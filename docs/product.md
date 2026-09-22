@@ -23,6 +23,8 @@ Watt-Wise helps Lithuanian households find the cheapest electricity setup. A use
 6. The product shows a **ranked list** of available grid plans, supplier plans, and grid+supplier combinations, each with its calculated monthly/yearly cost and the savings versus the user's current plans. "Best" means cheapest.
 7. The user browses the catalog of current supplier and grid plans in a rich UI.
 
+The UI is designed mobile-first: every screen works well on a phone and scales up to desktop. Users can choose light, dark or automatic (follow device) appearance.
+
 ## Functional requirements
 
 ### Consumption data
