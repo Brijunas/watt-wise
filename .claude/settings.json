@@ -1,0 +1,44 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/prettier-write.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(!.env.example)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*.pfx)",
+      "Read(**/*.p12)",
+      "Read(**/secrets/**)",
+      "Read(**/appsettings.*.local.json)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Edit(!.env.example)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.key)",
+      "Edit(**/*.pfx)",
+      "Edit(**/*.p12)",
+      "Edit(**/secrets/**)",
+      "Edit(**/appsettings.*.local.json)",
+      "Read(**/dist/**)",
+      "Read(**/dev-dist/**)",
+      "Read(**/coverage/**)",
+      "Read(**/bin/**)",
+      "Read(**/obj/**)",
+      "Read(**/.eslintcache)",
+      "Read(**/*.tsbuildinfo)"
+    ]
+  }
+}

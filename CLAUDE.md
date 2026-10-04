@@ -50,4 +50,5 @@ Nothing is scaffolded yet, so there are no build, lint or test commands. Add thi
 
 - JS: shared root ESLint + Prettier configs, `tsconfig.base.json` extended by every app and package. Prettier style: single quotes, no semicolons, 100 columns.
 - .NET: `.editorconfig`, `dotnet format`, built-in analyzers with warnings as errors.
-- Husky pre-commit runs the root `lint-staged.config.js` (lint/format on staged files); CI enforces the same.
+- Husky pre-commit runs a Betterleaks secret scan, then the root `lint-staged.config.js` (lint/format on staged files); CI enforces the same. Never bypass it with `--no-verify`; if Betterleaks flags something, remove the secret instead.
+- A Claude Code `PostToolUse` hook runs Prettier on every file Claude writes or edits, and `.claude/settings.json` denies reading local secret files and build output. These rules replace a `.claudeignore`, which Claude Code doesn't support.
