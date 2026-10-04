@@ -9,7 +9,7 @@ Watt-Wise helps Lithuanian households find the cheapest electricity setup. A use
 - **Market:** Lithuania. Grid operator is ESO; suppliers include Ignitis, Enefit, Elektrum and others.
 - **Users:** the general public. Anyone with an ESO account can use it.
 - **Business model:** free at launch. Monetization is undecided (affiliate fees, premium tier, or ads are all possible); the design must not block any of them.
-- **Scale for first release:** hundreds of users, hosted on a cheap single server or PaaS. Optimize for low cost and simplicity.
+- **Scale for first release:** hundreds of users. Optimize for low cost and simplicity.
 
 ## Core user flow
 
@@ -36,6 +36,7 @@ The UI is designed mobile-first: every screen works well on a phone and scales u
 
 - Central catalog of current grid plans and supplier plans, maintained by the product (not by users).
 - Source priority: official API or open data first; if unavailable, scrape provider websites.
+- Automatically fetched or scraped plans are not shown to users directly. An administrator reviews, corrects and publishes them in an internal admin application; users see only published plans.
 - Supplier plan availability depends on the selected grid plan; only valid grid+supplier pairs are offered.
 
 ### Tariff types

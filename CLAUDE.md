@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Watt-Wise is a greenfield project. The repository currently holds only the specifications; no application code exists yet. The two documents in `docs/` are the source of truth and every implementation decision must match them:
+Watt-Wise is a greenfield project. The root pnpm workspace, the shared lint/format tooling and the git hooks exist; no application code exists yet (`frontend/`, `admin/`, `packages/` and `backend/` are still to be created). `docs/product.md` and `docs/technical.md` are the source of truth and every implementation decision must match them. The documents in `docs/`:
 
 - `docs/product.md` — what the product does (Lithuanian electricity plan comparison from ESO hourly consumption CSVs), MVP scope, non-goals, open questions.
 - `docs/technical.md` — every technical decision: repo layout, stacks, architecture, data model, hosting, secrets, code style.
+- `docs/epics.md` — the MVP epics and stories, in delivery order. Work is tracked here.
 - `docs/setup.md` — machine setup: mise, pnpm install, git hooks, editor, troubleshooting. Update it when a story changes how the project is set up or run.
 - `docs/known-issues.md` — upstream problems with temporary workarounds (currently: TypeScript 7 vs typescript-eslint). Check it before changing tool versions.
 
@@ -26,14 +27,22 @@ Monorepo with plain top-level folders and no task runner. JS side is a pnpm work
 
 ## Commands
 
-Nothing is scaffolded yet, so there are no build, lint or test commands. Add this section once the workspace and solution exist.
+Tools (Node, pnpm, .NET, Betterleaks) come from the root `mise.toml`: run `mise install` first. Run everything from the repo root.
+
+- `pnpm install` — install dependencies and the git hooks. pnpm only; npm and yarn are rejected.
+- `pnpm lint` — ESLint over the whole repo; warnings fail.
+- `pnpm format` / `pnpm format:check` — Prettier write / check.
+- `pnpm test`, `pnpm build` — run the script in every workspace package that has one (none yet).
+- `pnpm exec tsc -p <package>` — type-check with TypeScript 7 (`tsc6` for TypeScript 6).
+
+Single-test, app and `dotnet` commands are added by S1.8, S2.11 and E3 as those parts are created.
 
 ## Architecture essentials
 
 **Backend (.NET 11, Clean Architecture).** Dependency direction is strictly Domain ← Application ← Infrastructure ← hosts.
 
 - _Domain_ has no external dependencies except NodaTime. The tariff/cost calculation engine lives here as pure code with no I/O.
-- _Application_ holds command/query handlers (MediatR-style pipeline), FluentValidation validators run as a pipeline behavior, and ports for persistence and external data.
+- _Application_ holds command/query handlers (in-house MediatR-style dispatcher, no MediatR package), FluentValidation validators run as a pipeline behavior, and ports for persistence and external data.
 - _Infrastructure_ implements ports: EF Core (code-first, PostgreSQL 18.6), Identity, spot-price adapters (ENTSO-E primary, Nord Pool/Litgrid fallback), per-provider catalog fetchers/scrapers.
 - _WattWise.Api_ is a Minimal API host only. It never runs a Hangfire server; it may enqueue jobs through shared Hangfire Postgres storage.
 - _WattWise.Jobs_ is the Hangfire server host and dashboard. Job classes are thin wrappers that invoke Application use cases.

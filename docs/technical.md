@@ -1,6 +1,6 @@
 # Watt-Wise — Technical Specification
 
-Companion to [product.md](product.md). This document records the technical decisions needed to start writing epics.
+Companion to [product.md](product.md). This document records the technical decisions the epics in [epics.md](epics.md) are built on.
 
 ## Repository
 
@@ -16,9 +16,15 @@ watt-wise/
 ├── docs/                      product.md, technical.md, epics.md, setup.md, known-issues.md
 ├── deploy/                    docker-compose.*.yml, .env.example, cloudflared config
 ├── .github/workflows/         CI/CD
+├── .claude/                   Claude Code settings, hooks and project skills
+├── .husky/                    git hooks (pre-commit)
+├── mise.toml                  tool versions (node, pnpm, dotnet, betterleaks)
 ├── pnpm-workspace.yaml        frontend, admin, packages/*
-├── package.json               root scripts (lint, test, build all JS packages)
+├── package.json               root scripts (lint, format, test, build all JS packages)
 ├── tsconfig.base.json         shared TypeScript settings
+├── eslint.config.js           shared ESLint config
+├── .prettierrc.json           shared Prettier config
+├── lint-staged.config.js      what the pre-commit hook runs on staged files
 ├── frontend/                  React PWA (Vite)
 ├── admin/                     React admin PWA (Vite)
 ├── packages/
@@ -41,9 +47,9 @@ watt-wise/
         └── WattWise.Jobs.IntegrationTests/
 ```
 
-- **Tool versions:** declared in the root `mise.toml`, which every developer machine and CI uses through mise. Node (latest LTS) and pnpm (latest) float so the project stays current; .NET is pinned to an exact SDK only while the required major is prerelease, then floats too. There is no `packageManager` field in `package.json`; mise is the only source of the pnpm version. JS dev dependencies also float (caret ranges of the latest release). The one exception is TypeScript: TS 7 provides `tsc`, and TS 6 is installed under the name `typescript` for ESLint and the editor until typescript-eslint supports TS 7 (see [known-issues.md](known-issues.md)).
+- **Tool versions:** declared in the root `mise.toml`, which every developer machine and CI uses through mise. Node (latest LTS), pnpm (latest) and Betterleaks (latest, the secret scanner) float so the project stays current; .NET is pinned to an exact SDK only while the required major is prerelease, then floats too. There is no `packageManager` field in `package.json`; mise is the only source of the pnpm version. JS dev dependencies also float (caret ranges of the latest release). The one exception is TypeScript: TS 7 provides `tsc`, and TS 6 is installed under the name `typescript` for ESLint and the editor until typescript-eslint supports TS 7 (see [known-issues.md](known-issues.md)).
 - **Version control hosting:** GitHub.
-- **CI/CD:** GitHub Actions. On pull request: build, lint and test all three applications. On merge to `main`: build Docker images, push to GitHub Container Registry, then deploy to saturn over SSH (`docker compose pull && docker compose up -d`).
+- **CI/CD:** GitHub Actions. On pull request: build, lint, format check, secret scan and test for all three applications. On merge to `main`: build Docker images, push to GitHub Container Registry, then deploy to saturn over SSH (`docker compose pull && docker compose up -d`).
 
 ## Frontend
 
@@ -65,7 +71,7 @@ watt-wise/
 - Shared code lives in `packages/<name>` as private workspace packages (`"private": true`, name `@wattwise/<name>`), consumed by the apps as `"@wattwise/<name>": "workspace:*"`.
 - **Consumed from source.** Each package's entry point is `src/index.ts`; there is no build step and no `dist/`. Vite compiles shared code as part of each app build, HMR works across packages, and TypeScript sees live types.
 - **Single React/MUI instance.** Packages declare `react`, `react-dom`, `@mui/material` and other framework libraries as `peerDependencies`; only the apps own those versions.
-- **Configuration.** One root `tsconfig.base.json` extended by every app and package. ESLint and Prettier each have one root config (`eslint.config.js`, `.prettierrc.json`) and run once from the root across all apps and packages. The Vitest config is shared through the base config. TypeScript project references are added only if type-checking becomes slow.
+- **Configuration.** One root `tsconfig.base.json` extended by every app and package. ESLint and Prettier each have one root config (`eslint.config.js`, `.prettierrc.json`) and run once from the root across all apps and packages. Vitest gets a shared config the same way when the packages are created (S1.3). TypeScript project references are added only if type-checking becomes slow.
 - **Initial packages:** `api-client`, `ui`, `core`, `i18n`. New packages are created only when code is genuinely needed by more than one app.
 
 ## Admin application
@@ -80,7 +86,7 @@ watt-wise/
 - **Architecture:** Clean Architecture with three layers:
   - **Domain** — entities, value objects, domain services (including the tariff/cost calculation engine), no external dependencies.
   - **Application** — use cases, ports (interfaces) for persistence and external data, validation, DTOs.
-  - **Infrastructure** — EF Core persistence, external data adapters (Nord Pool / ENTSO-E / Litgrid, provider catalog fetchers and scrapers), scheduled jobs, identity.
+  - **Infrastructure** — EF Core persistence, external data adapters (Nord Pool / ENTSO-E / Litgrid, provider catalog fetchers and scrapers), identity. Scheduled jobs are not here: the work is an Application use case and the Hangfire job class lives in `WattWise.Jobs`.
   - Two host projects wire the layers together and are deployed as separate applications:
     - **WattWise.Api** — Minimal API host only. It exposes endpoints and enqueues nothing itself beyond what use cases require; it does not run a Hangfire server.
     - **WattWise.Jobs** — Hangfire server host. It registers recurring jobs and executes them, hosts the Hangfire dashboard, and references the same Domain, Application and Infrastructure projects. Job implementations are Application use cases invoked by thin Hangfire job classes in this project.
@@ -88,7 +94,7 @@ watt-wise/
 - **Authentication:** ASP.NET Core Identity for users, password hashing, lockout and (later) external OAuth logins. API issues short-lived JWT access tokens plus rotating refresh tokens; the SPA sends the access token as a Bearer header via RTK Query.
 - **Background jobs:** Hangfire with PostgreSQL storage, running in the separate `WattWise.Jobs` host. Recurring cron jobs for spot price ingestion and catalog refresh, with retries. The Hangfire dashboard is served by the Jobs host and restricted to admins. The API can enqueue jobs through the shared Hangfire storage without running a server.
 - **API style:** REST over JSON, versioned under `/api/v1`. OpenAPI document generated by the built-in .NET OpenAPI support, browsable via Scalar UI in non-production environments.
-- **Request handling:** each endpoint maps to a command or query handler in the Application layer via a MediatR-style pipeline. Cross-cutting concerns (validation, logging, transactions) are pipeline behaviors.
+- **Request handling:** each endpoint maps to a command or query handler in the Application layer via a MediatR-style pipeline. The dispatcher (`IRequest` / `IRequestHandler`) is written in-house, with no dependency on the MediatR package. Cross-cutting concerns (validation, logging, transactions) are pipeline behaviors.
 - **Validation:** FluentValidation, executed as a pipeline behavior before the handler.
 - **Error format:** RFC 9457 ProblemDetails for all error responses, including validation errors.
 - **Logging / observability:** Serilog structured logging (console/JSON), OpenTelemetry traces and metrics, health checks at `/health`.
