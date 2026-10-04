@@ -13,7 +13,7 @@ Companion to [product.md](product.md). This document records the technical decis
 
 ```
 watt-wise/
-├── docs/                      product.md, technical.md
+├── docs/                      product.md, technical.md, epics.md, known-issues.md
 ├── deploy/                    docker-compose.*.yml, .env.example, cloudflared config
 ├── .github/workflows/         CI/CD
 ├── pnpm-workspace.yaml        frontend, admin, packages/*
@@ -40,7 +40,8 @@ watt-wise/
         ├── WattWise.Api.IntegrationTests/
         └── WattWise.Jobs.IntegrationTests/
 ```
-- **Tool versions:** declared in the root `mise.toml`, which every developer machine and CI uses through mise. Node (latest LTS) and pnpm (latest) float so the project stays current; .NET is pinned to an exact SDK only while the required major is prerelease, then floats too. There is no `packageManager` field in `package.json`; mise is the only source of the pnpm version.
+
+- **Tool versions:** declared in the root `mise.toml`, which every developer machine and CI uses through mise. Node (latest LTS) and pnpm (latest) float so the project stays current; .NET is pinned to an exact SDK only while the required major is prerelease, then floats too. There is no `packageManager` field in `package.json`; mise is the only source of the pnpm version. JS dev dependencies also float (caret ranges of the latest release). The one exception is TypeScript: TS 7 provides `tsc`, and TS 6 is installed under the name `typescript` for ESLint and the editor until typescript-eslint supports TS 7 (see [known-issues.md](known-issues.md)).
 - **Version control hosting:** GitHub.
 - **CI/CD:** GitHub Actions. On pull request: build, lint and test all three applications. On merge to `main`: build Docker images, push to GitHub Container Registry, then deploy to saturn over SSH (`docker compose pull && docker compose up -d`).
 
@@ -64,7 +65,7 @@ watt-wise/
 - Shared code lives in `packages/<name>` as private workspace packages (`"private": true`, name `@wattwise/<name>`), consumed by the apps as `"@wattwise/<name>": "workspace:*"`.
 - **Consumed from source.** Each package's entry point is `src/index.ts`; there is no build step and no `dist/`. Vite compiles shared code as part of each app build, HMR works across packages, and TypeScript sees live types.
 - **Single React/MUI instance.** Packages declare `react`, `react-dom`, `@mui/material` and other framework libraries as `peerDependencies`; only the apps own those versions.
-- **Configuration.** One root `tsconfig.base.json` extended by every app and package. ESLint, Prettier and Vitest configs are shared the same way. TypeScript project references are added only if type-checking becomes slow.
+- **Configuration.** One root `tsconfig.base.json` extended by every app and package. ESLint and Prettier each have one root config (`eslint.config.js`, `.prettierrc.json`) and run once from the root across all apps and packages. The Vitest config is shared through the base config. TypeScript project references are added only if type-checking becomes slow.
 - **Initial packages:** `api-client`, `ui`, `core`, `i18n`. New packages are created only when code is genuinely needed by more than one app.
 
 ## Admin application
@@ -122,4 +123,9 @@ watt-wise/
 - **Secrets and configuration:** 1Password is the source of truth for all secrets (database passwords, JWT signing key, Cloudflare Tunnel token, external API keys). Non-secret configuration is `appsettings.*.json` and Vite env files committed to git. Secrets are injected as environment variables at runtime: on saturn and in GitHub Actions via the 1Password CLI with a service account (`op run` / `op inject` rendering the Compose `.env`), locally via `op run` or the 1Password desktop integration. No secret is ever committed; `deploy/` holds `.env.example` templates referencing 1Password item paths.
 - **GDPR:** account delete and data export implemented as backend use cases. Delete removes the Identity user, consumption objects, hourly rows, current-plan entries and refresh tokens in one transaction. Export returns a JSON archive of the same data.
 - **External data sources:** spot prices from ENTSO-E Transparency Platform API (free token) as the primary source, with Nord Pool or Litgrid open data as fallback adapters behind the same Application port. Provider catalog sources are decided per provider during implementation (see product.md open questions); each provider gets its own Infrastructure adapter producing draft plans.
-- **Code style / linting:** frontend, admin and shared packages use ESLint and Prettier from root-level shared configs. Backend uses `.editorconfig`, `dotnet format`, and the built-in .NET analyzers with warnings treated as errors. Husky pre-commit hooks run lint and format on staged files. All of it is enforced again in CI.
+- **Code style / linting:** frontend, admin and shared packages use ESLint and Prettier from root-level shared configs.
+  - ESLint: typescript-eslint `strictTypeChecked` + `stylisticTypeChecked`, `@eslint-react` (`eslint-plugin-react` doesn't support ESLint 10), `eslint-plugin-react-hooks`, and `eslint-config-prettier` last.
+  - Prettier: single quotes, no semicolons, 100-column lines, otherwise defaults.
+  - Backend: `.editorconfig`, `dotnet format`, and the built-in .NET analyzers with warnings treated as errors.
+  - One Husky pre-commit hook runs a single root `lint-staged.config.js` that lints and formats staged files (JS/TS now, C# from S2.10).
+  - All of it is enforced again in CI.

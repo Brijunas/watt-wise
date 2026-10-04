@@ -7,10 +7,26 @@
     "pnpm": ">=12"
   },
   "scripts": {
+    "prepare": "husky",
     "preinstall": "npx only-allow pnpm",
-    "lint": "pnpm -r --if-present run lint",
-    "format": "pnpm -r --if-present run format",
+    "lint": "eslint . --cache --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build"
+  },
+  "devDependencies": {
+    "@eslint-react/eslint-plugin": "^5.23.5",
+    "@eslint/js": "^10.0.1",
+    "@typescript/native": "npm:typescript@^7",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.9",
+    "typescript": "npm:@typescript/typescript6@^6",
+    "typescript-eslint": "^8.71.0"
   }
 }

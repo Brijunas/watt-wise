@@ -8,6 +8,7 @@ Watt-Wise is a greenfield project. The repository currently holds only the speci
 
 - `docs/product.md` — what the product does (Lithuanian electricity plan comparison from ESO hourly consumption CSVs), MVP scope, non-goals, open questions.
 - `docs/technical.md` — every technical decision: repo layout, stacks, architecture, data model, hosting, secrets, code style.
+- `docs/known-issues.md` — upstream problems with temporary workarounds (currently: TypeScript 7 vs typescript-eslint). Check it before changing tool versions.
 
 When a task needs a decision the specs do not cover, ask rather than invent. When a decision changes, update the relevant spec in the same change.
 
@@ -29,11 +30,12 @@ Nothing is scaffolded yet, so there are no build, lint or test commands. Add thi
 ## Architecture essentials
 
 **Backend (.NET 11, Clean Architecture).** Dependency direction is strictly Domain ← Application ← Infrastructure ← hosts.
-- *Domain* has no external dependencies except NodaTime. The tariff/cost calculation engine lives here as pure code with no I/O.
-- *Application* holds command/query handlers (MediatR-style pipeline), FluentValidation validators run as a pipeline behavior, and ports for persistence and external data.
-- *Infrastructure* implements ports: EF Core (code-first, PostgreSQL 18.6), Identity, spot-price adapters (ENTSO-E primary, Nord Pool/Litgrid fallback), per-provider catalog fetchers/scrapers.
-- *WattWise.Api* is a Minimal API host only. It never runs a Hangfire server; it may enqueue jobs through shared Hangfire Postgres storage.
-- *WattWise.Jobs* is the Hangfire server host and dashboard. Job classes are thin wrappers that invoke Application use cases.
+
+- _Domain_ has no external dependencies except NodaTime. The tariff/cost calculation engine lives here as pure code with no I/O.
+- _Application_ holds command/query handlers (MediatR-style pipeline), FluentValidation validators run as a pipeline behavior, and ports for persistence and external data.
+- _Infrastructure_ implements ports: EF Core (code-first, PostgreSQL 18.6), Identity, spot-price adapters (ENTSO-E primary, Nord Pool/Litgrid fallback), per-provider catalog fetchers/scrapers.
+- _WattWise.Api_ is a Minimal API host only. It never runs a Hangfire server; it may enqueue jobs through shared Hangfire Postgres storage.
+- _WattWise.Jobs_ is the Hangfire server host and dashboard. Job classes are thin wrappers that invoke Application use cases.
 - REST under `/api/v1`, admin endpoints under `/api/v1/admin` requiring the Identity `Admin` role. All errors are RFC 9457 ProblemDetails. Auth is JWT access token + rotating refresh token.
 
 **Time handling.** Everything is stored as UTC `timestamptz`. The ESO CSV is interpreted as Europe/Vilnius on import. Time-of-use zone boundaries are evaluated in local time so 23/25-hour DST days work. Use NodaTime, never `DateTime` arithmetic, for this logic.
@@ -46,6 +48,6 @@ Nothing is scaffolded yet, so there are no build, lint or test commands. Add thi
 
 ## Code style
 
-- JS: shared root ESLint + Prettier configs, `tsconfig.base.json` extended by every app and package.
+- JS: shared root ESLint + Prettier configs, `tsconfig.base.json` extended by every app and package. Prettier style: single quotes, no semicolons, 100 columns.
 - .NET: `.editorconfig`, `dotnet format`, built-in analyzers with warnings as errors.
-- Husky pre-commit runs lint/format on staged files; CI enforces the same.
+- Husky pre-commit runs the root `lint-staged.config.js` (lint/format on staged files); CI enforces the same.
