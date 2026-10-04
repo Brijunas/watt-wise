@@ -1,0 +1,16 @@
+{
+  "name": "watt-wise",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=12"
+  },
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "lint": "pnpm -r --if-present run lint",
+    "format": "pnpm -r --if-present run format",
+    "test": "pnpm -r --if-present run test",
+    "build": "pnpm -r --if-present run build"
+  }
+}

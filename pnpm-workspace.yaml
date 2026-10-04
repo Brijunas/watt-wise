@@ -1,0 +1,7 @@
+packages:
+  - frontend
+  - admin
+  - packages/*
+
+# Fail install when the Node/pnpm versions don't satisfy package.json "engines".
+engineStrict: true
