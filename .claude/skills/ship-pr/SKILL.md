@@ -26,6 +26,11 @@ Merging is the step that's hard to undo and is seen by others. Only merge when t
 Run these checks and fix or ask before going on. Each one prevents a PR that's wrong or empty.
 
 - `git status --short`: uncommitted changes would be left out of the PR. Ask whether to commit them first, or leave them out.
+- **Commits go through the pre-commit hook.** It runs a Betterleaks secret scan on the staged changes first, then lint-staged (ESLint and Prettier).
+  - If Betterleaks rejects a commit, a credential is in the staged changes. Stop and show the user the redacted finding. Never bypass it with `--no-verify`, and don't add an exception without the user's say-so: no `betterleaks:allow` comment, `.betterleaksignore` entry or config allowlist.
+  - Remove the secret from the change (move it to 1Password / an env var), then commit again.
+  - If the hook says `betterleaks` is missing, run `mise install`.
+  - Lint failures also block the commit. Fix the code; don't skip the hook.
 - `git branch --show-current`: if you're on the base branch, there's no feature branch to ship. If the base branch has local commits ahead of `origin`, offer to move them to a new branch named after the work (e.g. `s1.2-shared-configs`). Otherwise stop.
 - `git fetch origin` then `git log --oneline origin/<base>..HEAD`: there must be at least one commit to ship. If the branch is behind the base, say so. GitHub will show the conflict status on the PR.
 - `gh pr list --head <branch> --state all`: if a PR already exists, reuse it. Don't open a duplicate. If that PR is already merged, switch to cleanup-only mode.
