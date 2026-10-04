@@ -85,6 +85,20 @@ All five should exit without errors. `typecheck` and `test` run in every package
 
 Code style: single quotes, no semicolons, 100-column lines. Prettier and ESLint enforce it, so you don't have to remember it.
 
+## Updating dependencies
+
+| Command                          | What it does                                                                  |
+| -------------------------------- | ----------------------------------------------------------------------------- |
+| `pnpm outdated -r`               | Lists outdated dependencies in every workspace package, including the root.   |
+| `pnpm update -r`                 | Updates within the existing ranges, so no majors. Low risk.                   |
+| `pnpm update -r -i --latest`     | Lets you pick bumps past the current range (majors) and rewrites the ranges.  |
+| `pnpm update -r --latest <name>` | Bumps one package, or a pattern such as `"@eslint/*"`, to its latest version. |
+
+- pnpm won't install a version published less than a day ago (`minimumReleaseAge` in `pnpm-workspace.yaml`). If the newest release is younger than that, pnpm picks the newest one that is old enough.
+- Take majors one at a time and read the changelog first. Check [known-issues.md](known-issues.md) before touching TypeScript or typescript-eslint; the two TypeScript aliases in the root `package.json` are deliberate.
+- After updating, run the five checks from section 4, then commit `package.json` files and `pnpm-lock.yaml` together in their own commit.
+- npm-check-updates isn't installed. For its extra modes, run it without installing: `pnpm dlx npm-check-updates --workspaces --root --format group`.
+
 ## What happens when you commit
 
 The pre-commit hook (`.husky/pre-commit`) runs two checks on the staged changes. Either one can stop the commit.
