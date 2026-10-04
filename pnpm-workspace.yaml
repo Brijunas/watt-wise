@@ -5,3 +5,6 @@ packages:
 
 # Fail install when the Node/pnpm versions don't satisfy package.json "engines".
 engineStrict: true
+
+# Don't install versions published less than a day ago (minutes). Guards against compromised releases.
+minimumReleaseAge: 1440
