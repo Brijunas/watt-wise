@@ -7,11 +7,11 @@ description: Ship a feature branch through GitHub. Push it, open a pull request 
 
 This skill moves a finished feature branch to `main` on GitHub through the `gh` CLI. It has three modes, picked from what the user asked for.
 
-| Mode | User says something like | Steps |
-|---|---|---|
-| **Full cycle** | "create PR and merge it", "ship it", "merge to main and clean up" | 1 → 2 → 3 → 4 |
-| **Create only** | "open a PR", "create a pull request" (merge not mentioned) | 1 → 2, then stop |
-| **Cleanup only** | "I merged it", "PR is merged, clean up", "back to main and pull" | 4 |
+| Mode             | User says something like                                          | Steps            |
+| ---------------- | ----------------------------------------------------------------- | ---------------- |
+| **Full cycle**   | "create PR and merge it", "ship it", "merge to main and clean up" | 1 → 2 → 3 → 4    |
+| **Create only**  | "open a PR", "create a pull request" (merge not mentioned)        | 1 → 2, then stop |
+| **Cleanup only** | "I merged it", "PR is merged, clean up", "back to main and pull"  | 4                |
 
 Merging is the step that's hard to undo and is seen by others. Only merge when the user asked for it in this request. "Create a PR" alone is never permission to merge. If the mode is ambiguous, ask.
 
@@ -35,10 +35,12 @@ Run these checks and fix or ask before going on. Each one prevents a PR that's w
 Push with `git push -u origin <branch>`.
 
 If the push is rejected because the remote branch holds different commits, don't force-push straight away. Compare the two first:
+
 - `git log --oneline HEAD..origin/<branch>` lists commits only on the remote.
 - `git diff origin/<branch> HEAD --stat` compares the content.
 
 Then choose:
+
 - **Remote side is an older version of the same work** (e.g. you amended or rebased locally): `git push --force-with-lease=<branch>:<remote-oid>`. Pinning the exact OID means the push fails if someone pushed again meanwhile. Tell the user what was replaced.
 - **Remote has commits that aren't in your local history**, or you're unsure: stop and show the user. Overwriting someone's work is not recoverable from your side.
 
@@ -80,24 +82,26 @@ Run the bundled script from the repo root:
 ```
 
 With no argument, it uses the current branch. It does the fiddly checks so they're the same every time:
+
 - It deletes nothing unless GitHub reports the PR as `MERGED`.
 - It deletes the remote branch if the merge left it behind, and handles one that's already gone.
 - It refuses to switch branches with a dirty working tree, so uncommitted work doesn't silently move to the base branch.
 - It switches to the base branch, prunes, and fast-forwards with `--ff-only`, so there's no accidental merge commit.
 - It deletes the local branch only if the branch tip is part of the PR's final head. Rebase and squash merges rewrite hashes, so `git branch -d` wrongly reports the branch as unmerged; the script checks against the PR instead.
 
-| Exit code | Meaning | What to do |
-|---|---|---|
-| 0 | Done | — |
-| 1 | No PR found | Ask which PR or branch the user means |
-| 2 | PR not merged | Report its state (open or closed). In cleanup-only mode the user may think they merged it; tell them it isn't. Don't delete a closed-but-unmerged branch without asking. |
-| 3 | Dirty tree | Show the changes and ask whether to commit, stash or keep them |
-| 4 | Local branch has extra commits | Show them. They may be follow-up work for a new PR. |
-| 5 | Base can't fast-forward | Local base has its own commits. Report and ask; don't reset. |
+| Exit code | Meaning                        | What to do                                                                                                                                                               |
+| --------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0         | Done                           | —                                                                                                                                                                        |
+| 1         | No PR found                    | Ask which PR or branch the user means                                                                                                                                    |
+| 2         | PR not merged                  | Report its state (open or closed). In cleanup-only mode the user may think they merged it; tell them it isn't. Don't delete a closed-but-unmerged branch without asking. |
+| 3         | Dirty tree                     | Show the changes and ask whether to commit, stash or keep them                                                                                                           |
+| 4         | Local branch has extra commits | Show them. They may be follow-up work for a new PR.                                                                                                                      |
+| 5         | Base can't fast-forward        | Local base has its own commits. Report and ask; don't reset.                                                                                                             |
 
 ## Final report
 
 Keep it short:
+
 - PR link as `[owner/repo#N](url)`
 - merge method and the resulting commit on the base branch (`git log -1 --oneline`)
 - branch deletion status (remote and local)
