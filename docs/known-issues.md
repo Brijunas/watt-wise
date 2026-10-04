@@ -42,5 +42,5 @@ The two compilers can disagree in rare edge cases. If ESLint's type-aware rules 
 
 1. In the root `package.json`, set `typescript` to the latest TS 7 and remove the `@typescript/native` alias.
 2. Turn on whatever parser option typescript-eslint requires for the native backend in `eslint.config.js`, if it is still opt-in.
-3. Run `pnpm install` and `pnpm lint`, plus the type-check once S1.3 adds it.
+3. Run `pnpm install`, `pnpm lint` and `pnpm typecheck`.
 4. Remove the TS exception from the "Tool versions" bullet in `docs/technical.md`, and delete this entry.
