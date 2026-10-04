@@ -14,7 +14,7 @@ Scaffolds the repository structure and the shared JavaScript tooling only. No ap
 - **S1.4 Frontend folder.** `frontend/` created as an empty placeholder with a short README stating the app is created in E3. No `package.json`, so the workspace ignores it.
 - **S1.5 Admin folder.** `admin/` created the same way as S1.4.
 - **S1.6 Backend folder.** `backend/` created as an empty placeholder with a short README stating the solution is created in E2.
-- **S1.7 Placeholder folders and docs.** `deploy/` and `.github/workflows/` with a short README each; top-level `README.md` describing the layout and how to run the checks.
+- **S1.7 Placeholder folders and docs.** `deploy/` and `.github/workflows/` with a short README each; top-level `README.md` describing the layout and linking to `docs/setup.md` for setup and checks.
 - **S1.8 Fill in CLAUDE.md Commands.** Replace the placeholder with the pnpm commands that exist after this epic, including how to run a single test in a package. Done: every listed command has been executed and works.
 
 ## E2. Backend foundation
