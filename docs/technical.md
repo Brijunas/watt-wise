@@ -40,6 +40,7 @@ watt-wise/
         ├── WattWise.Api.IntegrationTests/
         └── WattWise.Jobs.IntegrationTests/
 ```
+- **Tool versions:** declared in the root `mise.toml`, which every developer machine and CI uses through mise. Node (latest LTS) and pnpm (latest) float so the project stays current; .NET is pinned to an exact SDK only while the required major is prerelease, then floats too. There is no `packageManager` field in `package.json`; mise is the only source of the pnpm version.
 - **Version control hosting:** GitHub.
 - **CI/CD:** GitHub Actions. On pull request: build, lint and test all three applications. On merge to `main`: build Docker images, push to GitHub Container Registry, then deploy to saturn over SSH (`docker compose pull && docker compose up -d`).
 
