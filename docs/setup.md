@@ -62,23 +62,26 @@ pnpm install
 ```bash
 pnpm lint
 pnpm format:check
+pnpm typecheck
 pnpm test
 pnpm build
 ```
 
-All four should exit without errors. Until the apps and packages exist (S1.3, E3), `test` and `build` have nothing to run and pass trivially.
+All five should exit without errors. `typecheck` and `test` run in every package under `packages/`. Until the apps exist (E3), `build` has nothing to run and passes trivially.
 
 ## Everyday commands
 
-| Command                       | What it does                                                                                          |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `pnpm lint`                   | ESLint over the whole repo, using the root `eslint.config.js`. Warnings fail.                         |
-| `pnpm format`                 | Prettier rewrites every file it supports.                                                             |
-| `pnpm format:check`           | Prettier reports unformatted files without changing them.                                             |
-| `pnpm test`                   | Runs `test` in every workspace package that has one.                                                  |
-| `pnpm build`                  | Runs `build` in every workspace package that has one.                                                 |
-| `pnpm exec tsc -p <package>`  | Type-checks a package with TypeScript 7. A root `typecheck` script arrives with the packages in S1.3. |
-| `pnpm exec tsc6 -p <package>` | Same with TypeScript 6, the version ESLint uses.                                                      |
+| Command                                    | What it does                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------- |
+| `pnpm lint`                                | ESLint over the whole repo, using the root `eslint.config.js`. Warnings fail.   |
+| `pnpm format`                              | Prettier rewrites every file it supports.                                       |
+| `pnpm format:check`                        | Prettier reports unformatted files without changing them.                       |
+| `pnpm typecheck`                           | Runs `typecheck` (`tsc`, TypeScript 7) in every workspace package that has one. |
+| `pnpm test`                                | Runs `test` (`vitest run`) in every workspace package that has one.             |
+| `pnpm build`                               | Runs `build` in every workspace package that has one.                           |
+| `pnpm --filter @wattwise/core test`        | Runs one package's tests. The same works for `typecheck`.                       |
+| `pnpm --filter @wattwise/core exec vitest` | Runs one package's tests in watch mode.                                         |
+| `pnpm --filter @wattwise/core exec tsc6`   | Type-checks one package with TypeScript 6, the version ESLint uses.             |
 
 Code style: single quotes, no semicolons, 100-column lines. Prettier and ESLint enforce it, so you don't have to remember it.
 
