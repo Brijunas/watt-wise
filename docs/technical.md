@@ -13,7 +13,7 @@ Companion to [product.md](product.md). This document records the technical decis
 
 ```
 watt-wise/
-├── docs/                      product.md, technical.md, epics.md, known-issues.md
+├── docs/                      product.md, technical.md, epics.md, setup.md, known-issues.md
 ├── deploy/                    docker-compose.*.yml, .env.example, cloudflared config
 ├── .github/workflows/         CI/CD
 ├── pnpm-workspace.yaml        frontend, admin, packages/*

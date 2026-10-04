@@ -8,6 +8,7 @@ Watt-Wise is a greenfield project. The repository currently holds only the speci
 
 - `docs/product.md` — what the product does (Lithuanian electricity plan comparison from ESO hourly consumption CSVs), MVP scope, non-goals, open questions.
 - `docs/technical.md` — every technical decision: repo layout, stacks, architecture, data model, hosting, secrets, code style.
+- `docs/setup.md` — machine setup: mise, pnpm install, git hooks, editor, troubleshooting. Update it when a story changes how the project is set up or run.
 - `docs/known-issues.md` — upstream problems with temporary workarounds (currently: TypeScript 7 vs typescript-eslint). Check it before changing tool versions.
 
 When a task needs a decision the specs do not cover, ask rather than invent. When a decision changes, update the relevant spec in the same change.
