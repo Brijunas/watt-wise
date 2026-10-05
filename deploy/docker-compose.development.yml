@@ -1,0 +1,63 @@
+# Development environment: PostgreSQL and pgAdmin. Bind addresses, ports and user names
+# come from 1Password, rendered into deploy/.env (read by compose automatically):
+#   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
+# Passwords are read only on first start of empty volumes, through op run:
+#   op run --env-file deploy/development/compose.env -- \
+#     docker compose -f deploy/docker-compose.development.yml up -d --wait
+# Application roles and their passwords are set up by hand once, see
+# "Development database" in docs/setup.md.
+name: wattwise-development
+
+services:
+  postgres:
+    image: postgres:18.6-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?render deploy/.env, see deploy/development/compose.settings.tpl}
+      POSTGRES_DB: ${POSTGRES_DB:?render deploy/.env, see deploy/development/compose.settings.tpl}
+      # Read only when the volume is empty (initdb); comes from op run, see compose.env.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
+      - -c
+      - log_statement=ddl
+    ports:
+      - '${POSTGRES_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${POSTGRES_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:5432'
+    volumes:
+      # PG 18 image layout: PGDATA is /var/lib/postgresql/18/docker.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  pgadmin:
+    image: dpage/pgadmin4:9.18.0
+    restart: unless-stopped
+    environment:
+      # The image refuses to start without these, even in desktop mode (no login screen).
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?render deploy/.env, see deploy/development/compose.settings.tpl}
+      # Read only on first start (empty volume); comes from op run, see compose.env.
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    ports:
+      - '${PGADMIN_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${PGADMIN_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:80'
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  pgadmin-data:

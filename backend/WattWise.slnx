@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/WattWise.Api/WattWise.Api.csproj" />
     <Project Path="src/WattWise.Application/WattWise.Application.csproj" />
+    <Project Path="src/WattWise.Cli/WattWise.Cli.csproj" />
     <Project Path="src/WattWise.Domain/WattWise.Domain.csproj" />
     <Project Path="src/WattWise.Infrastructure/WattWise.Infrastructure.csproj" />
     <Project Path="src/WattWise.Jobs/WattWise.Jobs.csproj" />

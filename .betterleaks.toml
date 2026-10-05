@@ -1,0 +1,12 @@
+# Betterleaks configuration: the built-in rules plus one allowlist.
+# Agreed exceptions only; see "Secrets and configuration" in docs/technical.md.
+
+[extend]
+useDefault = true
+
+# 1Password secret references (op://vault/item/field) are pointers, not secrets.
+# Only a whole KEY="op://..." line is allowed, so a literal value is still caught.
+[[allowlists]]
+description = "1Password secret references"
+regexTarget = "line"
+regexes = ['''^\s*[A-Za-z_][A-Za-z0-9_]*\s*=\s*"?op://[^"\s]+(\s[^"\s]+)*"?\s*$''']

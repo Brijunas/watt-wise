@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Watt-Wise (Development)",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "wattwise",
+      "Username": "admin",
+      "SSLMode": "prefer"
+    }
+  }
+}

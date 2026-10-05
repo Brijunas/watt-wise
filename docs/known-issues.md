@@ -59,3 +59,23 @@ _Recorded 2026-10-05. Blocks the ESO CSV parser in E7._
 2. Choose the NodaTime resolver for `LocalDateTime` → `Instant` that matches (e.g. earlier/later occurrence by row order for the repeated hour; reject or skip for the missing one).
 3. Commit trimmed copies of the export as test fixtures and add parser tests for both DST days.
 4. Delete this entry.
+
+## EFCore.NamingConventions has no EF Core 11 release
+
+_Recorded 2026-10-05 (S2.3). EFCore.NamingConventions 10.0.1, EF Core and Npgsql EF provider 11.0.0-rc.1._
+
+**Problem.** snake_case table and column names come from EFCore.NamingConventions. Its latest release, 10.0.1, declares `Microsoft.EntityFrameworkCore [10.0.1, 11.0.0)`, so with EF Core 11 NuGet warns NU1608 (version outside the dependency constraint). It may also break at runtime if EF 11 changed the internals it hooks into.
+
+**Workaround in place.** `WattWise.Infrastructure.csproj` references 10.0.1 with `NoWarn="NU1608"` on that one `PackageReference`. That it works under EF Core 11 was checked in S2.3 by migrating a throwaway entity and reading the generated SQL. The S2.4 integration tests keep checking it.
+
+**Where to follow it.** [efcore/EFCore.NamingConventions](https://github.com/efcore/EFCore.NamingConventions) releases and issues. A quick check of the newest version:
+
+```bash
+curl -s https://api.nuget.org/v3-flatcontainer/efcore.namingconventions/index.json
+```
+
+**Resolved when** a release supports EF Core 11. Then:
+
+1. Bump it in `backend/Directory.Packages.props` and remove `NoWarn="NU1608"` from `WattWise.Infrastructure.csproj`.
+2. Run `dotnet build` (0 warnings) and `dotnet test`.
+3. Delete this entry.

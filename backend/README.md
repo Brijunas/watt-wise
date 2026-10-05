@@ -1,6 +1,6 @@
 # backend
 
-The Watt-Wise .NET 11 backend: the `WattWise.slnx` solution, following Clean Architecture, with five projects under `src/` (Domain, Application, Infrastructure, and the Api and Jobs hosts) and five test projects under `tests/`. It is built with the `dotnet` CLI and is never part of the pnpm workspace.
+The Watt-Wise .NET 11 backend: the `WattWise.slnx` solution, following Clean Architecture, with six projects under `src/` (Domain, Application, Infrastructure, and the Api, Jobs and Cli hosts) and five test projects under `tests/`. It is built with the `dotnet` CLI and is never part of the pnpm workspace.
 
 ## Docs
 
