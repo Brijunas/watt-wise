@@ -4,7 +4,7 @@ How the Watt-Wise database is set up in every environment: the roles, what each 
 
 ## Version
 
-PostgreSQL 18.6, the official `postgres:18.6-trixie` image. PostgreSQL 19 was still in beta when this was decided (2026-10). Moving to a new major is a planned upgrade, not a tag bump: data from an older major has to be migrated (`pg_upgrade` or dump and restore).
+PostgreSQL 18.6, the official `postgres:18.6-trixie` image. The same tag is pinned in the compose files and in the integration-test fixture (`PostgresContainerFixture` in `backend/tests/WattWise.Testing`); change them together. PostgreSQL 19 was still in beta when this was decided (2026-10). Moving to a new major is a planned upgrade, not a tag bump: data from an older major has to be migrated (`pg_upgrade` or dump and restore).
 
 ## Roles
 

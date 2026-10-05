@@ -2,25 +2,23 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <OutputType>Exe</OutputType>
-    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="xunit.runner.json" CopyToOutputDirectory="IfDifferent" />
+    <!-- Reaches the output directory of every test project that references this one. -->
+    <None Include="..\..\..\deploy\postgres\bootstrap.sql" Link="bootstrap.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.v3.mtp-v2" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
-    <Using Include="WattWise.Testing" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WattWise.Testing\WattWise.Testing.csproj" />
     <ProjectReference Include="..\..\src\WattWise.Infrastructure\WattWise.Infrastructure.csproj" />
   </ItemGroup>
 

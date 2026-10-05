@@ -23,6 +23,7 @@ public static class DependencyInjection
             DatabaseSettings settings = serviceProvider.GetRequiredService<IOptions<DatabaseSettings>>().Value;
             AppDbContextOptions.Configure(options, settings.ToConnectionString());
         });
+        services.AddScoped<DatabaseMigrator>();
         return services;
     }
 }

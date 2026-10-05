@@ -16,9 +16,11 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="WattWise.Testing" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WattWise.Testing\WattWise.Testing.csproj" />
     <ProjectReference Include="..\..\src\WattWise.Jobs\WattWise.Jobs.csproj" />
   </ItemGroup>
 

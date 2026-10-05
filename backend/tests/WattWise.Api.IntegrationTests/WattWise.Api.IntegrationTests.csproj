@@ -11,14 +11,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="xunit.v3.mtp-v2" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="WattWise.Testing" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WattWise.Testing\WattWise.Testing.csproj" />
     <ProjectReference Include="..\..\src\WattWise.Api\WattWise.Api.csproj" />
   </ItemGroup>
 
