@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WattWise.Api/WattWise.Api.csproj" />
+    <Project Path="src/WattWise.Application/WattWise.Application.csproj" />
+    <Project Path="src/WattWise.Domain/WattWise.Domain.csproj" />
+    <Project Path="src/WattWise.Infrastructure/WattWise.Infrastructure.csproj" />
+    <Project Path="src/WattWise.Jobs/WattWise.Jobs.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WattWise.Api.IntegrationTests/WattWise.Api.IntegrationTests.csproj" />
+    <Project Path="tests/WattWise.Application.Tests/WattWise.Application.Tests.csproj" />
+    <Project Path="tests/WattWise.Domain.Tests/WattWise.Domain.Tests.csproj" />
+    <Project Path="tests/WattWise.Infrastructure.IntegrationTests/WattWise.Infrastructure.IntegrationTests.csproj" />
+    <Project Path="tests/WattWise.Jobs.IntegrationTests/WattWise.Jobs.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

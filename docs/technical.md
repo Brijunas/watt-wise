@@ -1,6 +1,6 @@
 # Watt-Wise — Technical Specification
 
-Companion to [product.md](product.md). This document records the technical decisions needed to start writing epics.
+Companion to [product.md](product.md). This document records the architecture of the whole Watt-Wise system: the applications, how they talk to each other, the data model, hosting and the rules shared by every project. Technical details that belong to one project live in that project's own docs and are linked from here; for the backend, that is [backend/docs/](../backend/docs/).
 
 ## Repository
 
@@ -26,22 +26,11 @@ watt-wise/
 │   ├── ui/                    MUI theme (light/dark color schemes, mode switch), shared components, charts
 │   ├── core/                  auth/token handling, zod schemas, utilities
 │   └── i18n/                  react-i18next setup and shared resources
-└── backend/
-    ├── WattWise.sln
-    ├── src/
-    │   ├── WattWise.Domain/
-    │   ├── WattWise.Application/
-    │   ├── WattWise.Infrastructure/
-    │   ├── WattWise.Api/          Minimal API host
-    │   └── WattWise.Jobs/         Hangfire server host
-    └── tests/
-        ├── WattWise.Domain.Tests/
-        ├── WattWise.Application.Tests/
-        ├── WattWise.Api.IntegrationTests/
-        └── WattWise.Jobs.IntegrationTests/
+├── global.json                .NET SDK pin and test runner for the backend
+└── backend/                   .NET solution (WattWise.slnx), layout in backend/docs/architecture.md
 ```
 
-- **Tool versions:** declared in the root `mise.toml`, which every developer machine and CI uses through mise. Node (latest LTS) and pnpm (latest) float so the project stays current; .NET is pinned to an exact SDK only while the required major is prerelease, then floats too. There is no `packageManager` field in `package.json`; mise is the only source of the pnpm version. JS dev dependencies also float (caret ranges of the latest release). The one exception is TypeScript: TS 7 provides `tsc`, and TS 6 is installed under the name `typescript` for ESLint and the editor until typescript-eslint supports TS 7 (see [known-issues.md](known-issues.md)).
+- **Tool versions:** declared in the root `mise.toml`, which every developer machine and CI uses through mise. Node (latest LTS) and pnpm (latest) float so the project stays current; .NET is pinned to an exact SDK only while the required major is prerelease, then floats too; the root `global.json` mirrors that pin for the `dotnet` CLI (details in [backend/docs/conventions.md](../backend/docs/conventions.md)). There is no `packageManager` field in `package.json`; mise is the only source of the pnpm version. JS dev dependencies also float (caret ranges of the latest release). The one exception is TypeScript: TS 7 provides `tsc`, and TS 6 is installed under the name `typescript` for ESLint and the editor until typescript-eslint supports TS 7 (see [known-issues.md](known-issues.md)).
 - **Dependency updates:** done with pnpm's own commands; npm-check-updates is not a project dependency (it can be run ad hoc with `pnpm dlx npm-check-updates` for its `--doctor` or `--target minor` modes). `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440`, so pnpm never installs a version published less than a day ago; this guards against compromised releases that npm pulls within hours. Routine refreshes stay within the existing ranges; major bumps are taken one at a time, after reading the changelog and checking [known-issues.md](known-issues.md). The commands are in [development.md](development.md#updating-dependencies). Manifests and `pnpm-lock.yaml` are committed together in a dedicated commit after lint, typecheck, test and build pass. Versions shared by `frontend` and `admin` (React, MUI and the like) go in a pnpm catalog in `pnpm-workspace.yaml`, so one update keeps both apps in sync. Once CI exists (E5), Renovate opens the update PRs for npm, NuGet, Docker images, GitHub Actions and `mise.toml`, with the same one-day minimum release age and related packages grouped into one PR.
 - **Version control hosting:** GitHub.
 - **CI/CD:** GitHub Actions. On pull request: build, lint and test all three applications. On merge to `main`: build Docker images, push to GitHub Container Registry, then deploy to saturn over SSH (`docker compose pull && docker compose up -d`).
@@ -77,25 +66,13 @@ watt-wise/
 
 ## Backend
 
-- **Stack:** .NET 11, ASP.NET Core Minimal API.
-- **Architecture:** Clean Architecture with three layers:
-  - **Domain** — entities, value objects, domain services (including the tariff/cost calculation engine), no external dependencies.
-  - **Application** — use cases, ports (interfaces) for persistence and external data, validation, DTOs.
-  - **Infrastructure** — EF Core persistence, external data adapters (Nord Pool / ENTSO-E / Litgrid, provider catalog fetchers and scrapers), scheduled jobs, identity.
-  - Two host projects wire the layers together and are deployed as separate applications:
-    - **WattWise.Api** — Minimal API host only. It exposes endpoints and enqueues nothing itself beyond what use cases require; it does not run a Hangfire server.
-    - **WattWise.Jobs** — Hangfire server host. It registers recurring jobs and executes them, hosts the Hangfire dashboard, and references the same Domain, Application and Infrastructure projects. Job implementations are Application use cases invoked by thin Hangfire job classes in this project.
-- **Persistence:** Entity Framework Core, code-first with migrations, PostgreSQL 18.6.
-- **Authentication:** ASP.NET Core Identity for users, password hashing, lockout and (later) external OAuth logins. API issues short-lived JWT access tokens plus rotating refresh tokens; the SPA sends the access token as a Bearer header via RTK Query.
-- **Background jobs:** Hangfire with PostgreSQL storage, running in the separate `WattWise.Jobs` host. Recurring cron jobs for spot price ingestion and catalog refresh, with retries. The Hangfire dashboard is served by the Jobs host and restricted to admins. The API can enqueue jobs through the shared Hangfire storage without running a server.
-- **API style:** REST over JSON, versioned under `/api/v1`. OpenAPI document generated by the built-in .NET OpenAPI support, browsable via Scalar UI in non-production environments.
-- **Request handling:** each endpoint maps to a command or query handler in the Application layer via a MediatR-style pipeline. Cross-cutting concerns (validation, logging, transactions) are pipeline behaviors.
-- **Validation:** FluentValidation, executed as a pipeline behavior before the handler.
-- **Error format:** RFC 9457 ProblemDetails for all error responses, including validation errors.
-- **Logging / observability:** Serilog structured logging (console/JSON), OpenTelemetry traces and metrics, health checks at `/health`.
-- **Testing:** xUnit. Unit tests for Domain and Application (calculation engine, CSV parser, plan pricing model). Integration tests against a real PostgreSQL started with Testcontainers, split by host:
-  - `WattWise.Api.IntegrationTests` — endpoints, auth, persistence.
-  - `WattWise.Jobs.IntegrationTests` — each Hangfire job run end to end against Postgres with stubbed external sources (spot price ingestion writes the expected rows, catalog refresh produces draft plans, retries and idempotent re-runs behave correctly).
+- **System view:** one .NET 11 solution following Clean Architecture, deployed as two applications that share one PostgreSQL 18.6 database:
+  - **WattWise.Api** — the HTTP API serving both web clients. It can enqueue background jobs but never runs them.
+  - **WattWise.Jobs** — the Hangfire server: recurring jobs (spot price ingestion, catalog refresh) with retries, and the Hangfire dashboard for admins.
+- **API contract with the clients:** REST over JSON, versioned under `/api/v1`. The OpenAPI document generated by the API is the contract the web clients' API client is generated from.
+- **Authentication flow:** the API issues short-lived JWT access tokens plus rotating refresh tokens; the clients send the access token as a Bearer header via RTK Query.
+- **Error contract:** RFC 9457 ProblemDetails for every error response, including validation errors.
+- **Inside the backend:** layers, hosts, request pipeline, persistence, jobs, logging, testing and build conventions are documented in [backend/docs/](../backend/docs/): [architecture.md](../backend/docs/architecture.md), [testing.md](../backend/docs/testing.md) and [conventions.md](../backend/docs/conventions.md).
 
 ## Data
 
@@ -105,9 +82,9 @@ watt-wise/
 
 ## Calculation engine
 
-- Lives in the Domain layer as pure code with no I/O. Inputs: hourly consumption for the selected period, the candidate plans, and spot prices for the same hours. Output: cost per plan/combination per month and year, plus the delta against the user's current plans.
+- Pure code with no I/O in the backend Domain layer ([backend/docs/architecture.md](../backend/docs/architecture.md#calculation-engine)). Inputs: hourly consumption for the selected period, the candidate plans, and spot prices for the same hours. Output: cost per plan/combination per month and year, plus the delta against the user's current plans.
 - Computed on demand per request. No caching in MVP; a year of hourly data against the full catalog is expected to take milliseconds.
-- **Time handling:** all timestamps stored as UTC (`timestamptz`). The ESO CSV is interpreted as Europe/Vilnius local time on import. Time-of-use zone boundaries (day/night, 2- and 4-zone) are evaluated in local time so DST transitions (23- and 25-hour days) are handled correctly. NodaTime is used in the Domain for all date/time logic.
+- **Time handling:** all timestamps stored as UTC (`timestamptz`). The ESO CSV is interpreted as Europe/Vilnius local time on import. Time-of-use zone boundaries (day/night, 2- and 4-zone) are evaluated in local time so DST transitions (23- and 25-hour days) are handled correctly.
 
 ## Hosting and operations
 
@@ -127,7 +104,7 @@ watt-wise/
 - **Code style / linting:** frontend, admin and shared packages use ESLint and Prettier from root-level shared configs.
   - ESLint: typescript-eslint `strictTypeChecked` + `stylisticTypeChecked`, `@eslint-react` (`eslint-plugin-react` doesn't support ESLint 10), `eslint-plugin-react-hooks`, and `eslint-config-prettier` last.
   - Prettier: single quotes, no semicolons, 100-column lines, otherwise defaults.
-  - Backend: `.editorconfig`, `dotnet format`, and the built-in .NET analyzers with warnings treated as errors.
+  - Backend: `.editorconfig`, `dotnet format` and the built-in .NET analyzers; see [backend/docs/conventions.md](../backend/docs/conventions.md).
   - One Husky pre-commit hook first runs a Betterleaks secret scan on the staged changes, then a single root `lint-staged.config.js` that lints and formats staged files (JS/TS now, C# from S2.10).
   - Claude Code runs Prettier on every file it writes or edits (a `PostToolUse` hook in `.claude/settings.json`).
   - All of it is enforced again in CI.

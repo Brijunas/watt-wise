@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Watt-Wise is a greenfield project. E1 is done: the repo has the specifications plus the root JS tooling, git hooks, the four placeholder `@wattwise/*` packages and placeholder app folders. No application code exists yet.
+Watt-Wise is a greenfield project. E1 is done: the repo has the specifications plus the root JS tooling, git hooks, the four placeholder `@wattwise/*` packages and placeholder app folders. E2 is in progress: S2.1 created the backend solution skeleton (`backend/WattWise.slnx`, empty hosts, one trivial test per test project). No feature code exists yet.
 
 ## Docs
 
 Each doc has one job. Read or update the one that matches the task:
 
 - `docs/product.md`: what the product does, MVP scope, non-goals, open questions. Source of truth.
-- `docs/technical.md`: every technical decision (repo layout, stacks, architecture, data model, time handling, hosting, secrets, code style). Source of truth; read the relevant section before implementing, and every implementation decision must match it.
+- `docs/technical.md`: whole-system technical decisions (repo layout, stacks, how the apps talk to each other, data model, time handling, hosting, secrets, shared code style). Source of truth; read the relevant section before implementing, and every implementation decision must match it.
+- `<project>/docs/`: technical decisions that belong to one project, e.g. `backend/docs/` (architecture, testing, conventions). Source of truth for that project, read before implementing in it.
 - `docs/epics.md`: the epics and stories still to do.
 - `docs/implemented.md`: finished epics, kept for history. Don't read it unless asked about past work.
 - `docs/setup.md`: first-time machine setup only. Update it only when a story changes how a new machine is set up.
@@ -22,6 +23,7 @@ Each doc has one job. Read or update the one that matches the task:
 
 - When a task needs a decision the specs don't cover, ask rather than invent. When a decision changes, update the relevant spec in the same change.
 - Each fact lives in one doc; other docs link to it instead of repeating it.
+- Technical details that belong to one project go in that project's `docs/` folder. Root `docs/technical.md` keeps only whole-system architecture and links to the project docs.
 - Keep every doc at 200 lines or fewer. Split a doc before it goes over.
 - When an epic's last story ships, move the epic from `docs/epics.md` to `docs/implemented.md` in the same change.
 
