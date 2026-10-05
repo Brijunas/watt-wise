@@ -8,6 +8,9 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!-- Warnings are reported but do not fail the build; a deliberate project decision. -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- IDE0005 (unused usings) is checked by dotnet format, not the build: on build it needs
+         GenerateDocumentationFile, and without it the compiler warns on every project. -->
+    <NoWarn>$(NoWarn);EnableGenerateDocumentationFile</NoWarn>
   </PropertyGroup>
 
 </Project>

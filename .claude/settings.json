@@ -7,6 +7,11 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/prettier-write.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/backend-unused-usings.sh",
+            "timeout": 120
           }
         ]
       }
