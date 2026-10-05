@@ -35,5 +35,6 @@ Central package management: `backend/Directory.Packages.props` sets `ManagePacka
 
 - **`.editorconfig`:** `backend/.editorconfig` comes from `dotnet new editorconfig`. It doesn't set `root = true`, so it layers on top of the repo-root `.editorconfig` (UTF-8 without BOM, LF, final newline, trimmed whitespace). It adds 4-space indentation for `*.cs`, keeps XML and project files at 2 spaces, and holds the C# code style and naming rules.
 - **`dotnet format`** applies `.editorconfig` (whitespace, code style, analyzers). The solution must pass `dotnet format --verify-no-changes`. From S2.10, the pre-commit hook runs it on staged `.cs` files.
+- **One type per file:** each class, record, struct, interface or enum goes in its own file named after it, as the .NET guidelines recommend. Only nested private types may share their parent's file.
 - **JSON files** in `backend/` (`appsettings*.json`, `launchSettings.json`) are formatted by Prettier like the rest of the repo. `bin/`, `obj/` and `TestResults/` are listed in the root `.prettierignore`.
 - **Ignored files:** `backend/.gitignore` comes from `dotnet new gitignore`, plus `appsettings.*.local.json` for local secret overrides.

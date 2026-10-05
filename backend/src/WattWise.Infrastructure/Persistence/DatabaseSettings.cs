@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 
 using Npgsql;
 
@@ -86,17 +85,5 @@ public sealed class DatabaseSettings
         }
 
         return builder.ConnectionString;
-    }
-}
-
-/// <summary>Fails options resolution (and host start, through ValidateOnStart) listing the missing keys, never values.</summary>
-internal sealed class DatabaseSettingsValidator : IValidateOptions<DatabaseSettings>
-{
-    public ValidateOptionsResult Validate(string? name, DatabaseSettings options)
-    {
-        IReadOnlyList<string> missing = options.MissingKeys();
-        return missing.Count == 0
-            ? ValidateOptionsResult.Success
-            : ValidateOptionsResult.Fail($"Database configuration is missing or invalid: {string.Join(", ", missing)}.");
     }
 }
