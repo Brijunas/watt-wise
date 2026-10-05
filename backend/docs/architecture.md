@@ -26,7 +26,8 @@ backend/
     ├── WattWise.Application.Tests/
     ├── WattWise.Infrastructure.IntegrationTests/
     ├── WattWise.Api.IntegrationTests/
-    └── WattWise.Jobs.IntegrationTests/
+    ├── WattWise.Jobs.IntegrationTests/
+    └── WattWise.Testing/         shared PostgreSQL fixture for the integration tests
 ```
 
 ## Layers and dependency direction
@@ -54,7 +55,7 @@ Three hosts wire the layers together and are deployed separately:
 
 - **WattWise.Api** runs the Minimal API only. It enqueues jobs through the shared Hangfire storage when a use case needs one, but it never runs a Hangfire server.
 - **WattWise.Jobs** runs the Hangfire server: it registers recurring jobs, executes them and serves the Hangfire dashboard. Job implementations are Application use cases; the job classes in this project only call them. It uses the Web SDK because it serves the dashboard over HTTP.
-- **WattWise.Cli** is a console app built with System.CommandLine on the .NET Generic Host (configuration, DI and logging like the other hosts). It runs one command and exits with a non-zero code on failure. `migrate` applies pending EF Core migrations. It is the only host that changes the schema, and it runs as a deploy step before Api and Jobs start. Later commands add one-off scripts and maintenance tasks.
+- **WattWise.Cli** is a console app built with System.CommandLine on the .NET Generic Host (configuration, DI and logging like the other hosts). It runs one command and exits with a non-zero code on failure. `migrate` applies pending EF Core migrations through `DatabaseMigrator` (Infrastructure). It is the only host that changes the schema, and it runs as a deploy step before Api and Jobs start. Later commands add one-off scripts and maintenance tasks.
 
 ## Request handling
 
@@ -79,6 +80,7 @@ Three hosts wire the layers together and are deployed separately:
 - `MaxPoolSize` is the Npgsql pool limit. It isn't secret, so each host sets it in its `appsettings.json`, below its role's connection limit ([postgres.md](../../deploy/docs/postgres.md#hardening)): Api 25, Cli 2.
 - Each host connects as its own database role (`api`, `hangfire`, `cli`).
 - Each host's `appsettings.json` lists every `Database` key with an empty value, so the file shows where each secret lands. The values come from the host's committed `.env.<environment>` file (e.g. `WattWise.Api/.env.development`), which `op run` resolves at start; blank values count as missing. That file also sets the .NET environment name (`launchSettings.json` doesn't), so starting without it runs as Production and fails on the missing settings. The design-time factory reads the same environment variables. `migrations add` works without them, and commands that connect run through `op run --env-file backend/src/WattWise.Cli/.env.development`. No connection data is in the repo.
+- `DatabaseMigrator` (in `Persistence/`) is the one migrate code path: `WattWise.Cli migrate` runs it, and so does the integration-test fixture ([testing.md](testing.md#shared-postgresql-fixture)), so tests migrate exactly like a deployment.
 - Migrations are applied only by `WattWise.Cli migrate`, in every environment, before Api and Jobs start. Its connection switches to the `owner` role (`Database:Options` = `-c role=owner`, from the `postgres-cli` item), so the objects it creates belong to `owner`. It runs migrations with no command timeout, since index builds and table rewrites can take long. Api and Jobs never migrate, and their roles have no DDL rights.
 
 ## Background jobs
@@ -94,7 +96,7 @@ ASP.NET Core Identity for users, password hashing, lockout and (later) external 
 
 ## Logging and observability
 
-Serilog structured logging to the console as JSON, with request logging. OpenTelemetry traces and metrics with an OTLP exporter configured per environment, and log/trace correlation. Health checks at `/health`, including a database check.
+Serilog structured logging to the console as JSON, with request logging. OpenTelemetry traces and metrics with an OTLP exporter configured per environment, and log/trace correlation. Health checks at `/health`, including a database check (`AddDbContextCheck<AppDbContext>`, minimal since S2.4; S2.7 extends it).
 
 ## Calculation engine
 

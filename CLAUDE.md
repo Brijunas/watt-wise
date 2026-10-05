@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Watt-Wise is a greenfield project. E1 is done: the repo has the specifications plus the root JS tooling, git hooks, the four placeholder `@wattwise/*` packages and placeholder app folders. E2 is in progress: S2.1 created the backend solution skeleton (`backend/WattWise.slnx`, empty hosts, one trivial test per test project). S2.3 added the Development PostgreSQL stack with least-privilege roles (`deploy/`), `AppDbContext` with an empty initial migration, and `WattWise.Cli` for migrations. No feature code exists yet.
+Watt-Wise is a greenfield project. E1 is done: the repo has the specifications plus the root JS tooling, git hooks, the four placeholder `@wattwise/*` packages and placeholder app folders. E2 is in progress: S2.1 created the backend solution skeleton (`backend/WattWise.slnx`, empty hosts, one trivial test per test project). S2.3 added the Development PostgreSQL stack with least-privilege roles (`deploy/`), `AppDbContext` with an empty initial migration, and `WattWise.Cli` for migrations. S2.4 added the shared Testcontainers fixture (`backend/tests/WattWise.Testing`), `DatabaseMigrator` and a minimal `/health`. No feature code exists yet.
 
 ## Docs
 

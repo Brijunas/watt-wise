@@ -13,5 +13,6 @@
     <Project Path="tests/WattWise.Domain.Tests/WattWise.Domain.Tests.csproj" />
     <Project Path="tests/WattWise.Infrastructure.IntegrationTests/WattWise.Infrastructure.IntegrationTests.csproj" />
     <Project Path="tests/WattWise.Jobs.IntegrationTests/WattWise.Jobs.IntegrationTests.csproj" />
+    <Project Path="tests/WattWise.Testing/WattWise.Testing.csproj" />
   </Folder>
 </Solution>
