@@ -32,18 +32,20 @@ Each environment has its own cluster, so role names carry no prefix.
 | Schema     | Owner   | Contents                                                                   | Granted to                                                                               |
 | ---------- | ------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `app`      | `owner` | Application tables and the EF Core history table `__ef_migrations_history` | `api`: `USAGE`; `SELECT, INSERT, UPDATE, DELETE` on tables; `USAGE, SELECT` on sequences |
-| `hangfire` | `owner` | Hangfire storage, installed by `WattWise.Cli` (S2.9)                       | `hangfire`: the same set                                                                 |
+| `hangfire` | `owner` | Hangfire storage (S2.9)                                                    | `hangfire`: the same set                                                                 |
 | `public`   | `admin` | Only the `pg_stat_statements` extension                                    | Nothing: every privilege is revoked from `PUBLIC`                                        |
 
 - The grants are default privileges `FOR ROLE owner`, so they apply to every table a migration creates. The bootstrap doesn't grant on existing tables, so a re-run never undoes a revoke made by a migration. The Initial migration revokes `api`'s access to `__ef_migrations_history`, so only the Cli touches migration history.
 - `CONNECT` and `TEMPORARY` are revoked from `PUBLIC` on `wattwise`, `postgres` and `template1`. `CONNECT` on `wattwise` is granted only to `cli`, `api`, `hangfire` and `backup`.
-- The apps never create or alter tables. Schema changes, including Hangfire's own tables, go through `WattWise.Cli`, which runs before Api and Jobs start. Hangfire runs with `PrepareSchemaIfNecessary = false`.
+- `public` would by default belong to `pg_database_owner`, which is `owner` here. The bootstrap gives it to `admin`, so migrations can't create objects in it.
+- The bootstrap re-asserts the owner of the `wattwise` database and the `app` and `hangfire` schemas on every run, so they belong to `owner` even if they existed before.
+- The apps never create or alter tables. Schema changes go through `WattWise.Cli`, which runs before Api and Jobs start; how Hangfire's tables fit in is under "Background jobs" in [architecture.md](../../backend/docs/architecture.md#background-jobs).
 
 ## Hardening
 
 | Setting                               | Value                                                                                                                                                                                                                                                |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection limits                     | `api` 30, `hangfire` 20, `cli` 3, `backup` 2. Keep each app's Npgsql `Maximum Pool Size` below its limit.                                                                                                                                            |
+| Connection limits                     | `api` 30, `hangfire` 20, `cli` 3, `backup` 2. Each app's Npgsql pool stays below its limit (`Database:MaxPoolSize`, see [architecture.md](../../backend/docs/architecture.md#persistence)).                                                          |
 | `statement_timeout`                   | `api` 30 s, `hangfire` 5 min, `cli` none                                                                                                                                                                                                             |
 | `idle_in_transaction_session_timeout` | `api` and `hangfire` 60 s                                                                                                                                                                                                                            |
 | Password hashing                      | `scram-sha-256` (the default; MD5 is deprecated in 18)                                                                                                                                                                                               |

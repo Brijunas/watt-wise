@@ -31,7 +31,7 @@ backend/
 
 ## Layers and dependency direction
 
-Clean Architecture with three layers and two hosts. References point inward only:
+Clean Architecture with three layers and three hosts. References point inward only:
 
 ```
 Domain ← Application ← Infrastructure ← Api, Jobs, Cli
@@ -75,15 +75,16 @@ Three hosts wire the layers together and are deployed separately:
   - `AppDbContextOptions`, the single place that configures Npgsql, NodaTime, the history table and naming, used by both DI and the design-time factory;
   - `AppDbContextFactory`, the design-time factory for `dotnet ef`;
   - the migrations in `Migrations/`.
-- `AddInfrastructure(configuration)` registers `AppDbContext`. It builds the connection string from the `Database` section (`Host`, `Port`, `Name`, `Username`, `Password`, optional `Options`) in `DatabaseSettings`, and fails at startup listing any missing key.
+- `AddInfrastructure()` registers `AppDbContext`. The connection string is built from the `Database` section (`Host`, `Port`, `Name`, `Username`, `Password`, `MaxPoolSize`, optional `Options`) through the validated `DatabaseSettings` options. The settings are read from the built configuration, so sources added after registration (test overrides) count, and `ValidateOnStart` stops the host at startup listing any missing key. `DatabaseSettings` is a class, not a record, so formatting it never prints the password.
+- `MaxPoolSize` is the Npgsql pool limit. It isn't secret, so each host sets it in its `appsettings.json`, below its role's connection limit ([postgres.md](../../deploy/docs/postgres.md#hardening)): Api 25, Cli 2.
 - Each host connects as its own database role (`api`, `hangfire`, `cli`).
 - Each host's `appsettings.json` lists every `Database` key with an empty value, so the file shows where each secret lands. The values come from the host's committed `.env.<environment>` file (e.g. `WattWise.Api/.env.development`), which `op run` resolves at start; blank values count as missing. That file also sets the .NET environment name (`launchSettings.json` doesn't), so starting without it runs as Production and fails on the missing settings. The design-time factory reads the same environment variables. `migrations add` works without them, and commands that connect run through `op run --env-file backend/src/WattWise.Cli/.env.development`. No connection data is in the repo.
-- Migrations are applied only by `WattWise.Cli migrate`, in every environment, before Api and Jobs start. Its connection switches to the `owner` role (`Database:Options` = `-c role=owner`, from the `postgres-cli` item), so the objects it creates belong to `owner`. Api and Jobs never migrate, and their roles have no DDL rights.
+- Migrations are applied only by `WattWise.Cli migrate`, in every environment, before Api and Jobs start. Its connection switches to the `owner` role (`Database:Options` = `-c role=owner`, from the `postgres-cli` item), so the objects it creates belong to `owner`. It runs migrations with no command timeout, since index builds and table rewrites can take long. Api and Jobs never migrate, and their roles have no DDL rights.
 
 ## Background jobs
 
 - Hangfire with PostgreSQL storage in the dedicated `hangfire` schema, shared by Api and Jobs.
-- Both run Hangfire with `PrepareSchemaIfNecessary = false`. `WattWise.Cli migrate` installs and upgrades Hangfire's tables (`PostgreSqlObjectsInstaller.Install`), so the `hangfire` role needs no DDL rights.
+- Both run Hangfire with `PrepareSchemaIfNecessary = false`. From S2.9, `WattWise.Cli migrate` installs and upgrades Hangfire's tables (`PostgreSqlObjectsInstaller.Install`), so the `hangfire` role needs no DDL rights.
 - Recurring cron jobs: spot price ingestion and catalog refresh, with retries.
 - The dashboard is served by the Jobs host and restricted to admins.
 

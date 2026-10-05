@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using WattWise.Infrastructure;
 using WattWise.Infrastructure.Persistence;
@@ -25,24 +26,29 @@ internal static class MigrateCommand
         // appsettings*.json are copied next to the binary; the working directory can be anywhere.
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(
             new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory });
+        builder.Services.AddInfrastructure();
+        using IHost host = builder.Build();
+
+        // The host is never started, so ValidateOnStart doesn't run; resolve the settings to fail
+        // fast with the list of missing keys.
         try
         {
-            builder.Services.AddInfrastructure(builder.Configuration);
+            _ = host.Services.GetRequiredService<IOptions<DatabaseSettings>>().Value;
         }
-        catch (InvalidOperationException ex)
+        catch (OptionsValidationException ex)
         {
-            // Configuration errors happen before logging exists.
             await Console.Error.WriteLineAsync(ex.Message);
             return 1;
         }
-
-        using IHost host = builder.Build();
 
         ILogger logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("WattWise.Cli.Migrate");
         try
         {
             await using AsyncServiceScope scope = host.Services.CreateAsyncScope();
             AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            // No command timeout: index builds and table rewrites can run long, and the cli role
+            // has no statement_timeout either. Ctrl+C still cancels.
+            db.Database.SetCommandTimeout(0);
 
             string[] pending = [.. await db.Database.GetPendingMigrationsAsync(cancellationToken)];
             if (pending.Length == 0)

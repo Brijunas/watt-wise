@@ -18,7 +18,7 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
         // Npgsql refuses a blank host even when nothing connects, so use a placeholder that is never used.
         if (string.IsNullOrWhiteSpace(settings.Host))
         {
-            settings = settings with { Host = "design-time-only" };
+            settings.Host = "design-time-only";
         }
 
         string connectionString = settings.ToConnectionString();

@@ -58,13 +58,11 @@ pnpm install
 
 ## 4. Check 1Password access
 
-The Development database passwords are read from the `Watt Wise Development` vault (items `postgres-admin`, `postgres-api`, `postgres-hangfire`, `postgres-cli`, `postgres-backup`, and `pgadmin` for the pgAdmin container). Check that the CLI can reach the vault. The desktop app asks you to approve the first access.
+The Development database settings and passwords are read from the `Watt Wise Development` vault; its items are listed under "Passwords" in [deploy/docs/postgres.md](../deploy/docs/postgres.md#passwords). Check that the CLI can reach the vault. The desktop app asks you to approve the first access.
 
 ```bash
 op item list --vault "Watt Wise Development"
 ```
-
-How the roles and the database are set up is in [deploy/docs/postgres.md](../deploy/docs/postgres.md).
 
 ## 5. Development database
 
