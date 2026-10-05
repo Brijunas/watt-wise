@@ -44,3 +44,18 @@ The two compilers can disagree in rare edge cases. If ESLint's type-aware rules 
 2. Turn on whatever parser option typescript-eslint requires for the native backend in `eslint.config.js`, if it is still opt-in.
 3. Run `pnpm install`, `pnpm lint` and `pnpm typecheck`.
 4. Remove the TS exception from the "Tool versions" bullet in `docs/technical.md`, and delete this entry.
+
+## ESO CSV format around DST changes is unknown
+
+_Recorded 2026-10-05. Blocks the ESO CSV parser in E7._
+
+**Problem.** The ESO CSV gives times as Europe/Vilnius local time. On the last Sunday of October, local 03:00–03:59 occurs twice; on the last Sunday of March, 03:00–03:59 does not exist. We don't know how Mano ESO exports these days: two rows with the same local time, an explicit UTC offset, a 24-hour day with one hour merged or dropped, or something else. If the parser guesses wrong, both October rows map to the same `hour_utc` and the upsert silently overwrites one hour of consumption.
+
+**Workaround in place.** None yet; nothing parses the CSV.
+
+**Resolved when** we have a real ESO export that spans both a March and an October DST change. Then:
+
+1. Check how the repeated and skipped hours appear in it.
+2. Choose the NodaTime resolver for `LocalDateTime` → `Instant` that matches (e.g. earlier/later occurrence by row order for the repeated hour; reject or skip for the missing one).
+3. Commit trimmed copies of the export as test fixtures and add parser tests for both DST days.
+4. Delete this entry.
