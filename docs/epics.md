@@ -1,25 +1,10 @@
 # Watt-Wise — MVP Epics
 
-Epics are ordered by dependency. Each one is expected to be delivered end to end (backend, frontend, tests) before the next starts, except where noted. `docs/product.md` and `docs/technical.md` remain the source of truth; an epic never overrides them.
-
-## E1. Repository scaffolding and tooling
-
-Scaffolds the repository structure and the shared JavaScript tooling only. No application is created here: `frontend/`, `admin/` and `backend/` exist as placeholder folders, and the real apps and solution are created in E2 and E3. Delivers the pnpm workspace, root `tsconfig.base.json`, ESLint and Prettier configs, the Husky pre-commit hook with lint-staged, the four shared package skeletons, placeholder `deploy/` and `.github/workflows/` folders and the top-level README. Done when `pnpm install`, `pnpm lint` and `pnpm test` are green on the skeleton and the Commands section of `CLAUDE.md` lists the commands that exist.
-
-### Stories
-
-- **S1.1 Root workspace and git hygiene.** `pnpm-workspace.yaml` listing `frontend`, `admin`, `packages/*`; root `package.json` with `engines` floors and `lint`, `format`, `test`, `build` scripts fanning out with `pnpm -r`; root `mise.toml` providing node (latest LTS), pnpm (latest) and dotnet; `.gitignore`, `.editorconfig`; pnpm enforced via `only-allow pnpm` and `engineStrict` in `pnpm-workspace.yaml`. Done: `pnpm install` succeeds.
-- **S1.2 Shared TypeScript, ESLint and Prettier configs and pre-commit hook.** Root `tsconfig.base.json` (strict), ESLint flat config with TypeScript (typescript-eslint, type-checked), React (`@eslint-react`), React Hooks and Prettier integration, Prettier config, and the Husky pre-commit hook running one root `lint-staged.config.js` (ESLint and Prettier on staged files). `lint` and `format` run once from the root. TypeScript 7 provides `tsc` and TypeScript 6 is installed as `typescript` for the lint tooling; see `docs/known-issues.md`. Done: `pnpm lint` and `pnpm format:check` run cleanly, and a commit with a lint error is rejected locally.
-- **S1.3 Shared packages skeleton.** `packages/ui`, `core`, `i18n`, `api-client` as `@wattwise/<name>`, `private: true`, entry `src/index.ts` exposed through `exports`, no build step, `tsconfig.json` extending the base, a `vitest.config.js` merging the shared root `vitest.base.js`, `test` and `typecheck` scripts, and one trivial passing test each. Vitest is a root devDependency. No `peerDependencies` yet: the rule that framework libs are peers is recorded in `docs/technical.md`, and each E3 story adds a peer (plus a devDependency for tests) when a package first imports it. `api-client` holds a placeholder export until E3 wires codegen. Done: `pnpm test` and `pnpm typecheck` pass.
-- **S1.4 Frontend folder.** `frontend/` created as an empty placeholder with a short README stating the app is created in E3. No `package.json`, so the workspace ignores it.
-- **S1.5 Admin folder.** `admin/` created the same way as S1.4.
-- **S1.6 Backend folder.** `backend/` created as an empty placeholder with a short README stating the solution is created in E2.
-- **S1.7 Placeholder folders and docs.** `deploy/` and `.github/workflows/` with a short README each; top-level `README.md` describing the layout and linking to `docs/setup.md` for setup and checks.
-- **S1.8 Fill in CLAUDE.md Commands.** Replace the placeholder with the pnpm commands that exist after this epic, including how to run a single test in a package. Done: every listed command has been executed and works.
+Epics are ordered by dependency. Each one is expected to be delivered end to end (backend, frontend, tests) before the next starts, except where noted. `docs/product.md` and `docs/technical.md` remain the source of truth; an epic never overrides them. When an epic's last story ships, the epic moves to [implemented.md](implemented.md).
 
 ## E2. Backend foundation
 
-Creates `backend/WattWise.sln` with all `src/` and `tests/` projects, `Directory.Build.props` and central package management, `.editorconfig`, analyzers with warnings as errors, and C# formatting added to the existing pre-commit hook. Clean Architecture skeleton with the Domain ← Application ← Infrastructure ← hosts dependency direction enforced. EF Core code-first on PostgreSQL 18.6 with the initial migration. MediatR-style pipeline with the FluentValidation behavior, RFC 9457 ProblemDetails, Serilog + OpenTelemetry, `/health`, OpenAPI + Scalar in non-production. Testcontainers base for integration tests. Hangfire Postgres storage wired into `WattWise.Jobs` with a no-op job and its integration test. Extends the `CLAUDE.md` Commands section with the dotnet commands.
+Creates `backend/WattWise.sln` with all `src/` and `tests/` projects, `Directory.Build.props` and central package management, `.editorconfig`, analyzers with warnings as errors, and C# formatting added to the existing pre-commit hook. Clean Architecture skeleton with the Domain ← Application ← Infrastructure ← hosts dependency direction enforced. EF Core code-first on PostgreSQL 18.6 with the initial migration. MediatR-style pipeline with the FluentValidation behavior, RFC 9457 ProblemDetails, Serilog + OpenTelemetry, `/health`, OpenAPI + Scalar in non-production. Testcontainers base for integration tests. Hangfire Postgres storage wired into `WattWise.Jobs` with a no-op job and its integration test. Extends `docs/development.md` with the dotnet commands.
 
 ### Stories
 
@@ -33,11 +18,11 @@ Creates `backend/WattWise.sln` with all `src/` and `tests/` projects, `Directory
 - **S2.8 Logging and observability.** Serilog with console JSON output and request logging, OpenTelemetry traces and metrics with an OTLP exporter configured per environment, log/trace correlation. Done: a request produces one structured log line and one trace.
 - **S2.9 Jobs host and Hangfire.** `WattWise.Jobs` with Hangfire server, PostgreSQL storage in a dedicated schema, dashboard endpoint (access control comes in E4), a no-op recurring job as the template for thin job classes, configuration shared with Api. Jobs.IntegrationTests fixture running the job against the container. Done: the no-op job executes and its test passes.
 - **S2.10 C# pre-commit hook.** Add a `*.cs` entry to the root `lint-staged.config.js` running `dotnet format --include` on the staged files. The Husky hook from S1.2 already runs lint-staged, so no new hook is needed. Done: a badly formatted commit is rejected locally.
-- **S2.11 CLAUDE.md Commands.** Extend the Commands section with build, format, test, single-test, local database and `dotnet ef` migration commands. Done: each command executed and works.
+- **S2.11 Backend commands in development.md.** Extend `docs/development.md` with build, format, test, single-test, local database and `dotnet ef` migration commands. Done: each command executed and works.
 
 ## E3. Frontend foundation (frontend + admin + shared packages)
 
-Creates the `frontend/` and `admin/` Vite React TypeScript apps in the workspace. Both PWAs booting with the app shell cached. MUI CSS-variables theme with light/dark/auto, choice in `localStorage` and applied before first paint. React Router shell, RTK Query store. Packages `@wattwise/ui`, `@wattwise/core`, `@wattwise/i18n` (LT/EN) and `@wattwise/api-client` with the `@rtk-query/codegen-openapi` pipeline from the API's OpenAPI document. Vitest + React Testing Library set up in every app and package. Extends the `CLAUDE.md` Commands section with the app commands. Runs after E2 because the API client is generated from the real OpenAPI document.
+Creates the `frontend/` and `admin/` Vite React TypeScript apps in the workspace. Both PWAs booting with the app shell cached. MUI CSS-variables theme with light/dark/auto, choice in `localStorage` and applied before first paint. React Router shell, RTK Query store. Packages `@wattwise/ui`, `@wattwise/core`, `@wattwise/i18n` (LT/EN) and `@wattwise/api-client` with the `@rtk-query/codegen-openapi` pipeline from the API's OpenAPI document. Vitest + React Testing Library set up in every app and package. Extends `docs/development.md` with the app commands. Runs after E2 because the API client is generated from the real OpenAPI document.
 
 ### Stories
 
@@ -50,7 +35,7 @@ Creates the `frontend/` and `admin/` Vite React TypeScript apps in the workspace
 - **S3.7 Forms foundation.** react-hook-form with zod resolver, shared zod helpers in `@wattwise/core`, MUI-bound form fields in `@wattwise/ui` with error display and localized messages. One demo form under test. Done: validation errors show localized messages.
 - **S3.8 PWA.** `vite-plugin-pwa` in both apps with manifest, icons, app-shell precaching and a network-only rule for `/api`. Update prompt when a new service worker is available. Done: Lighthouse reports installable, API requests are never served from cache.
 - **S3.9 Vite env and config.** `.env.example` per app and env files for local/staging/production with the API base URL, typed via `import.meta.env` declarations. Done: builds for each mode pick the correct API URL.
-- **S3.10 CLAUDE.md Commands.** Extend the Commands section with app dev/build/test, single test and API client regeneration commands. Done: each command executed and works.
+- **S3.10 App commands in development.md.** Extend `docs/development.md` with app dev/build/test, single test and API client regeneration commands. Done: each command executed and works.
 
 ## E4. Accounts and authentication
 
