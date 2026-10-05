@@ -59,6 +59,8 @@ ALTER ROLE hangfire SET search_path = hangfire;
 SELECT 'CREATE DATABASE wattwise OWNER "owner"'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'wattwise')
 \gexec
+-- Re-asserted on every run, in case the database already existed (e.g. created by the image).
+ALTER DATABASE wattwise OWNER TO "owner";
 
 -- Nobody connects by default; admin is a superuser and is unaffected.
 REVOKE ALL ON DATABASE wattwise FROM PUBLIC;
@@ -68,12 +70,18 @@ GRANT CONNECT ON DATABASE wattwise TO cli, api, hangfire, backup;
 
 \connect wattwise
 
+-- public would otherwise belong to pg_database_owner, i.e. owner, letting migrations
+-- create objects there. Give it to the superuser running this script instead.
+ALTER SCHEMA public OWNER TO CURRENT_USER;
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
 CREATE SCHEMA IF NOT EXISTS app AUTHORIZATION "owner";
 CREATE SCHEMA IF NOT EXISTS hangfire AUTHORIZATION "owner";
+-- Re-asserted on every run, in case a schema already existed with another owner.
+ALTER SCHEMA app OWNER TO "owner";
+ALTER SCHEMA hangfire OWNER TO "owner";
 
--- Extension lives in public, which nobody but admin (and owner, as the database
--- owner) can use; other roles get no USAGE on public. Statistics views are read by admin.
+-- Extension lives in public, which only admin can use; no other role gets USAGE on
+-- public. Statistics views are read by admin.
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements SCHEMA public;
 
 GRANT USAGE ON SCHEMA app TO api;
