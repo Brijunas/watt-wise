@@ -18,6 +18,10 @@ indent_size = 2
 [*.json]
 indent_size = 2
 
+# EF Core migrations are generated code
+[**/Migrations/*.cs]
+generated_code = true
+
 # C# files
 [*.cs]
 

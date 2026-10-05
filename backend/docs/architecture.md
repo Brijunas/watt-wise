@@ -19,7 +19,8 @@ backend/
 │   ├── WattWise.Application/     use cases, ports, validation, DTOs
 │   ├── WattWise.Infrastructure/  EF Core, external adapters, identity
 │   ├── WattWise.Api/             Minimal API host
-│   └── WattWise.Jobs/            Hangfire server host
+│   ├── WattWise.Jobs/            Hangfire server host
+│   └── WattWise.Cli/             maintenance command line: migrations, scripts
 └── tests/
     ├── WattWise.Domain.Tests/
     ├── WattWise.Application.Tests/
@@ -33,7 +34,7 @@ backend/
 Clean Architecture with three layers and two hosts. References point inward only:
 
 ```
-Domain ← Application ← Infrastructure ← Api, Jobs
+Domain ← Application ← Infrastructure ← Api, Jobs, Cli
 ```
 
 | Project        | Contains                                                                                                                                 | May reference                       |
@@ -43,15 +44,17 @@ Domain ← Application ← Infrastructure ← Api, Jobs
 | Infrastructure | EF Core persistence, external data adapters (ENTSO-E, Nord Pool, Litgrid, provider catalog fetchers and scrapers), ASP.NET Core Identity | Application (and Domain through it) |
 | Api            | Endpoints, HTTP pipeline, composition root                                                                                               | Application, Infrastructure         |
 | Jobs           | Hangfire server, recurring job registration, thin job classes, dashboard, composition root                                               | Application, Infrastructure         |
+| Cli            | Commands (System.CommandLine) for migrations, one-off scripts and maintenance, composition root                                          | Application, Infrastructure         |
 
 No layer references a host; MSBuild already rejects that as a project cycle. Each layer exposes a marker type (`DomainAssembly`, `ApplicationAssembly`, `InfrastructureAssembly`) so tests can point at its assembly.
 
 ## Hosts
 
-Two hosts wire the layers together and are deployed as separate applications:
+Three hosts wire the layers together and are deployed separately:
 
 - **WattWise.Api** runs the Minimal API only. It enqueues jobs through the shared Hangfire storage when a use case needs one, but it never runs a Hangfire server.
 - **WattWise.Jobs** runs the Hangfire server: it registers recurring jobs, executes them and serves the Hangfire dashboard. Job implementations are Application use cases; the job classes in this project only call them. It uses the Web SDK because it serves the dashboard over HTTP.
+- **WattWise.Cli** is a console app built with System.CommandLine on the .NET Generic Host (configuration, DI and logging like the other hosts). It runs one command and exits with a non-zero code on failure. `migrate` applies pending EF Core migrations. It is the only host that changes the schema, and it runs as a deploy step before Api and Jobs start. Later commands add one-off scripts and maintenance tasks.
 
 ## Request handling
 
@@ -63,14 +66,24 @@ Two hosts wire the layers together and are deployed as separate applications:
 
 ## Persistence
 
-- EF Core, code-first with migrations, Npgsql provider, PostgreSQL 18.6.
-- NodaTime types are mapped through the Npgsql NodaTime plugin; all timestamps are `timestamptz` in UTC. Table and column names are snake_case.
-- `AppDbContext`, the migrations and a design-time factory for `dotnet ef` live in Infrastructure.
-- Migrations apply automatically on startup in `local` only. Staging and production run them as an explicit deploy step.
+- EF Core, code-first with migrations, Npgsql provider, PostgreSQL 18.6. The database roles, schemas and privileges are in [deploy/docs/postgres.md](../../deploy/docs/postgres.md).
+- NodaTime types are mapped through the Npgsql NodaTime plugin; all timestamps are `timestamptz` in UTC.
+- Table and column names are snake_case, through EFCore.NamingConventions. See [known-issues.md](../../docs/known-issues.md) for its EF Core 11 version gap.
+- Application tables live in the `app` schema (`HasDefaultSchema("app")`), and so does the history table `__ef_migrations_history`.
+- In `WattWise.Infrastructure/Persistence/`:
+  - `AppDbContext`;
+  - `AppDbContextOptions`, the single place that configures Npgsql, NodaTime, the history table and naming, used by both DI and the design-time factory;
+  - `AppDbContextFactory`, the design-time factory for `dotnet ef`;
+  - the migrations in `Migrations/`.
+- `AddInfrastructure(configuration)` registers `AppDbContext`. It builds the connection string from the `Database` section (`Host`, `Port`, `Name`, `Username`, `Password`, optional `Options`) in `DatabaseSettings`, and fails at startup listing any missing key.
+- Each host connects as its own database role (`api`, `hangfire`, `cli`).
+- Each host's `appsettings.json` lists every `Database` key with an empty value, so the file shows where each secret lands. The values come from the host's committed `.env.<environment>` file (e.g. `WattWise.Api/.env.development`), which `op run` resolves at start; blank values count as missing. That file also sets the .NET environment name (`launchSettings.json` doesn't), so starting without it runs as Production and fails on the missing settings. The design-time factory reads the same environment variables. `migrations add` works without them, and commands that connect run through `op run --env-file backend/src/WattWise.Cli/.env.development`. No connection data is in the repo.
+- Migrations are applied only by `WattWise.Cli migrate`, in every environment, before Api and Jobs start. Its connection switches to the `owner` role (`Database:Options` = `-c role=owner`, from the `postgres-cli` item), so the objects it creates belong to `owner`. Api and Jobs never migrate, and their roles have no DDL rights.
 
 ## Background jobs
 
-- Hangfire with PostgreSQL storage in a dedicated schema, shared by both hosts.
+- Hangfire with PostgreSQL storage in the dedicated `hangfire` schema, shared by Api and Jobs.
+- Both run Hangfire with `PrepareSchemaIfNecessary = false`. `WattWise.Cli migrate` installs and upgrades Hangfire's tables (`PostgreSqlObjectsInstaller.Install`), so the `hangfire` role needs no DDL rights.
 - Recurring cron jobs: spot price ingestion and catalog refresh, with retries.
 - The dashboard is served by the Jobs host and restricted to admins.
 

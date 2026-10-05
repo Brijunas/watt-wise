@@ -1,5 +1,13 @@
 # deploy
 
-Deployment configuration for Watt-Wise: Docker Compose files for the `local`, `staging` and `production` environments, `.env.example` templates that reference 1Password item paths, and the cloudflared tunnel config. See "Hosting and operations" in [technical.md](../docs/technical.md).
+Deployment configuration for Watt-Wise: Docker Compose files per environment, PostgreSQL bootstrap, env files that hold only 1Password secret references, and later the cloudflared tunnel config. The environments are described under "Environments" in [technical.md](../docs/technical.md).
 
-The folder is empty for now. S2.3 adds `docker-compose.local.yml` for the local database, and E5 adds the rest (see [epics.md](../docs/epics.md)). Real `.env` files are never committed; secrets come from 1Password at runtime.
+| Path                             | What it is                                                                                                                                                                                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docker-compose.development.yml` | Development stack: PostgreSQL 18.6 and pgAdmin, bind addresses and ports from 1Password                                                                                                                                                                              |
+| `development/*.env`              | `op://` references for `op run --env-file`: `compose.settings.tpl` rendered to `deploy/.env` with `op inject` (settings, no passwords), `compose.env` for the first start's passwords (the apps' own reference files are `backend/src/<project>/.env.<environment>`) |
+| `postgres/bootstrap.sql`         | Idempotent roles, database, schemas and privileges, run by hand once per database by an admin; sets no passwords                                                                                                                                                     |
+| `pgadmin/servers.json`           | Server pre-registered in pgAdmin                                                                                                                                                                                                                                     |
+| `docs/postgres.md`               | Database roles, privileges, hardening and bootstrap                                                                                                                                                                                                                  |
+
+Compose files for Testing, Staging and Production and the cloudflared config come in E5 (see [epics.md](../docs/epics.md)). No secret value is ever committed; secrets come from 1Password at runtime.
