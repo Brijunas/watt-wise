@@ -1,5 +1,3 @@
-using WattWise.Infrastructure;
-
 namespace WattWise.Infrastructure.IntegrationTests;
 
 public class InfrastructureAssemblyTests

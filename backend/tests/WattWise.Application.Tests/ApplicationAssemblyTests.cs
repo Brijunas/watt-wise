@@ -1,5 +1,3 @@
-using WattWise.Application;
-
 namespace WattWise.Application.Tests;
 
 public class ApplicationAssemblyTests
