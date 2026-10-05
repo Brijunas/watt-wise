@@ -51,7 +51,7 @@ Log queries and traces for Serilog + OpenTelemetry. Hangfire dashboard access co
 
 ## E7. Consumption objects and CSV import
 
-Consumption object CRUD, one per account in the UI while the model allows many. ESO CSV parser targeting exactly what Mano ESO exports, Europe/Vilnius interpreted and stored as UTC. Hourly rows keyed by `(consumption_object_id, hour_utc)` with upsert so repeated uploads merge. The CSV itself is discarded after import. Upload UI with clear validation feedback.
+Consumption object CRUD, one per account in the UI while the model allows many. ESO CSV parser targeting exactly what Mano ESO exports, Europe/Vilnius interpreted and stored as UTC; how DST days appear in the export is still open, see [known-issues.md](known-issues.md#eso-csv-format-around-dst-changes-is-unknown). Hourly rows keyed by `(consumption_object_id, hour_utc)` with upsert so repeated uploads merge. The CSV itself is discarded after import. Upload UI with clear validation feedback.
 
 ## E8. Consumption visualization
 
