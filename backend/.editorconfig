@@ -37,6 +37,8 @@ tab_width = 4
 # Organize usings
 dotnet_separate_import_directive_groups = true
 dotnet_sort_system_directives_first = true
+# Unused usings: reported by dotnet format, the IDE and the Claude Code hook (not by dotnet build, see Directory.Build.props)
+dotnet_diagnostic.IDE0005.severity = warning
 file_header_template = unset
 
 # this. and Me. preferences
