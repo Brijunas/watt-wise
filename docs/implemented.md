@@ -1,0 +1,18 @@
+# Watt-Wise — Implemented epics
+
+Finished epics, moved here from [epics.md](epics.md) when their last story ships. They are kept for history because commits and pull requests refer to their story IDs; the specs, not this file, describe the current state.
+
+## E1. Repository scaffolding and tooling
+
+Scaffolds the repository structure and the shared JavaScript tooling only. No application is created here: `frontend/`, `admin/` and `backend/` exist as placeholder folders, and the real apps and solution are created in E2 and E3. Delivers the pnpm workspace, root `tsconfig.base.json`, ESLint and Prettier configs, the Husky pre-commit hook with lint-staged, the four shared package skeletons, placeholder `deploy/` and `.github/workflows/` folders and the top-level README. Done when `pnpm install`, `pnpm lint` and `pnpm test` are green on the skeleton and the Commands section of `CLAUDE.md` lists the commands that exist.
+
+### Stories
+
+- **S1.1 Root workspace and git hygiene.** `pnpm-workspace.yaml` listing `frontend`, `admin`, `packages/*`; root `package.json` with `engines` floors and `lint`, `format`, `test`, `build` scripts fanning out with `pnpm -r`; root `mise.toml` providing node (latest LTS), pnpm (latest) and dotnet; `.gitignore`, `.editorconfig`; pnpm enforced via `only-allow pnpm` and `engineStrict` in `pnpm-workspace.yaml`. Done: `pnpm install` succeeds.
+- **S1.2 Shared TypeScript, ESLint and Prettier configs and pre-commit hook.** Root `tsconfig.base.json` (strict), ESLint flat config with TypeScript (typescript-eslint, type-checked), React (`@eslint-react`), React Hooks and Prettier integration, Prettier config, and the Husky pre-commit hook running one root `lint-staged.config.js` (ESLint and Prettier on staged files). `lint` and `format` run once from the root. TypeScript 7 provides `tsc` and TypeScript 6 is installed as `typescript` for the lint tooling; see `docs/known-issues.md`. Done: `pnpm lint` and `pnpm format:check` run cleanly, and a commit with a lint error is rejected locally.
+- **S1.3 Shared packages skeleton.** `packages/ui`, `core`, `i18n`, `api-client` as `@wattwise/<name>`, `private: true`, entry `src/index.ts` exposed through `exports`, no build step, `tsconfig.json` extending the base, a `vitest.config.js` merging the shared root `vitest.base.js`, `test` and `typecheck` scripts, and one trivial passing test each. Vitest is a root devDependency. No `peerDependencies` yet: the rule that framework libs are peers is recorded in `docs/technical.md`, and each E3 story adds a peer (plus a devDependency for tests) when a package first imports it. `api-client` holds a placeholder export until E3 wires codegen. Done: `pnpm test` and `pnpm typecheck` pass.
+- **S1.4 Frontend folder.** `frontend/` created as an empty placeholder with a short README stating the app is created in E3. No `package.json`, so the workspace ignores it.
+- **S1.5 Admin folder.** `admin/` created the same way as S1.4.
+- **S1.6 Backend folder.** `backend/` created as an empty placeholder with a short README stating the solution is created in E2.
+- **S1.7 Placeholder folders and docs.** `deploy/` and `.github/workflows/` with a short README each; top-level `README.md` describing the layout and linking to `docs/setup.md` for setup and checks.
+- **S1.8 Fill in CLAUDE.md Commands.** Replace the placeholder with the pnpm commands that exist after this epic, including how to run a single test in a package. Done: every listed command has been executed and works. Delivered as `docs/development.md`, which `CLAUDE.md` imports in its Commands section; the same story made `docs/setup.md` first-time setup only and moved this epic here.
