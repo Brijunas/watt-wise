@@ -1,5 +1,3 @@
-using WattWise.Domain;
-
 namespace WattWise.Domain.Tests;
 
 public class DomainAssemblyTests
