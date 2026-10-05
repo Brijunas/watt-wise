@@ -44,7 +44,7 @@ Domain ← Application ← Infrastructure ← Api, Jobs
 | Api            | Endpoints, HTTP pipeline, composition root                                                                                               | Application, Infrastructure         |
 | Jobs           | Hangfire server, recurring job registration, thin job classes, dashboard, composition root                                               | Application, Infrastructure         |
 
-No layer references a host. Each layer exposes a marker type (`DomainAssembly`, `ApplicationAssembly`, `InfrastructureAssembly`) so tests can point at its assembly; S2.2 adds architecture tests that enforce this table.
+No layer references a host; MSBuild already rejects that as a project cycle. Each layer exposes a marker type (`DomainAssembly`, `ApplicationAssembly`, `InfrastructureAssembly`) so tests can point at its assembly.
 
 ## Hosts
 
