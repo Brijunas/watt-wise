@@ -13,19 +13,19 @@ public sealed class TestErrorsEndpointModule : IEndpointModule
 {
     public const string ExceptionSecret = "secret-detail-123";
 
-    public void MapEndpoints(IEndpointRouteBuilder app)
+    public void MapEndpoints(IEndpointRouteBuilder group)
     {
-        RouteGroupBuilder group = app.MapGroup("/test/errors");
+        RouteGroupBuilder errors = group.MapGroup("/test/errors");
 
-        group.MapGet("/validation", () => Validation());
-        group.MapGet("/validation-keys", () => ValidationKeys());
-        group.MapGet("/not-found", () => NotFound());
-        group.MapGet("/unauthorized", () => Unauthorized());
-        group.MapGet("/ok", () => Ok());
-        group.MapGet("/exception", () => ThrowException());
-        group.MapGet("/domain", () => ThrowDomainException());
-        group.MapGet("/status/{code:int}", (int code) => Results.StatusCode(code));
-        group.MapGet("/binding", (int number) => TypedResults.Ok(number));
+        errors.MapGet("/validation", () => Validation());
+        errors.MapGet("/validation-keys", () => ValidationKeys());
+        errors.MapGet("/not-found", () => NotFound());
+        errors.MapGet("/unauthorized", () => Unauthorized());
+        errors.MapGet("/ok", () => Ok());
+        errors.MapGet("/exception", () => ThrowException());
+        errors.MapGet("/domain", () => ThrowDomainException());
+        errors.MapGet("/status/{code:int}", (int code) => Results.StatusCode(code));
+        errors.MapGet("/binding", (int number) => TypedResults.Ok(number));
     }
 
     private static IResult Validation()

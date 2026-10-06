@@ -2,7 +2,7 @@ using System.Net;
 
 namespace WattWise.Api.IntegrationTests;
 
-public class CorsTests(CorsApiFixture fixture) : IClassFixture<CorsApiFixture>
+public class CorsTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsApiFixture>
 {
     private const string AllowOriginHeader = "Access-Control-Allow-Origin";
     private const string Url = "/api/v1/test/errors/ok";
@@ -13,12 +13,12 @@ public class CorsTests(CorsApiFixture fixture) : IClassFixture<CorsApiFixture>
     public async Task Preflight_from_an_allowed_origin_is_answered_with_that_origin()
     {
         using HttpClient client = fixture.Factory.CreateClient();
-        using HttpRequestMessage request = Preflight(CorsApiFixture.AllowedOrigin);
+        using HttpRequestMessage request = Preflight(ErrorsApiFixture.AllowedOrigin);
 
         using HttpResponseMessage response = await client.SendAsync(request, Token);
 
         Assert.True(response.IsSuccessStatusCode);
-        Assert.Equal([CorsApiFixture.AllowedOrigin], response.Headers.GetValues(AllowOriginHeader));
+        Assert.Equal([ErrorsApiFixture.AllowedOrigin], response.Headers.GetValues(AllowOriginHeader));
     }
 
     [Fact]
@@ -37,12 +37,12 @@ public class CorsTests(CorsApiFixture fixture) : IClassFixture<CorsApiFixture>
     {
         using HttpClient client = fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Get, Url);
-        request.Headers.Add("Origin", CorsApiFixture.AllowedOrigin);
+        request.Headers.Add("Origin", ErrorsApiFixture.AllowedOrigin);
 
         using HttpResponseMessage response = await client.SendAsync(request, Token);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal([CorsApiFixture.AllowedOrigin], response.Headers.GetValues(AllowOriginHeader));
+        Assert.Equal([ErrorsApiFixture.AllowedOrigin], response.Headers.GetValues(AllowOriginHeader));
     }
 
     [Fact]

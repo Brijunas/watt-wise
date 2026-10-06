@@ -10,13 +10,13 @@ public class CorsValidationTests(DatabaseFixture fixture) : IClassFixture<Databa
     [InlineData("ftp://app.example.test")]
     [InlineData("https://app.example.test?x=1")]
     [InlineData(" ")]
-    public void Malformed_origin_fails_host_start(string origin)
+    public async Task Malformed_origin_fails_host_start(string origin)
     {
         Dictionary<string, string?> settings = new(fixture.Database.ConfigurationFor(DatabaseRole.Api))
         {
             ["Cors:AllowedOrigins:0"] = origin,
         };
-        using ApiFactory factory = new(settings);
+        await using ApiFactory factory = new(settings);
 
         Exception? exception = Record.Exception(() => factory.CreateClient());
 
