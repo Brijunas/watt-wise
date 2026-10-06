@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Microsoft.AspNetCore.Http.HttpResults;
 
 using WattWise.Application.Results;
@@ -21,17 +23,28 @@ public static class ResultHttpExtensions
         }
 
         Error error = result.Error;
-        Dictionary<string, object?> extensions = new() { ["code"] = error.Code };
+        Dictionary<string, object?> extensions = new() { [ProblemDetailsKeys.Code] = error.Code };
 
         if (error.Type == ErrorType.Validation && error.FieldErrors is not null)
         {
             // TypedResults.ValidationProblem is fixed at 400 and cannot carry another status.
-            return TypedResults.ValidationProblem(error.FieldErrors.ToDictionary(), extensions: extensions);
+            return TypedResults.ValidationProblem(ToCamelCaseKeys(error.FieldErrors), extensions: extensions);
         }
 
         return TypedResults.Problem(
             statusCode: ErrorTypeMapping.ToStatusCode(error.Type),
             detail: error.Description,
             extensions: extensions);
+    }
+
+    /// <summary>
+    /// Field keys are the validators' property names; the API's JSON uses camel case, so each
+    /// dot-separated segment is converted. Indexers survive: <c>Items[0].Name</c> gives <c>items[0].name</c>.
+    /// </summary>
+    private static Dictionary<string, string[]> ToCamelCaseKeys(IReadOnlyDictionary<string, string[]> fieldErrors)
+    {
+        return fieldErrors.ToDictionary(
+            pair => string.Join('.', pair.Key.Split('.').Select(segment => JsonNamingPolicy.CamelCase.ConvertName(segment))),
+            pair => pair.Value);
     }
 }

@@ -8,17 +8,15 @@ namespace WattWise.Api.ErrorHandling;
 /// </summary>
 public static class ProblemDetailsCustomization
 {
-    private const string CodeKey = "code";
-
     public static void Apply(ProblemDetailsContext context)
     {
-        if (context.ProblemDetails.Extensions.ContainsKey(CodeKey))
+        if (context.ProblemDetails.Extensions.ContainsKey(ProblemDetailsKeys.Code))
         {
             return;
         }
 
         int status = context.ProblemDetails.Status ?? context.HttpContext.Response.StatusCode;
-        context.ProblemDetails.Extensions[CodeKey] = "General." + StatusName(status);
+        context.ProblemDetails.Extensions[ProblemDetailsKeys.Code] = "General." + StatusName(status);
     }
 
     /// <summary>The status's reason phrase without spaces and hyphens, e.g. 404 gives <c>NotFound</c>.</summary>

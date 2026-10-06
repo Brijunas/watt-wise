@@ -18,6 +18,7 @@ public sealed class TestErrorsEndpointModule : IEndpointModule
         RouteGroupBuilder group = app.MapGroup("/test/errors");
 
         group.MapGet("/validation", () => Validation());
+        group.MapGet("/validation-keys", () => ValidationKeys());
         group.MapGet("/not-found", () => NotFound());
         group.MapGet("/unauthorized", () => Unauthorized());
         group.MapGet("/ok", () => Ok());
@@ -29,7 +30,19 @@ public sealed class TestErrorsEndpointModule : IEndpointModule
 
     private static IResult Validation()
     {
-        Dictionary<string, string[]> fieldErrors = new() { ["email"] = ["'Email' must not be empty."] };
+        Dictionary<string, string[]> fieldErrors = new() { ["Email"] = ["'Email' must not be empty."] };
+        return Result<string>.Failure(Error.Validation(fieldErrors)).ToHttpResult();
+    }
+
+    private static IResult ValidationKeys()
+    {
+        Dictionary<string, string[]> fieldErrors = new()
+        {
+            ["Email"] = ["Invalid."],
+            ["IPAddress"] = ["Invalid."],
+            ["Address.StreetName"] = ["Invalid."],
+            ["Items[0].Name"] = ["Invalid."],
+        };
         return Result<string>.Failure(Error.Validation(fieldErrors)).ToHttpResult();
     }
 
