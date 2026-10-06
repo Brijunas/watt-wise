@@ -6,5 +6,5 @@ namespace WattWise.Api.Endpoints;
 /// </summary>
 public interface IEndpointModule
 {
-    void MapEndpoints(IEndpointRouteBuilder app);
+    void MapEndpoints(IEndpointRouteBuilder group);
 }

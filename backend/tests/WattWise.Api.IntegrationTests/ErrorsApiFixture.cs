@@ -9,10 +9,12 @@ namespace WattWise.Api.IntegrationTests;
 
 /// <summary>
 /// Class fixture: one Api host for every test of a class, with the test error endpoints mapped and
-/// a fake log collector registered. It owns a database of its own, managed by a <see cref="DatabaseFixture"/>.
+/// a fake log collector registered. It allows <see cref="AllowedOrigin"/> through CORS. It owns a database of its own, managed by a <see cref="DatabaseFixture"/>.
 /// </summary>
 public sealed class ErrorsApiFixture(PostgresContainerFixture postgres) : IAsyncLifetime
 {
+    public const string AllowedOrigin = "https://app.example.test";
+
     private readonly DatabaseFixture databaseFixture = new(postgres);
     private ApiFactory? factory;
 
@@ -23,8 +25,12 @@ public sealed class ErrorsApiFixture(PostgresContainerFixture postgres) : IAsync
     public async ValueTask InitializeAsync()
     {
         await databaseFixture.InitializeAsync();
+        Dictionary<string, string?> settings = new(databaseFixture.Database.ConfigurationFor(DatabaseRole.Api))
+        {
+            ["Cors:AllowedOrigins:0"] = AllowedOrigin,
+        };
         factory = new ApiFactory(
-            databaseFixture.Database.ConfigurationFor(DatabaseRole.Api),
+            settings,
             services =>
             {
                 services.TryAddEnumerable(ServiceDescriptor.Singleton<IEndpointModule, TestErrorsEndpointModule>());
