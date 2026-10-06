@@ -19,9 +19,4 @@ public sealed class LogEventCollector : ILogEventSink
     {
         return [.. events];
     }
-
-    public void Clear()
-    {
-        events.Clear();
-    }
 }

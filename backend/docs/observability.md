@@ -94,7 +94,7 @@ HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed} ms
 - **Key:** `Observability:OtlpEndpoint`, the gRPC endpoint of an OTLP receiver, for example `http://127.0.0.1:4317`.
 - **Validation:** `ObservabilitySettingsValidator` runs with `ValidateOnStart`. The value must be an absolute http or https URI with no path, query, fragment or user info; otherwise the host stops at start.
 - **Empty means off.** No exporter is added, and logs go only to the console. Spans are still recorded, so the log ids work either way. The integration tests rely on this, and so does any environment without a collector.
-- **When the decision is made.** The exporters are added or left out once, at service registration, from the configuration available then (environment variables and appsettings).
+- **When the decision is made.** When the logger and the tracer and meter providers are built, from the bound `ObservabilitySettings` options. So every configuration source counts, including test overrides that `WebApplicationFactory` applies only at `Build()`. Don't read `builder.Configuration` during registration for such decisions: those overrides aren't there yet.
 - **Where the value comes from.** It is a URL, so it comes from 1Password like every connection setting. `appsettings.json` lists the key empty, and `.env.development` maps `Observability__OtlpEndpoint` to the `otlp` item's `url`. In Development the receiver is the Grafana LGTM container ([deploy/docs/lgtm.md](../../deploy/docs/lgtm.md)). Testing, Staging and Production pick theirs in E5.
 
 ## Cli

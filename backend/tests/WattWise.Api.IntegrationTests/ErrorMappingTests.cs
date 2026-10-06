@@ -79,15 +79,25 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
 
         using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/exception", Token);
 
-        await ProblemDetailsAssertions.AssertProblemAsync(
+        JsonElement body = await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.InternalServerError, "General.Unexpected", Token);
         Assert.DoesNotContain(
             TestErrorsEndpointModule.ExceptionSecret, await response.Content.ReadAsStringAsync(Token), StringComparison.Ordinal);
+        // The traceId is the W3C traceparent: 00-<trace id>-<span id>-<flags>. Filtering by it keeps
+        // other tests hitting the same endpoint out of the count.
+        string traceId = body.GetProperty("traceId").GetString()!.Split('-')[1];
+        // The error is logged before the response, but wait for the request line so nothing is still in flight.
+        await Poll.UntilAsync(
+            () => fixture.Logs.Snapshot().FirstOrDefault(logEvent =>
+                logEvent.TraceId?.ToHexString() == traceId && logEvent.Level == LogEventLevel.Warning),
+            "the request log line of the failed request",
+            Token);
         IReadOnlyList<LogEvent> errors = fixture.Logs.Snapshot()
-            .Where(logEvent => logEvent.Level == LogEventLevel.Error
-                && logEvent.Exception is InvalidOperationException { Message: TestErrorsEndpointModule.ExceptionSecret })
+            .Where(logEvent => logEvent.Level == LogEventLevel.Error && logEvent.TraceId?.ToHexString() == traceId)
             .ToList();
-        Assert.Single(errors);
+        LogEvent error = Assert.Single(errors);
+        Assert.IsType<InvalidOperationException>(error.Exception);
+        Assert.Equal(TestErrorsEndpointModule.ExceptionSecret, error.Exception.Message);
     }
 
     [Fact]

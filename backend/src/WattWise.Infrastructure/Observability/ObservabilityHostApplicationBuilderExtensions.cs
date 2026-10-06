@@ -8,6 +8,7 @@ using Microsoft.Extensions.Options;
 
 using Npgsql;
 
+using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -43,14 +44,13 @@ public static class ObservabilityHostApplicationBuilderExtensions
     public static IHostApplicationBuilder AddObservability(this IHostApplicationBuilder builder, string serviceName)
     {
         builder.Services.AddOptions<ObservabilitySettings>()
-            .Configure<IConfiguration>((settings, configuration) => settings.ReadFrom(configuration))
+            .BindConfiguration(ObservabilitySettings.SectionName)
             .ValidateOnStart();
         builder.Services.AddSingleton<IValidateOptions<ObservabilitySettings>, ObservabilitySettingsValidator>();
 
-        // Decided at registration: the exporters are wired into the providers here, so unlike the
-        // options above this does not see configuration sources added later. A blank or invalid
-        // endpoint turns them off (an invalid one then fails ValidateOnStart).
-        Uri? otlpEndpoint = ObservabilitySettings.Read(builder.Configuration).ValidOtlpEndpoint();
+        // The exporter decision reads the bound options when the providers are built, so every
+        // configuration source (including test overrides) counts. A blank endpoint turns the
+        // exporters off; an invalid one throws OptionsValidationException when resolved.
         string serviceVersion = ServiceVersion();
         string environment = builder.Environment.EnvironmentName.ToLowerInvariant();
 
@@ -63,6 +63,7 @@ public static class ObservabilityHostApplicationBuilderExtensions
                     .ReadFrom.Services(services)
                     .Enrich.FromLogContext()
                     .WriteTo.Console(new RenderedCompactJsonFormatter());
+                Uri? otlpEndpoint = OtlpEndpoint(services);
                 if (otlpEndpoint is not null)
                 {
                     logger.WriteTo.OpenTelemetry(options =>
@@ -85,30 +86,39 @@ public static class ObservabilityHostApplicationBuilderExtensions
             .ConfigureResource(resource => resource
                 .AddService(serviceName, serviceVersion: serviceVersion)
                 .AddAttributes([new KeyValuePair<string, object>(EnvironmentAttribute, environment)]))
-            .WithTracing(tracing =>
+            .WithTracing(tracing => tracing.AddSource(AppSources).AddNpgsql())
+            .WithMetrics(metrics => metrics.AddMeter(AppMeters).AddNpgsqlInstrumentation());
+
+        // AddOtlpExporter registers services, which a deferred callback cannot do, so the exporters
+        // are built by hand. The resource is configured on the providers, so it applies to them.
+        builder.Services.ConfigureOpenTelemetryTracerProvider((services, tracing) =>
+        {
+            Uri? otlpEndpoint = OtlpEndpoint(services);
+            if (otlpEndpoint is not null)
             {
-                tracing.AddSource(AppSources).AddNpgsql();
-                if (otlpEndpoint is not null)
-                {
-                    tracing.AddOtlpExporter(options => ConfigureExporter(options, otlpEndpoint));
-                }
-            })
-            .WithMetrics(metrics =>
+                tracing.AddProcessor(new BatchActivityExportProcessor(new OtlpTraceExporter(ExporterOptions(otlpEndpoint))));
+            }
+        });
+        builder.Services.ConfigureOpenTelemetryMeterProvider((services, metrics) =>
+        {
+            Uri? otlpEndpoint = OtlpEndpoint(services);
+            if (otlpEndpoint is not null)
             {
-                metrics.AddMeter(AppMeters).AddNpgsqlInstrumentation();
-                if (otlpEndpoint is not null)
-                {
-                    metrics.AddOtlpExporter(options => ConfigureExporter(options, otlpEndpoint));
-                }
-            });
+                metrics.AddReader(new PeriodicExportingMetricReader(new OtlpMetricExporter(ExporterOptions(otlpEndpoint))));
+            }
+        });
 
         return builder;
     }
 
-    private static void ConfigureExporter(OtlpExporterOptions options, Uri endpoint)
+    private static Uri? OtlpEndpoint(IServiceProvider services)
     {
-        options.Endpoint = endpoint;
-        options.Protocol = OtlpExportProtocol.Grpc;
+        return services.GetRequiredService<IOptions<ObservabilitySettings>>().Value.ValidOtlpEndpoint();
+    }
+
+    private static OtlpExporterOptions ExporterOptions(Uri endpoint)
+    {
+        return new OtlpExporterOptions { Endpoint = endpoint, Protocol = OtlpExportProtocol.Grpc };
     }
 
     private static string ServiceVersion()
