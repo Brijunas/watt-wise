@@ -15,7 +15,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.GetAsync("/test/errors/validation", Token);
+        using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/validation", Token);
 
         JsonElement body = await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.BadRequest, "Validation.Failed", Token);
@@ -29,7 +29,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.GetAsync("/test/errors/validation-keys", Token);
+        using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/validation-keys", Token);
 
         JsonElement body = await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.BadRequest, "Validation.Failed", Token);
@@ -42,7 +42,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.GetAsync("/test/errors/not-found", Token);
+        using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/not-found", Token);
 
         JsonElement body = await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.NotFound, "Test.Missing", Token);
@@ -55,7 +55,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.GetAsync("/test/errors/unauthorized", Token);
+        using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/unauthorized", Token);
 
         await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.Unauthorized, "Test.SignedOut", Token);
@@ -66,7 +66,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.GetAsync("/test/errors/ok", Token);
+        using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/ok", Token);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token));
@@ -79,7 +79,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
         using HttpClient client = fixture.Factory.CreateClient();
         fixture.Logs.Clear();
 
-        using HttpResponseMessage response = await client.GetAsync("/test/errors/exception", Token);
+        using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/exception", Token);
 
         await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.InternalServerError, "General.Unexpected", Token);
@@ -97,7 +97,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.GetAsync("/test/errors/domain", Token);
+        using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/domain", Token);
 
         await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.InternalServerError, "General.Unexpected", Token);
@@ -109,7 +109,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.GetAsync("/test/errors/binding?number=abc", Token);
+        using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/binding?number=abc", Token);
 
         await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.BadRequest, "General.BadRequest", Token);
@@ -120,7 +120,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.PostAsync("/test/errors/ok", content: null, Token);
+        using HttpResponseMessage response = await client.PostAsync("/api/v1/test/errors/ok", content: null, Token);
 
         await ProblemDetailsAssertions.AssertProblemAsync(
             response, HttpStatusCode.MethodNotAllowed, "General.MethodNotAllowed", Token);
@@ -134,7 +134,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
-        using HttpResponseMessage response = await client.GetAsync($"/test/errors/status/{status}", Token);
+        using HttpResponseMessage response = await client.GetAsync($"/api/v1/test/errors/status/{status}", Token);
 
         await ProblemDetailsAssertions.AssertProblemAsync(
             response, (HttpStatusCode)status, expectedCode, Token, expectRfcType);

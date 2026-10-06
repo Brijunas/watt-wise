@@ -58,7 +58,7 @@ pnpm install
 
 ## 4. Check 1Password access
 
-The Development database settings and passwords are read from the `Watt Wise Development` vault; its items are listed under "Passwords" in [deploy/docs/postgres.md](../deploy/docs/postgres.md#passwords). Check that the CLI can reach the vault. The desktop app asks you to approve the first access.
+The Development database settings, passwords and app URLs (the Api listen URL, and the frontend and admin origins the Api allows through CORS) are read from the `Watt Wise Development` vault; its items are listed under "Passwords" in [deploy/docs/postgres.md](../deploy/docs/postgres.md#passwords). Check that the CLI can reach the vault. The desktop app asks you to approve the first access.
 
 ```bash
 op item list --vault "Watt Wise Development"

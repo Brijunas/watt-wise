@@ -67,7 +67,7 @@ Every API error response is `application/problem+json` following [RFC 9457](http
 }
 ```
 
-Responses with no body of their own (routing 404, 405, binding failures) get ProblemDetails from `UseStatusCodePages()` and the same customization. The frontend branches on `code`, never on `title` or `detail`. `/health` is a system check outside this contract and keeps its plain-text body.
+Responses with no body of their own (routing 404, 405, binding failures) get ProblemDetails from `UseStatusCodePages()` and the same customization. The frontend branches on `code`, never on `title` or `detail`. `/health` is a system check outside this contract: its body is the JSON health report described under "Health" in [architecture.md](architecture.md#http-surface).
 
 ## Logging
 

@@ -1,7 +1,14 @@
 using Mediator;
 
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+
+using Scalar.AspNetCore;
+
+using WattWise.Api.Cors;
 using WattWise.Api.Endpoints;
 using WattWise.Api.ErrorHandling;
+using WattWise.Api.Health;
+using WattWise.Api.OpenApi;
 using WattWise.Application;
 using WattWise.Application.Behaviors;
 using WattWise.Infrastructure;
@@ -18,14 +25,25 @@ builder.Services.AddMediator((MediatorOptions options) =>
     options.ServiceLifetime = ServiceLifetime.Scoped;
 });
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = ProblemDetailsCustomization.Apply);
+builder.Services.AddApiCors();
+builder.Services.AddApiOpenApi();
 builder.Services.AddEndpointModules();
-builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
-app.MapHealthChecks("/health");
+app.UseCors();
+app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = HealthResponseWriter.WriteAsync });
+
+// The OpenAPI document and Scalar UI are only served outside Production.
+if (!app.Environment.IsProduction())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
+
 app.MapEndpointModules();
 
 app.Run();

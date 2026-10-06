@@ -74,8 +74,23 @@ endpoint / job / CLI command
 - **Library:** [`martinothamar/Mediator`](https://github.com/martinothamar/Mediator), source-generated and MIT-licensed (the choice Ardalis's Clean Architecture template made). The dispatch code is generated at compile time: no runtime reflection, and a request without a handler fails the build. MediatR is not used: from version 13 it needs a commercial licence key.
 - **Conventions:** requests implement `IQuery<Result<T>>` or `ICommand<Result<T>>`; handlers implement `IQueryHandler<,>` / `ICommandHandler<,>` and return `ValueTask<Result<T>>`. The behaviors are constrained to `Result` responses, so a request that returns anything else would skip them silently; a unit test in Application.Tests fails if any Application request doesn't return `Result<>`.
 - **Registration:** the source generator runs in the startup project, so each host that sends requests calls `AddMediator` (Api today; Jobs and Cli when they first send one) with the Application assembly, the behaviors in the order above, and scoped lifetime (handlers use the scoped `AppDbContext`). The options must be written inline in that call: the generator reads them from the source and generates `MediatorOptions` into the host, so they can't come from a shared helper. The behavior list is therefore written twice, in the Api's `Program.cs` and in Application.Tests' `PipelineHost`, and the two must match. No test guards this yet: the generator registers behaviors per request type at compile time, and the Api has no requests. The first real use case adds a test that resolves its behaviors from the Api host and checks their order. `AddApplication()` registers the FluentValidation validators.
-- **Endpoints** are grouped in `IEndpointModule` classes in the Api (`Endpoints/`), registered by `AddEndpointModules()` and mapped by `MapEndpointModules()`. Endpoints live in a `/api/v1` route group (S2.7). The OpenAPI document comes from the built-in .NET OpenAPI support, with Scalar UI in non-production environments.
+- **Endpoints** are grouped in `IEndpointModule` classes in the Api (`Endpoints/`), registered by `AddEndpointModules()` and mapped by `MapEndpointModules()` inside the `/api/v1` route group, so a module maps relative paths. What else the Api serves is under [HTTP surface](#http-surface).
 - **Errors:** expected failures are `Result` errors, unexpected ones are exceptions, and the Api turns both into RFC 9457 ProblemDetails. The model, the contract and how to add an error are in [error-handling.md](error-handling.md).
+
+## HTTP surface
+
+What the Api host serves besides the endpoints, all wired in `Program.cs`:
+
+| Path               | What                                                                              | Environments       |
+| ------------------ | --------------------------------------------------------------------------------- | ------------------ |
+| `/api/v1/...`      | Every endpoint module, with the CORS policy                                       | All                |
+| `/health`          | Health report as JSON                                                             | All                |
+| `/openapi/v1.json` | OpenAPI document (built-in `Microsoft.AspNetCore.OpenApi`), title `Watt-Wise API` | All but Production |
+| `/scalar`          | Scalar UI over that document; the `http` launch profile opens it                  | All but Production |
+
+- **Versioning:** a plain route group; the prefix lives only in `ApiRoutes.V1Prefix`. No versioning library: a breaking v2 would be a second group with its own OpenAPI document. The document is the contract the web clients' API client is generated from ([technical.md](../../docs/technical.md#backend)).
+- **CORS:** one named policy (`CorsPolicy`), required by the `/api/v1` group only; `/health`, OpenAPI and Scalar are same-origin or non-browser. It allows the origins in `Cors:AllowedOrigins`, methods GET, POST, PUT, PATCH and DELETE, headers `Authorization` and `Content-Type`, no credentials (clients send bearer tokens), and caches preflights for 10 minutes. The origins are the frontend and admin URLs, so like every URL they come from 1Password: `.env.<environment>` maps `Cors__AllowedOrigins__0` and `__1` to the `frontend` and `admin` items' `url` fields. `appsettings.json` lists the key as an empty array. An empty list is valid and allows no cross-origin calls; a malformed origin (not absolute http/https, or with a path, query or trailing slash) stops the host at start (`CorsSettingsValidator`, `ValidateOnStart`).
+- **Health:** `AddDbContextCheck<AppDbContext>("database")`. `HealthResponseWriter` returns `{ "status", "durationMs", "checks": [{ "name", "status", "durationMs", "description" }] }`, 200 when Healthy or Degraded and 503 when Unhealthy. It never includes exception text, since `/health` is public.
 
 ## Persistence
 
@@ -108,7 +123,7 @@ ASP.NET Core Identity for users, password hashing, lockout and (later) external 
 
 ## Logging and observability
 
-Serilog structured logging to the console as JSON, with request logging. OpenTelemetry traces and metrics with an OTLP exporter configured per environment, and log/trace correlation. Health checks at `/health`, including a database check (`AddDbContextCheck<AppDbContext>`, minimal since S2.4; S2.7 extends it).
+Serilog structured logging to the console as JSON, with request logging. OpenTelemetry traces and metrics with an OTLP exporter configured per environment, and log/trace correlation. Health checks at `/health` with a database check, see [HTTP surface](#http-surface).
 
 ## Calculation engine
 
