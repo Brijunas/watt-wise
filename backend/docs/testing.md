@@ -49,7 +49,7 @@ Writing an integration test:
 ## Testing the pipeline and error mapping
 
 - **Pipeline (Application.Tests).** The test project references `Mediator.SourceGenerator` and calls `AddMediator` with the Application assembly, its own assembly and the same behaviors as the hosts, so tests run the real generated mediator. Test-only requests and handlers live in the test project; no sample use case ships in production code.
-- **Error mapping (Api.IntegrationTests).** `ApiFactory` takes an optional `Action<IServiceCollection>`, applied through `ConfigureTestServices`. `ErrorMappingTests` uses it to register a test-only `IEndpointModule` whose endpoints return each kind of `Error` or throw, and asserts the ProblemDetails body: status, `type`, `code`, `traceId` and, for validation, `errors`. A new error category adds a case there ([error-handling.md](error-handling.md#how-to-add-)).
+- **Error mapping (Api.IntegrationTests).** `ApiFactory` takes an optional `Action<IServiceCollection>`, applied through `ConfigureTestServices`. `ErrorMappingTests` shares one host per class through `ErrorsApiFixture`, which uses that hook to register a test-only `IEndpointModule` (endpoints that return each kind of `Error` or throw) and a fake log collector. The tests assert the ProblemDetails body: status, `type`, `code`, `traceId` and, for validation, `errors`. A new error category adds a case there ([error-handling.md](error-handling.md#how-to-add-)).
 
 ## Framework
 

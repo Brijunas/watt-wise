@@ -1,4 +1,4 @@
-using System.Net;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace WattWise.Api.ErrorHandling;
 
@@ -21,6 +21,7 @@ public static class ProblemDetailsCustomization
         context.ProblemDetails.Extensions[CodeKey] = "General." + StatusName(status);
     }
 
+    /// <summary>The status's reason phrase without spaces and hyphens, e.g. 404 gives <c>NotFound</c>.</summary>
     private static string StatusName(int status)
     {
         if (status == StatusCodes.Status500InternalServerError)
@@ -28,6 +29,10 @@ public static class ProblemDetailsCustomization
             return "Unexpected";
         }
 
-        return Enum.IsDefined((HttpStatusCode)status) ? ((HttpStatusCode)status).ToString() : "Error";
+        string reason = ReasonPhrases.GetReasonPhrase(status)
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Replace("-", string.Empty, StringComparison.Ordinal);
+
+        return reason.Length == 0 ? "Status" + status : reason;
     }
 }

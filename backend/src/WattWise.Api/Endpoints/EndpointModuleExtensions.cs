@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
 namespace WattWise.Api.Endpoints;
 
 public static class EndpointModuleExtensions
@@ -11,7 +13,7 @@ public static class EndpointModuleExtensions
 
         foreach (Type moduleType in moduleTypes)
         {
-            services.AddSingleton(typeof(IEndpointModule), moduleType);
+            services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(IEndpointModule), moduleType));
         }
 
         return services;
