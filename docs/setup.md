@@ -58,7 +58,7 @@ pnpm install
 
 ## 4. Check 1Password access
 
-The Development database settings, passwords and app URLs (the Api listen URL, and the frontend and admin origins the Api allows through CORS) are read from the `Watt Wise Development` vault; its items are listed under "Passwords" in [deploy/docs/postgres.md](../deploy/docs/postgres.md#passwords). Check that the CLI can reach the vault. The desktop app asks you to approve the first access.
+The Development database settings, passwords and app URLs (the Api listen URL, the frontend and admin origins the Api allows through CORS, and the Grafana and OTLP addresses) are read from the `Watt Wise Development` vault; its items are listed under "Passwords" in [deploy/docs/postgres.md](../deploy/docs/postgres.md#passwords). Check that the CLI can reach the vault. The desktop app asks you to approve the first access.
 
 ```bash
 op item list --vault "Watt Wise Development"
@@ -108,6 +108,8 @@ One-time setup of the Development PostgreSQL. The roles and why they exist are i
    ```
 
 pgAdmin listens on the address and port in the `pgadmin` item (http://127.0.0.1:5050 today). The first time you open the server, it asks for the `postgres-admin` password.
+
+The stack also runs Grafana LGTM, which receives the apps' traces, metrics and logs. Grafana is at the `grafana` item's `url` (http://127.0.0.1:3000 today), without a login; see [deploy/docs/lgtm.md](../deploy/docs/lgtm.md). On a machine set up before S2.8, render `deploy/.env` again (step 1) and run `docker compose -f deploy/docker-compose.development.yml up -d --wait` to add it.
 
 ## 6. Check that everything works
 

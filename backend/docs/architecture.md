@@ -1,6 +1,6 @@
 # Backend architecture
 
-How the Watt-Wise backend is built inside. The system-level picture (applications, API contract, data model, hosting, secrets) is in the root [technical.md](../../docs/technical.md); this document covers only what happens inside `backend/`. Testing is in [testing.md](testing.md), build settings and code style in [conventions.md](conventions.md), failures and the error contract in [error-handling.md](error-handling.md).
+How the Watt-Wise backend is built inside. The system-level picture (applications, API contract, data model, hosting, secrets) is in the root [technical.md](../../docs/technical.md); this document covers only what happens inside `backend/`. Testing is in [testing.md](testing.md), build settings and code style in [conventions.md](conventions.md), failures and the error contract in [error-handling.md](error-handling.md), logs, traces and metrics in [observability.md](observability.md).
 
 ## Stack
 
@@ -123,7 +123,7 @@ ASP.NET Core Identity for users, password hashing, lockout and (later) external 
 
 ## Logging and observability
 
-Serilog structured logging to the console as JSON, with request logging. OpenTelemetry traces and metrics with an OTLP exporter configured per environment, and log/trace correlation. Health checks at `/health` with a database check, see [HTTP surface](#http-surface).
+Serilog writes JSON to the console, one request line per HTTP request. OpenTelemetry records traces and metrics, and every log event carries its trace id. Logs, traces and metrics go to an OTLP endpoint when one is configured. Every host sets this up with `AddObservability` from Infrastructure; the details are in [observability.md](observability.md). Health checks at `/health` with a database check, see [HTTP surface](#http-surface).
 
 ## Calculation engine
 

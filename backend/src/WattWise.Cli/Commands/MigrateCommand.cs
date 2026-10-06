@@ -1,11 +1,10 @@
 using System.CommandLine;
+using System.Diagnostics;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
-using WattWise.Infrastructure;
 using WattWise.Infrastructure.Persistence;
 
 namespace WattWise.Cli.Commands;
@@ -21,26 +20,21 @@ internal static class MigrateCommand
 
     private static async Task<int> RunAsync(string[] args, CancellationToken cancellationToken)
     {
-        // The host is built per command, so --help works without any configuration.
-        // appsettings*.json are copied next to the binary; the working directory can be anywhere.
-        HostApplicationBuilder builder = Host.CreateApplicationBuilder(
-            new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory });
-        builder.Services.AddInfrastructure();
-        using IHost host = builder.Build();
+        // Disposing the host (on every return path) flushes the trace and metric exporters and
+        // closes the Serilog logger, so the last log lines and the migrate span are not lost.
+        using IHost host = CliHost.Build(args);
 
-        // The host is never started, so ValidateOnStart doesn't run; resolve the settings to fail
-        // fast with the list of missing keys.
-        try
+        string? settingsError = CliHost.ValidateSettings(host);
+        if (settingsError is not null)
         {
-            _ = host.Services.GetRequiredService<IOptions<DatabaseSettings>>().Value;
-        }
-        catch (OptionsValidationException ex)
-        {
-            await Console.Error.WriteLineAsync(ex.Message);
+            await Console.Error.WriteLineAsync(settingsError);
             return 1;
         }
 
+        CliHost.StartTelemetry(host);
+
         ILogger logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("WattWise.Cli.Migrate");
+        using Activity? activity = CliTelemetry.Source.StartActivity("migrate");
         try
         {
             await using AsyncServiceScope scope = host.Services.CreateAsyncScope();
@@ -49,6 +43,8 @@ internal static class MigrateCommand
         }
         catch (Exception ex)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, "Migration failed.");
+            activity?.AddException(ex);
             logger.LogError(ex, "Migration failed.");
             return 1;
         }
