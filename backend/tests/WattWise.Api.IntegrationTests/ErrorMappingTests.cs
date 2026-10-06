@@ -25,6 +25,19 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     }
 
     [Fact]
+    public async Task Validation_field_keys_are_camel_cased_per_segment_keeping_indexers()
+    {
+        using HttpClient client = fixture.Factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/test/errors/validation-keys", Token);
+
+        JsonElement body = await ProblemDetailsAssertions.AssertProblemAsync(
+            response, HttpStatusCode.BadRequest, "Validation.Failed", Token);
+        string[] keys = body.GetProperty("errors").EnumerateObject().Select(property => property.Name).Order().ToArray();
+        Assert.Equal(["address.streetName", "email", "ipAddress", "items[0].name"], keys);
+    }
+
+    [Fact]
     public async Task Not_found_error_is_404_with_the_handlers_code_and_description()
     {
         using HttpClient client = fixture.Factory.CreateClient();
@@ -76,8 +89,7 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
             .Where(record => record.Level == LogLevel.Error
                 && record.Exception is InvalidOperationException { Message: TestErrorsEndpointModule.ExceptionSecret })
             .ToList();
-        FakeLogRecord logged = Assert.Single(errors);
-        Assert.IsType<InvalidOperationException>(logged.Exception);
+        Assert.Single(errors);
     }
 
     [Fact]
@@ -114,20 +126,18 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
             response, HttpStatusCode.MethodNotAllowed, "General.MethodNotAllowed", Token);
     }
 
+    // 422 gets an RFC 4918 type and 599 none, so neither carries the RFC 9110 type the helper checks by default.
     [Theory]
-    [InlineData(422, "General.UnprocessableEntity")]
-    [InlineData(599, "General.Status599")]
-    public async Task Other_statuses_get_a_code_from_their_reason_phrase(int status, string expectedCode)
+    [InlineData(422, "General.UnprocessableEntity", false)]
+    [InlineData(599, "General.Status599", false)]
+    public async Task Other_statuses_get_a_code_from_their_reason_phrase(int status, string expectedCode, bool expectRfcType)
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync($"/test/errors/status/{status}", Token);
 
-        // The framework only adds an RFC 9110 "type" for statuses it knows, so check the code directly.
-        Assert.Equal((HttpStatusCode)status, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-        using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token));
-        Assert.Equal(expectedCode, document.RootElement.GetProperty("code").GetString());
+        await ProblemDetailsAssertions.AssertProblemAsync(
+            response, (HttpStatusCode)status, expectedCode, Token, expectRfcType);
     }
 
     [Fact]

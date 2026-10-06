@@ -10,6 +10,7 @@ using WattWise.Infrastructure.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
+// Keep the behavior list identical to PipelineHost in Application.Tests (the generator needs a literal list at each site).
 builder.Services.AddMediator((MediatorOptions options) =>
 {
     options.Assemblies = [typeof(ApplicationAssembly)];

@@ -26,6 +26,7 @@ public sealed class PipelineHost : IDisposable
         services.AddSingleton<CallRecorder>();
         services.AddApplication();
         services.AddValidatorsFromAssemblyContaining<EchoQueryValidator>();
+        // Keep the behavior list identical to Program.cs in Api (the generator needs a literal list at each site).
         services.AddMediator((MediatorOptions options) =>
         {
             options.Assemblies = [typeof(ApplicationAssembly), typeof(PipelineHost)];

@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 using FluentValidation;
 using FluentValidation.Results;
 
@@ -35,7 +33,7 @@ public sealed class ValidationBehavior<TMessage, TResponse>(IEnumerable<IValidat
 
         Dictionary<string, string[]> fieldErrors = results
             .SelectMany(result => result.Errors)
-            .GroupBy(failure => ToCamelCasePath(failure.PropertyName))
+            .GroupBy(failure => failure.PropertyName)
             .ToDictionary(group => group.Key, group => group.Select(failure => failure.ErrorMessage).ToArray());
 
         if (fieldErrors.Count == 0)
@@ -44,10 +42,5 @@ public sealed class ValidationBehavior<TMessage, TResponse>(IEnumerable<IValidat
         }
 
         return TResponse.Failure(Error.Validation(fieldErrors));
-    }
-
-    private static string ToCamelCasePath(string propertyName)
-    {
-        return string.Join('.', propertyName.Split('.').Select(segment => JsonNamingPolicy.CamelCase.ConvertName(segment)));
     }
 }

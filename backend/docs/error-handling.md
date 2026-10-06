@@ -20,14 +20,14 @@ Why:
 
 ## Where each part lives
 
-| Layer       | Types                                                                                       | Job                                                                                                                                                                                 |
-| ----------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Domain      | `Exceptions/DomainException` (abstract, carries a `Code`)                                   | Base class for business-rule violations                                                                                                                                             |
-| Application | `Results/Result<T>`, `Results/Error`, `Results/ErrorType`, `Results/IFallibleResult<TSelf>` | The failure vocabulary every handler returns                                                                                                                                        |
-| Application | `Behaviors/ValidationBehavior`, `Behaviors/LoggingBehavior`                                 | Turn FluentValidation failures into a `Validation` error; log the outcome                                                                                                           |
-| Api         | `ErrorHandling/ErrorTypeMapping`                                                            | The single `ErrorType` → status code table                                                                                                                                          |
-| Api         | `ErrorHandling/ResultHttpExtensions`                                                        | `Result<T>.ToHttpResult()`: `200 OK` with the value, or the error as ProblemDetails; typed as `Results<Ok<T>, ProblemHttpResult, ValidationProblem>` so OpenAPI sees the 200 schema |
-| Api         | `ErrorHandling/ProblemDetailsCustomization`                                                 | Adds the `code` extension to any ProblemDetails that lacks one; the framework already sets `type` and `traceId`                                                                     |
+| Layer       | Types                                                                                       | Job                                                                                                                                                                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain      | `Exceptions/DomainException` (abstract, carries a `Code`)                                   | Base class for business-rule violations                                                                                                                                                                                                                                                                                         |
+| Application | `Results/Result<T>`, `Results/Error`, `Results/ErrorType`, `Results/IFallibleResult<TSelf>` | The failure vocabulary every handler returns                                                                                                                                                                                                                                                                                    |
+| Application | `Behaviors/ValidationBehavior`, `Behaviors/LoggingBehavior`                                 | Turn FluentValidation failures into a `Validation` error keyed by FluentValidation's property paths (`Address.StreetName`); log the outcome                                                                                                                                                                                     |
+| Api         | `ErrorHandling/ErrorTypeMapping`                                                            | The single `ErrorType` → status code table                                                                                                                                                                                                                                                                                      |
+| Api         | `ErrorHandling/ResultHttpExtensions`                                                        | `Result<T>.ToHttpResult()`: `200 OK` with the value, or the error as ProblemDetails; typed as `Results<Ok<T>, ProblemHttpResult, ValidationProblem>` so OpenAPI sees the 200 schema. It also camelCases validation keys per path segment to match the JSON clients send: a presentation concern, so it stays out of Application |
+| Api         | `ErrorHandling/ProblemDetailsCustomization`                                                 | Adds the `code` extension to any ProblemDetails that lacks one; the framework already sets `type` and `traceId`                                                                                                                                                                                                                 |
 
 `Program.cs` wires `AddProblemDetails` with the customization, `UseExceptionHandler()` and `UseStatusCodePages()`. There is no custom `IExceptionHandler`: only unexpected exceptions reach the middleware, and its default ProblemDetails response is what we want. That also keeps their logs and metrics, which .NET 10+ suppresses for exceptions an `IExceptionHandler` reports as handled.
 
@@ -54,7 +54,7 @@ Every API error response is `application/problem+json` following [RFC 9457](http
 | `detail`  | The error's description; never exception messages or stack traces                                                                                                  |
 | `code`    | Machine-readable code (`Area.Reason`); `General.<ReasonPhrase>` (e.g. `General.NotFound`) when the framework produced the response, `General.Unexpected` for a 500 |
 | `traceId` | The request's trace id, to find its logs                                                                                                                           |
-| `errors`  | Validation only: camelCase field path → messages                                                                                                                   |
+| `errors`  | Validation only: camelCase field path (`address.streetName`, `items[0].name`) → messages                                                                           |
 
 ```json
 {
@@ -100,7 +100,7 @@ Responses with no body of their own (routing 404, 405, binding failures) get Pro
 
 1. Next to the request in Application, add `public sealed class XValidator : AbstractValidator<X>`. `AddApplication()` finds it; `ValidationBehavior` runs it.
 2. Validate input shape and simple rules only. Rules that need data (does this plan exist?) belong in the handler and return `NotFound` or another category.
-3. Unit-test it with `TestValidate` and assert on property names.
+3. Unit-test it with `TestValidate` and assert on FluentValidation's property names (`Name`, `Address.StreetName`); the Api camelCases them.
 
 **A new use case**
 
