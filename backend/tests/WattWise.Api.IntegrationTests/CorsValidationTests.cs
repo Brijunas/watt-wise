@@ -21,14 +21,6 @@ public class CorsValidationTests(DatabaseFixture fixture) : IClassFixture<Databa
         Exception? exception = Record.Exception(() => factory.CreateClient());
 
         Assert.NotNull(exception);
-        Assert.Contains(Chain(exception), e => e is OptionsValidationException);
-    }
-
-    private static IEnumerable<Exception> Chain(Exception exception)
-    {
-        for (Exception? current = exception; current is not null; current = current.InnerException)
-        {
-            yield return current;
-        }
+        Assert.Contains(ExceptionChain.Of(exception), e => e is OptionsValidationException);
     }
 }

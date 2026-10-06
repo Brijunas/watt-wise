@@ -9,8 +9,9 @@ using WattWise.Application.Results;
 namespace WattWise.Application.Behaviors;
 
 /// <summary>
-/// Logs the outcome and duration of every use case. Exceptions are not logged here: they
-/// propagate and the exception middleware logs them once.
+/// Logs the outcome and duration of every use case: a success at Debug, so an HTTP request logs
+/// exactly one Information line (the request line), and a failure result at Information.
+/// Exceptions are not logged here: they propagate and the exception middleware logs them once.
 /// </summary>
 public sealed partial class LoggingBehavior<TMessage, TResponse>(ILogger<LoggingBehavior<TMessage, TResponse>> logger)
     : IPipelineBehavior<TMessage, TResponse>
@@ -38,7 +39,7 @@ public sealed partial class LoggingBehavior<TMessage, TResponse>(ILogger<Logging
         return response;
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Handled {RequestName} in {ElapsedMs} ms")]
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Handled {RequestName} in {ElapsedMs} ms")]
     private partial void LogHandled(string requestName, double elapsedMs);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{RequestName} failed with {ErrorCode} in {ElapsedMs} ms")]

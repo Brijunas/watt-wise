@@ -22,7 +22,7 @@ public sealed class PipelineHost : IDisposable
     public PipelineHost()
     {
         ServiceCollection services = new();
-        services.AddLogging(builder => builder.AddFakeLogging());
+        services.AddLogging(builder => builder.SetMinimumLevel(LogLevel.Debug).AddFakeLogging());
         services.AddSingleton<CallRecorder>();
         services.AddApplication();
         services.AddValidatorsFromAssemblyContaining<EchoQueryValidator>();

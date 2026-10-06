@@ -1,5 +1,6 @@
-# Development environment: PostgreSQL and pgAdmin. Bind addresses, ports and user names
-# come from 1Password, rendered into deploy/.env (read by compose automatically):
+# Development environment: PostgreSQL, pgAdmin and Grafana LGTM (traces, metrics and logs
+# over OTLP). Bind addresses, ports and user names come from 1Password, rendered into
+# deploy/.env (read by compose automatically):
 #   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
 # Passwords are read only on first start of empty volumes, through op run:
 #   op run --env-file deploy/development/compose.env -- \
@@ -58,6 +59,20 @@ services:
       postgres:
         condition: service_healthy
 
+  lgtm:
+    image: grafana/otel-lgtm:0.35.0
+    restart: unless-stopped
+    environment:
+      # Grafana without a login (anonymous Admin), like pgAdmin's desktop mode; published on loopback only.
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+    ports:
+      - '${GRAFANA_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${GRAFANA_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:3000'
+      # OTLP gRPC; the apps export traces, metrics and logs here.
+      - '${OTLP_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${OTLP_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:4317'
+    volumes:
+      - lgtm-data:/data
+
 volumes:
   postgres-data:
   pgadmin-data:
+  lgtm-data:

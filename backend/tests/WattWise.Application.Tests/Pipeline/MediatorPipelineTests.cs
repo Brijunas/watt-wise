@@ -91,7 +91,7 @@ public sealed class MediatorPipelineTests : IDisposable
         await _host.Mediator.Send(new EchoQuery("Ada"), Token);
 
         FakeLogRecord record = Assert.Single(_host.LoggingBehaviorRecords());
-        Assert.Equal(LogLevel.Information, record.Level);
+        Assert.Equal(LogLevel.Debug, record.Level);
         Assert.StartsWith("Handled EchoQuery in ", record.Message, StringComparison.Ordinal);
     }
 

@@ -8,13 +8,16 @@ using WattWise.Api.Cors;
 using WattWise.Api.Endpoints;
 using WattWise.Api.ErrorHandling;
 using WattWise.Api.Health;
+using WattWise.Api.Observability;
 using WattWise.Api.OpenApi;
 using WattWise.Application;
 using WattWise.Application.Behaviors;
 using WattWise.Infrastructure;
+using WattWise.Infrastructure.Observability;
 using WattWise.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddObservability("wattwise-api");
 builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 // Keep the behavior list identical to PipelineHost in Application.Tests (the generator needs a literal list at each site).
@@ -32,6 +35,8 @@ builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
 
 var app = builder.Build();
 
+// Outermost, so the request line records the final status after the exception handler and status code pages.
+app.UseApiRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors();

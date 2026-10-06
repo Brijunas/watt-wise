@@ -71,8 +71,8 @@ Responses with no body of their own (routing 404, 405, binding failures) get Pro
 
 ## Logging
 
-- **Expected failures:** `LoggingBehavior` logs one Information line per request: `Handled {RequestName} in {ElapsedMs} ms`, or `{RequestName} failed with {ErrorCode} in {ElapsedMs} ms`.
-- **Unexpected failures:** the behavior doesn't log exceptions; the exception handler middleware logs each one once at Error, with the stack trace, and the response carries only the `traceId`.
+- **Expected failures:** `LoggingBehavior` logs `{RequestName} failed with {ErrorCode} in {ElapsedMs} ms` at Information. A successful use case is logged at Debug (`Handled {RequestName} in {ElapsedMs} ms`), so by default an HTTP request writes only its request line ([observability.md](observability.md#one-log-line-per-request)).
+- **Unexpected failures:** the behavior doesn't log exceptions; the exception handler middleware logs each one once at Error, with the stack trace, and the response carries only the `traceId`. The request line of a 5xx response is a Warning, so each exception gives exactly one Error event.
 
 ## How to add …
 

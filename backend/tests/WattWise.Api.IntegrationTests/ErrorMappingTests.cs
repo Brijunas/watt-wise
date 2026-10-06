@@ -1,8 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Testing;
+using Serilog.Events;
 
 namespace WattWise.Api.IntegrationTests;
 
@@ -77,7 +76,6 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
     public async Task Unhandled_exception_is_500_without_its_message_and_logged_once_as_an_error()
     {
         using HttpClient client = fixture.Factory.CreateClient();
-        fixture.Logs.Clear();
 
         using HttpResponseMessage response = await client.GetAsync("/api/v1/test/errors/exception", Token);
 
@@ -85,9 +83,9 @@ public class ErrorMappingTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsA
             response, HttpStatusCode.InternalServerError, "General.Unexpected", Token);
         Assert.DoesNotContain(
             TestErrorsEndpointModule.ExceptionSecret, await response.Content.ReadAsStringAsync(Token), StringComparison.Ordinal);
-        IReadOnlyList<FakeLogRecord> errors = fixture.Logs.GetSnapshot()
-            .Where(record => record.Level == LogLevel.Error
-                && record.Exception is InvalidOperationException { Message: TestErrorsEndpointModule.ExceptionSecret })
+        IReadOnlyList<LogEvent> errors = fixture.Logs.Snapshot()
+            .Where(logEvent => logEvent.Level == LogEventLevel.Error
+                && logEvent.Exception is InvalidOperationException { Message: TestErrorsEndpointModule.ExceptionSecret })
             .ToList();
         Assert.Single(errors);
     }
