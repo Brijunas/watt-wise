@@ -1,6 +1,6 @@
 # Backend architecture
 
-How the Watt-Wise backend is built inside. The system-level picture (applications, API contract, data model, hosting, secrets) is in the root [technical.md](../../docs/technical.md); this document covers only what happens inside `backend/`. Testing is in [testing.md](testing.md), build settings and code style in [conventions.md](conventions.md).
+How the Watt-Wise backend is built inside. The system-level picture (applications, API contract, data model, hosting, secrets) is in the root [technical.md](../../docs/technical.md); this document covers only what happens inside `backend/`. Testing is in [testing.md](testing.md), build settings and code style in [conventions.md](conventions.md), failures and the error contract in [error-handling.md](error-handling.md).
 
 ## Stack
 
@@ -14,6 +14,7 @@ backend/
 ├── Directory.Build.props         shared build settings, see conventions.md
 ├── Directory.Packages.props      central NuGet versions
 ├── .editorconfig                 C# style, layered on the root .editorconfig
+├── .globalconfig                 analyzer severities without a source location, see conventions.md
 ├── src/
 │   ├── WattWise.Domain/          entities, value objects, domain services
 │   ├── WattWise.Application/     use cases, ports, validation, DTOs
@@ -59,11 +60,22 @@ Three hosts wire the layers together and are deployed separately:
 
 ## Request handling
 
-- Each endpoint maps to one command or query handler in Application through an in-house MediatR-style dispatcher (`IRequest` / `IRequestHandler`, registered through DI, no MediatR licence dependency).
-- Cross-cutting concerns (logging, validation, transactions) are pipeline behaviors around the handler.
-- Validation uses FluentValidation, run as a pipeline behavior before the handler. Failures are raised as a typed exception.
-- An exception handler maps validation, not-found, unauthorized and unexpected errors to RFC 9457 ProblemDetails with a `traceId`. ProblemDetails is the error contract with the clients (see the root technical.md).
-- Endpoints live in a `/api/v1` route group. The OpenAPI document comes from the built-in .NET OpenAPI support, with Scalar UI in non-production environments.
+Every use case is a request object (a query or a command) with exactly one handler in Application. Callers (Api endpoints, and later Hangfire jobs and CLI commands) never call a handler directly: they send the request through the mediator, which runs it through a fixed pipeline first:
+
+```
+endpoint / job / CLI command
+  → mediator.Send(request)
+    → LoggingBehavior      time and outcome of every use case
+      → ValidationBehavior FluentValidation; an invalid request stops here
+        → handler          the use case itself
+```
+
+- **Why a mediator.** Cross-cutting concerns (logging, validation, later transactions, permission checks, metrics) are written once as behaviors and apply to every use case, so handlers hold only business logic. Jobs and CLI commands that send a request get the same pipeline as HTTP calls. Endpoints stay thin: build the request, send it, map the `Result` to HTTP.
+- **Library:** [`martinothamar/Mediator`](https://github.com/martinothamar/Mediator), source-generated and MIT-licensed (the choice Ardalis's Clean Architecture template made). The dispatch code is generated at compile time: no runtime reflection, and a request without a handler fails the build. MediatR is not used: from version 13 it needs a commercial licence key.
+- **Conventions:** requests implement `IQuery<Result<T>>` or `ICommand<Result<T>>`; handlers implement `IQueryHandler<,>` / `ICommandHandler<,>` and return `ValueTask<Result<T>>`. The behaviors are constrained to `Result` responses, so a request that returns anything else would skip them silently; a unit test in Application.Tests fails if any Application request doesn't return `Result<>`.
+- **Registration:** the source generator runs in the startup project, so each host that sends requests calls `AddMediator` (Api today; Jobs and Cli when they first send one) with the Application assembly, the behaviors in the order above, and scoped lifetime (handlers use the scoped `AppDbContext`). The options must be written inline in that call: the generator reads them from the source and generates `MediatorOptions` into the host, so they can't come from a shared helper. `AddApplication()` registers the FluentValidation validators.
+- **Endpoints** are grouped in `IEndpointModule` classes in the Api (`Endpoints/`), registered by `AddEndpointModules()` and mapped by `MapEndpointModules()`. Endpoints live in a `/api/v1` route group (S2.7). The OpenAPI document comes from the built-in .NET OpenAPI support, with Scalar UI in non-production environments.
+- **Errors:** expected failures are `Result` errors, unexpected ones are exceptions, and the Api turns both into RFC 9457 ProblemDetails. The model, the contract and how to add an error are in [error-handling.md](error-handling.md).
 
 ## Persistence
 
