@@ -43,7 +43,7 @@ The integration and functional projects run against a real PostgreSQL started by
 Writing an integration test:
 
 - Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `hangfire` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
-- Api tests start the host through `ApiFactory` (a `WebApplicationFactory<Program>`) with the clone's `api` settings.
+- Api tests start the host through `ApiFactory` (a `WebApplicationFactory<Program>`) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
 
 ## Testing the pipeline and error mapping

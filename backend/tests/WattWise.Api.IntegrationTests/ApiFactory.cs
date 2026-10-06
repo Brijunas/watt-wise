@@ -9,13 +9,20 @@ namespace WattWise.Api.IntegrationTests;
 /// <summary>
 /// Starts the Api host with the given settings layered over its configuration. Optional
 /// <paramref name="configureServices"/> runs after the host's own registrations, so tests can add or replace services.
+/// When <paramref name="environment"/> is set, the host runs in that environment instead of the default (Development).
 /// </summary>
 public sealed class ApiFactory(
     IReadOnlyDictionary<string, string?> settings,
-    Action<IServiceCollection>? configureServices = null) : WebApplicationFactory<Program>
+    Action<IServiceCollection>? configureServices = null,
+    string? environment = null) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        if (environment is not null)
+        {
+            builder.UseEnvironment(environment);
+        }
+
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(settings));
 
         if (configureServices is not null)

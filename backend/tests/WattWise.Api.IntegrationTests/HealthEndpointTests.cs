@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 
 namespace WattWise.Api.IntegrationTests;
 
@@ -15,7 +16,11 @@ public class HealthEndpointTests(DatabaseFixture fixture) : IClassFixture<Databa
         using HttpResponseMessage response = await client.GetAsync("/health", Token);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("Healthy", await response.Content.ReadAsStringAsync(Token));
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token));
+        Assert.Equal("Healthy", body.RootElement.GetProperty("status").GetString());
+        JsonElement check = Assert.Single(body.RootElement.GetProperty("checks").EnumerateArray());
+        Assert.Equal("database", check.GetProperty("name").GetString());
+        Assert.Equal("Healthy", check.GetProperty("status").GetString());
     }
 
     [Fact]
@@ -31,6 +36,15 @@ public class HealthEndpointTests(DatabaseFixture fixture) : IClassFixture<Databa
         using HttpResponseMessage response = await client.GetAsync("/health", Token);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-        Assert.Equal("Unhealthy", await response.Content.ReadAsStringAsync(Token));
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+        string text = await response.Content.ReadAsStringAsync(Token);
+        using JsonDocument body = JsonDocument.Parse(text);
+        Assert.Equal("Unhealthy", body.RootElement.GetProperty("status").GetString());
+        JsonElement check = Assert.Single(body.RootElement.GetProperty("checks").EnumerateArray());
+        Assert.Equal("database", check.GetProperty("name").GetString());
+        Assert.Equal("Unhealthy", check.GetProperty("status").GetString());
+        Assert.DoesNotContain("28P01", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("authentication", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("password", text, StringComparison.OrdinalIgnoreCase);
     }
 }
