@@ -41,6 +41,11 @@ dotnet_sort_system_directives_first = true
 dotnet_diagnostic.IDE0005.severity = warning
 file_header_template = unset
 
+# Switches over enums must name every value, so a new ErrorType can't miss its HTTP mapping (see ErrorTypeMapping).
+# CS8524 (unnamed values, e.g. (ErrorType)3) would force a throwing discard arm, so it is off.
+dotnet_diagnostic.CS8509.severity = error
+dotnet_diagnostic.CS8524.severity = none
+
 # this. and Me. preferences
 dotnet_style_qualification_for_event = false:silent
 dotnet_style_qualification_for_field = false:silent

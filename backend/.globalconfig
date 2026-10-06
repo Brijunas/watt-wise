@@ -1,0 +1,14 @@
+# Analyzer settings that .editorconfig can't carry: the Mediator source generator reports its
+# diagnostics without a source location, and .editorconfig severities only apply to diagnostics
+# that have one. A .globalconfig applies to the whole compilation.
+is_global = true
+
+# A message without a handler, or with an invalid or duplicate handler, would only fail at runtime
+# (or be skipped silently), so these break the build.
+# MSG0001 multiple handlers, MSG0002 and MSG0003 invalid handler, MSG0004 invalid message,
+# MSG0005 message without handler.
+dotnet_diagnostic.MSG0001.severity = error
+dotnet_diagnostic.MSG0002.severity = error
+dotnet_diagnostic.MSG0003.severity = error
+dotnet_diagnostic.MSG0004.severity = error
+dotnet_diagnostic.MSG0005.severity = error
