@@ -43,11 +43,23 @@ public sealed class MediatorPipelineTests : IDisposable
     [Fact]
     public async Task Validation_collects_every_message_for_a_property()
     {
-        Result<string> result = await _host.Mediator.Send(new EchoQuery(new string('x', 21)), Token);
+        Result<string> result = await _host.Mediator.Send(new EchoQuery(new string('x', 20) + "1"), Token);
 
         Assert.True(result.IsFailure);
         Assert.NotNull(result.Error.FieldErrors);
-        Assert.Single(result.Error.FieldErrors["name"]);
+        Assert.Equal(2, result.Error.FieldErrors["name"].Length);
+        Assert.Contains("'Name' must not contain digits.", result.Error.FieldErrors["name"]);
+    }
+
+    [Fact]
+    public async Task Property_names_starting_with_an_acronym_are_camel_cased_like_system_text_json()
+    {
+        Result<string> result = await _host.Mediator.Send(new AcronymQuery(null, null), Token);
+
+        Assert.True(result.IsFailure);
+        Assert.NotNull(result.Error.FieldErrors);
+        Assert.Equal(["ipAddress", "url"], result.Error.FieldErrors.Keys.Order().ToArray());
+        Assert.Equal(0, _host.Recorder.Calls);
     }
 
     [Fact]

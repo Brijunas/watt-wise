@@ -23,6 +23,7 @@ public sealed class TestErrorsEndpointModule : IEndpointModule
         group.MapGet("/ok", () => Ok());
         group.MapGet("/exception", () => ThrowException());
         group.MapGet("/domain", () => ThrowDomainException());
+        group.MapGet("/status/{code:int}", (int code) => Results.StatusCode(code));
         group.MapGet("/binding", (int number) => TypedResults.Ok(number));
     }
 

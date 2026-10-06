@@ -20,14 +20,14 @@ Why:
 
 ## Where each part lives
 
-| Layer       | Types                                                                                       | Job                                                                                 |
-| ----------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Domain      | `Exceptions/DomainException` (abstract, carries a `Code`)                                   | Base class for business-rule violations                                             |
-| Application | `Results/Result<T>`, `Results/Error`, `Results/ErrorType`, `Results/IFallibleResult<TSelf>` | The failure vocabulary every handler returns                                        |
-| Application | `Behaviors/ValidationBehavior`, `Behaviors/LoggingBehavior`                                 | Turn FluentValidation failures into a `Validation` error; log the outcome           |
-| Api         | `ErrorHandling/ErrorTypeMapping`                                                            | The single `ErrorType` → status code table                                          |
-| Api         | `ErrorHandling/ResultHttpExtensions`                                                        | `Result<T>.ToHttpResult()`: `200 OK` with the value, or the error as ProblemDetails |
-| Api         | `ErrorHandling/ProblemDetailsCustomization`                                                 | Fills `type`, `code` and `traceId` on every ProblemDetails, whatever produced it    |
+| Layer       | Types                                                                                       | Job                                                                                                                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain      | `Exceptions/DomainException` (abstract, carries a `Code`)                                   | Base class for business-rule violations                                                                                                                                             |
+| Application | `Results/Result<T>`, `Results/Error`, `Results/ErrorType`, `Results/IFallibleResult<TSelf>` | The failure vocabulary every handler returns                                                                                                                                        |
+| Application | `Behaviors/ValidationBehavior`, `Behaviors/LoggingBehavior`                                 | Turn FluentValidation failures into a `Validation` error; log the outcome                                                                                                           |
+| Api         | `ErrorHandling/ErrorTypeMapping`                                                            | The single `ErrorType` → status code table                                                                                                                                          |
+| Api         | `ErrorHandling/ResultHttpExtensions`                                                        | `Result<T>.ToHttpResult()`: `200 OK` with the value, or the error as ProblemDetails; typed as `Results<Ok<T>, ProblemHttpResult, ValidationProblem>` so OpenAPI sees the 200 schema |
+| Api         | `ErrorHandling/ProblemDetailsCustomization`                                                 | Adds the `code` extension to any ProblemDetails that lacks one; the framework already sets `type` and `traceId`                                                                     |
 
 `Program.cs` wires `AddProblemDetails` with the customization, `UseExceptionHandler()` and `UseStatusCodePages()`. There is no custom `IExceptionHandler`: only unexpected exceptions reach the middleware, and its default ProblemDetails response is what we want. That also keeps their logs and metrics, which .NET 10+ suppresses for exceptions an `IExceptionHandler` reports as handled.
 
@@ -40,21 +40,21 @@ Why:
 | `Unauthorized` | 401    | `Error.Unauthorized(code, description)` | chosen by the handler |
 | (exception)    | 500    | none: thrown                            | `General.Unexpected`  |
 
-Further categories (Conflict, Forbidden, …) are added by the story that first needs them; see below. `ErrorTypeMapping` is a `switch` with no fallback arm and `CS8509` is a build error ([conventions.md](conventions.md#code-style)), so a new `ErrorType` value doesn't compile until it has a status code.
+Further categories (Conflict, Forbidden, …) are added by the story that first needs them; see below. `ErrorTypeMapping` is a `switch` with no fallback arm and `CS8509` is a build error ([conventions.md](conventions.md#code-style)), so a new `ErrorType` value doesn't compile until it has a status code. `Validation` is always 400: it is written as `ValidationProblem`, which carries the field errors and can't take another status.
 
 ## The contract clients see
 
 Every API error response is `application/problem+json` following [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html):
 
-| Member    | Content                                                                                            |
-| --------- | -------------------------------------------------------------------------------------------------- |
-| `type`    | Link to the status code's section of RFC 9110                                                      |
-| `title`   | The status's standard phrase (`Not Found`), or the framework's validation title                    |
-| `status`  | HTTP status code                                                                                   |
-| `detail`  | The error's description; never exception messages or stack traces                                  |
-| `code`    | Machine-readable code (`Area.Reason`); `General.<Status>` when the framework produced the response |
-| `traceId` | The request's trace id, to find its logs                                                           |
-| `errors`  | Validation only: camelCase field path → messages                                                   |
+| Member    | Content                                                                                                                                                            |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `type`    | Link to the status code's section of RFC 9110                                                                                                                      |
+| `title`   | The status's standard phrase (`Not Found`), or the framework's validation title                                                                                    |
+| `status`  | HTTP status code                                                                                                                                                   |
+| `detail`  | The error's description; never exception messages or stack traces                                                                                                  |
+| `code`    | Machine-readable code (`Area.Reason`); `General.<ReasonPhrase>` (e.g. `General.NotFound`) when the framework produced the response, `General.Unexpected` for a 500 |
+| `traceId` | The request's trace id, to find its logs                                                                                                                           |
+| `errors`  | Validation only: camelCase field path → messages                                                                                                                   |
 
 ```json
 {
@@ -105,5 +105,5 @@ Responses with no body of their own (routing 404, 405, binding failures) get Pro
 **A new use case**
 
 1. Application: request `record` implementing `IQuery<Result<T>>` or `ICommand<Result<T>>`, its handler, and a validator if it takes input.
-2. Api: an endpoint in an `IEndpointModule` that sends the request and returns `result.ToHttpResult()`, with `.ProducesProblem(...)` for each status it can return.
+2. Api: an endpoint in an `IEndpointModule` that sends the request and returns `result.ToHttpResult()` (its return type documents the 200 response), with `.ProducesProblem(...)` for each other status it can return.
 3. Tests: handler and validator unit tests; one functional test through `ApiFactory` for the happy path and one error path.

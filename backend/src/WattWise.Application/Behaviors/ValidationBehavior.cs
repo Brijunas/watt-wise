@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using FluentValidation;
 using FluentValidation.Results;
 
@@ -46,13 +48,6 @@ public sealed class ValidationBehavior<TMessage, TResponse>(IEnumerable<IValidat
 
     private static string ToCamelCasePath(string propertyName)
     {
-        return string.Join('.', propertyName.Split('.').Select(ToCamelCase));
-    }
-
-    private static string ToCamelCase(string segment)
-    {
-        return segment.Length == 0 || char.IsLower(segment[0])
-            ? segment
-            : char.ToLowerInvariant(segment[0]) + segment[1..];
+        return string.Join('.', propertyName.Split('.').Select(segment => JsonNamingPolicy.CamelCase.ConvertName(segment)));
     }
 }
