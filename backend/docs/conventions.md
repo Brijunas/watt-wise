@@ -34,7 +34,7 @@ Central package management: `backend/Directory.Packages.props` sets `ManagePacka
 ## Code style
 
 - **`.editorconfig`:** `backend/.editorconfig` comes from `dotnet new editorconfig`. It doesn't set `root = true`, so it layers on top of the repo-root `.editorconfig` (UTF-8 without BOM, LF, final newline, trimmed whitespace). It adds 4-space indentation for `*.cs`, keeps XML and project files at 2 spaces, and holds the C# code style and naming rules.
-- **`dotnet format`** applies `.editorconfig` (whitespace, code style, analyzers). The solution must pass `dotnet format --verify-no-changes`. From S2.10, the pre-commit hook runs it on staged `.cs` files.
+- **`dotnet format`** applies `.editorconfig` (whitespace, code style, analyzers). The solution must pass `dotnet format --verify-no-changes`. The pre-commit hook also runs it on staged `.cs` files; see "What happens when you commit" in the root [development.md](../../docs/development.md#what-happens-when-you-commit).
 - **One type per file:** each class, record, struct, interface or enum goes in its own file named after it, as the .NET guidelines recommend. Only nested private types may share their parent's file.
 - **Unused usings:** IDE0005 is a warning in `.editorconfig`, so `dotnet format --verify-no-changes` and the IDE report unused `using` directives. The build doesn't: on build IDE0005 needs `GenerateDocumentationFile`, so `Directory.Build.props` silences the compiler's `EnableGenerateDocumentationFile` hint instead. For Claude Code, the `backend-unused-usings` hook in `.claude/hooks/` checks each `.cs` file right after it is edited.
 - **Build-breaking diagnostics:** most rules are warnings, but a few are set to `error` in `.editorconfig` because they guard correctness:

@@ -113,6 +113,6 @@ watt-wise/
   - ESLint: typescript-eslint `strictTypeChecked` + `stylisticTypeChecked`, `@eslint-react` (`eslint-plugin-react` doesn't support ESLint 10), `eslint-plugin-react-hooks`, and `eslint-config-prettier` last.
   - Prettier: single quotes, no semicolons, 100-column lines, otherwise defaults.
   - Backend: `.editorconfig`, `dotnet format` and the built-in .NET analyzers; see [backend/docs/conventions.md](../backend/docs/conventions.md).
-  - One Husky pre-commit hook first runs a Betterleaks secret scan on the staged changes, then a single root `lint-staged.config.js` that lints and formats staged files (JS/TS now, C# from S2.10).
+  - One Husky pre-commit hook first runs a Betterleaks secret scan on the staged changes, then a single root `lint-staged.config.js` that lints and formats staged files (JS/TS and C#).
   - Claude Code runs Prettier on every file it writes or edits (a `PostToolUse` hook in `.claude/settings.json`).
   - All of it is enforced again in CI.

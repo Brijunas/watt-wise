@@ -61,6 +61,7 @@ The pre-commit hook (`.husky/pre-commit`) runs two checks on the staged changes.
    - Don't bypass the hook with `git commit --no-verify`, and don't add an exception without agreeing on it first.
    - If the hook says `betterleaks not found`, mise isn't active in the shell git runs in, or you haven't run `mise install`.
 2. **Lint and format** (lint-staged, configured in `lint-staged.config.js`). ESLint `--fix` and Prettier run on the staged files; fixes are added to the commit automatically. Any remaining lint error stops the commit.
+   - Staged `.cs` files under `backend/` go through `dotnet format` twice: once to fix what it can (added to the commit like the ESLint fixes), then with `--verify-no-changes`, so any issue it can't fix (an analyzer warning such as CA2013) stops the commit and is printed. Generated migrations are skipped. This adds about 15–20 seconds to a commit that touches C#.
 
 ## Troubleshooting
 
