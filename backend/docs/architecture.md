@@ -1,6 +1,6 @@
 # Backend architecture
 
-How the Watt-Wise backend is built inside. The system-level picture (applications, API contract, data model, hosting, secrets) is in the root [technical.md](../../docs/technical.md); this document covers only what happens inside `backend/`. Testing is in [testing.md](testing.md), build settings and code style in [conventions.md](conventions.md), failures and the error contract in [error-handling.md](error-handling.md), logs, traces and metrics in [observability.md](observability.md).
+How the Watt-Wise backend is built inside. The system-level picture (applications, API contract, data model, hosting, secrets) is in the root [technical.md](../../docs/technical.md); this document covers only what happens inside `backend/`. Testing is in [testing.md](testing.md), build settings and code style in [conventions.md](conventions.md), failures and the error contract in [error-handling.md](error-handling.md), logs, traces and metrics in [observability.md](observability.md), the Jobs host and Hangfire in [jobs.md](jobs.md).
 
 ## Stack
 
@@ -54,9 +54,9 @@ No layer references a host; MSBuild already rejects that as a project cycle. Eac
 
 Three hosts wire the layers together and are deployed separately:
 
-- **WattWise.Api** runs the Minimal API only. It enqueues jobs through the shared Hangfire storage when a use case needs one, but it never runs a Hangfire server.
-- **WattWise.Jobs** runs the Hangfire server: it registers recurring jobs, executes them and serves the Hangfire dashboard. Job implementations are Application use cases; the job classes in this project only call them. It uses the Web SDK because it serves the dashboard over HTTP.
-- **WattWise.Cli** is a console app built with System.CommandLine on the .NET Generic Host (configuration, DI and logging like the other hosts). It runs one command and exits with a non-zero code on failure. `migrate` applies pending EF Core migrations through `DatabaseMigrator` (Infrastructure). It is the only host that changes the schema, and it runs as a deploy step before Api and Jobs start. Later commands add one-off scripts and maintenance tasks.
+- **WattWise.Api** runs the Minimal API only. It never touches Hangfire: it doesn't enqueue jobs and its `api` role has no access to the `hangfire` schema.
+- **WattWise.Jobs** runs the Hangfire server, the only process that uses Hangfire: it registers recurring jobs, executes them and serves the Hangfire dashboard. Job implementations are Application use cases; the job classes in this project only call them. It uses the Web SDK because it serves the dashboard over HTTP. Details in [jobs.md](jobs.md).
+- **WattWise.Cli** is a console app built with System.CommandLine on the .NET Generic Host (configuration, DI and logging like the other hosts). It runs one command and exits with a non-zero code on failure, or 130 when cancelled (Ctrl+C or SIGTERM). `migrate` brings every schema up to date (EF Core migrations, Hangfire's tables) through `DatabaseMigrator` (Infrastructure). It is the only host that changes the schema, and it runs as a deploy step before Api and Jobs start. Later commands add one-off scripts and maintenance tasks.
 
 ## Request handling
 
@@ -104,18 +104,24 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
   - `AppDbContextFactory`, the design-time factory for `dotnet ef`;
   - the migrations in `Migrations/`.
 - `AddInfrastructure()` registers `AppDbContext`. The connection string is built from the `Database` section (`Host`, `Port`, `Name`, `Username`, `Password`, `MaxPoolSize`, optional `Options`) through the validated `DatabaseSettings` options. The settings are read from the built configuration, so sources added after registration (test overrides) count, and `ValidateOnStart` stops the host at startup listing any missing key. `DatabaseSettings` is a class, not a record, so formatting it never prints the password.
-- `MaxPoolSize` is the Npgsql pool limit. It isn't secret, so each host sets it in its `appsettings.json`, below its role's connection limit ([postgres.md](../../deploy/docs/postgres.md#hardening)): Api 25, Cli 2.
+- `MaxPoolSize` is the Npgsql pool limit. It isn't secret, so each host sets it in its `appsettings.json`, below its role's connection limit ([postgres.md](../../deploy/docs/postgres.md#hardening)): Api 25, Jobs 15, Cli 2.
 - Each host connects as its own database role (`api`, `hangfire`, `cli`).
 - Each host's `appsettings.json` lists every `Database` key with an empty value, so the file shows where each secret lands. The values come from the host's committed `.env.<environment>` file (e.g. `WattWise.Api/.env.development`), which `op run` resolves at start; blank values count as missing. That file also sets the .NET environment name (`launchSettings.json` doesn't), so starting without it runs as Production and fails on the missing settings. The design-time factory reads the same environment variables. `migrations add` works without them, and commands that connect run through `op run --env-file backend/src/WattWise.Cli/.env.development`. No connection data is in the repo.
-- `DatabaseMigrator` (in `Persistence/`) is the one migrate code path: `WattWise.Cli migrate` runs it, and so does the integration-test fixture ([testing.md](testing.md#shared-postgresql-fixture)), so tests migrate exactly like a deployment.
+- `DatabaseMigrator` (in `Persistence/Schema/`) is the one migrate code path: `WattWise.Cli migrate` runs it, and so does the integration-test fixture ([testing.md](testing.md#shared-postgresql-fixture)), so tests migrate exactly like a deployment. It only runs the registered schema steps in order; each step owns one schema:
+  - `ISchemaStep` has a `Name` and an idempotent `ApplyAsync`. Every step runs on every migrate.
+  - `EfCoreMigrationsStep` applies pending EF Core migrations (the `app` schema), then `HangfireStorageStep` installs or upgrades Hangfire's tables (the `hangfire` schema). Both use the migrating connection, so everything they create belongs to `owner`.
+  - `SchemaServiceCollectionExtensions.AddSchemaSteps()` registers them; the registration order is the run order.
+  - `DatabaseSchemas` holds every schema name (`App`, `Hangfire`); code never spells one out.
+  - To add or change a schema, add or change its step and register it. `DatabaseMigrator`, the Cli and the fixture stay as they are.
 - Migrations are applied only by `WattWise.Cli migrate`, in every environment, before Api and Jobs start. Its connection switches to the `owner` role (`Database:Options` = `-c role=owner`, from the `postgres-cli` item), so the objects it creates belong to `owner`. It runs migrations with no command timeout, since index builds and table rewrites can take long. Api and Jobs never migrate, and their roles have no DDL rights.
 
 ## Background jobs
 
-- Hangfire with PostgreSQL storage in the dedicated `hangfire` schema, shared by Api and Jobs.
-- Both run Hangfire with `PrepareSchemaIfNecessary = false`. From S2.9, `WattWise.Cli migrate` installs and upgrades Hangfire's tables (`PostgreSqlObjectsInstaller.Install`), so the `hangfire` role needs no DDL rights.
+- Hangfire with PostgreSQL storage in the dedicated `hangfire` schema, used only by the Jobs host.
+- Jobs runs Hangfire with `PrepareSchemaIfNecessary = false`. `WattWise.Cli migrate` installs and upgrades Hangfire's tables (`HangfireStorageStep`, see [Persistence](#persistence)), so the `hangfire` role needs no DDL rights.
 - Recurring cron jobs: spot price ingestion and catalog refresh, with retries.
-- The dashboard is served by the Jobs host and restricted to admins.
+- The dashboard is served by the Jobs host at `/hangfire`; admin-only access comes in E4.
+- Storage options, the job-class template and how to add a job are in [jobs.md](jobs.md).
 
 ## Authentication
 

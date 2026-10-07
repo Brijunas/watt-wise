@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using WattWise.Infrastructure.Persistence;
+using WattWise.Infrastructure.Persistence.Schema;
 
 namespace WattWise.Infrastructure;
 
@@ -23,7 +24,7 @@ public static class DependencyInjection
             DatabaseSettings settings = serviceProvider.GetRequiredService<IOptions<DatabaseSettings>>().Value;
             AppDbContextOptions.Configure(options, settings.ToConnectionString());
         });
-        services.AddScoped<DatabaseMigrator>();
+        services.AddSchemaSteps();
         return services;
     }
 }

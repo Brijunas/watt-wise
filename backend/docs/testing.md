@@ -28,7 +28,7 @@ Rules of thumb:
 | `WattWise.Infrastructure.IntegrationTests` | Integration | Persistence, migrations and external adapters against PostgreSQL.                                                                                           |
 | `WattWise.Api.IntegrationTests`            | Functional  | Endpoints and auth through `WebApplicationFactory`, ProblemDetails mapping.                                                                                 |
 | `WattWise.Jobs.IntegrationTests`           | Functional  | Each Hangfire job end to end against PostgreSQL with stubbed external sources: expected rows written, draft plans produced, retries and idempotent re-runs. |
-| `WattWise.Testing`                         | Library     | Not a test project: the shared PostgreSQL fixture the three integration projects reference.                                                                 |
+| `WattWise.Testing`                         | Library     | Not a test project: the shared PostgreSQL fixture and `Poll` helper the three integration projects reference.                                               |
 
 ## Shared PostgreSQL fixture
 
@@ -44,6 +44,7 @@ Writing an integration test:
 
 - Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `hangfire` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
 - Api tests start the host through `ApiFactory` (a `WebApplicationFactory<Program>`) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
+- Jobs tests start the Jobs host the same way through `JobsFactory`, with the clone's `hangfire` settings, so the real Hangfire server runs against the clone. To test a job, trigger it through `IRecurringJobManager` and wait with `Poll.UntilAsync` until Hangfire's monitoring API lists it as succeeded ([jobs.md](jobs.md#testing-a-job)).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
 
 ## Testing the pipeline and error mapping

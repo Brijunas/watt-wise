@@ -1,14 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace WattWise.Infrastructure.Persistence;
+namespace WattWise.Infrastructure.Persistence.Schema;
 
-/// <summary>
-/// The single migrate code path, used by <c>WattWise.Cli migrate</c> and the integration-test fixture.
-/// </summary>
-public sealed class DatabaseMigrator(AppDbContext db, ILogger<DatabaseMigrator> logger)
+/// <summary>Applies pending EF Core migrations, which own the <see cref="DatabaseSchemas.App"/> schema.</summary>
+internal sealed class EfCoreMigrationsStep(AppDbContext db, ILogger<EfCoreMigrationsStep> logger) : ISchemaStep
 {
-    public async Task<IReadOnlyList<string>> MigrateAsync(CancellationToken cancellationToken)
+    public string Name => "ef-core-migrations";
+
+    public async Task ApplyAsync(CancellationToken cancellationToken)
     {
         // No command timeout: index builds and table rewrites can run long, and the cli role
         // has no statement_timeout either. Ctrl+C still cancels.
@@ -18,12 +18,11 @@ public sealed class DatabaseMigrator(AppDbContext db, ILogger<DatabaseMigrator> 
         if (pending.Length == 0)
         {
             logger.LogInformation("No pending migrations.");
-            return [];
+            return;
         }
 
         logger.LogInformation("Applying {Count} pending migration(s): {Migrations}", pending.Length, string.Join(", ", pending));
         await db.Database.MigrateAsync(cancellationToken);
         logger.LogInformation("Applied: {Migrations}", string.Join(", ", pending));
-        return pending;
     }
 }

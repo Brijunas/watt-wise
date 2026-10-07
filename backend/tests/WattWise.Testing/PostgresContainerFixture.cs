@@ -10,7 +10,7 @@ using Npgsql;
 using Testcontainers.PostgreSql;
 
 using WattWise.Infrastructure;
-using WattWise.Infrastructure.Persistence;
+using WattWise.Infrastructure.Persistence.Schema;
 
 namespace WattWise.Testing;
 
@@ -45,21 +45,23 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        await StartContainerAsync();
-        await RunBootstrapAsync();
-        await SetPasswordsAsync();
-        await MigrateAsync();
+        // IAsyncLifetime passes no token; the test run's token cancels setup when the run is aborted.
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        await StartContainerAsync(cancellationToken);
+        await RunBootstrapAsync(cancellationToken);
+        await SetPasswordsAsync(cancellationToken);
+        await MigrateAsync(cancellationToken);
     }
 
     // Parallel test assemblies can take the chosen port first, so a failed start is retried on another.
-    private async Task StartContainerAsync()
+    private async Task StartContainerAsync(CancellationToken cancellationToken)
     {
         for (int attempt = 1; ; attempt++)
         {
             container = BuildContainer(FreeHostPort.Pick());
             try
             {
-                await container.StartAsync();
+                await container.StartAsync(cancellationToken);
                 return;
             }
             catch (Exception) when (attempt < StartAttempts)
@@ -85,6 +87,7 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
             })
             .Build();
 
+    // Cleanup takes no token: it must finish even when the run was cancelled.
     public async ValueTask DisposeAsync()
     {
         createLock.Dispose();
@@ -92,17 +95,17 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
     }
 
     /// <summary>Clones the migrated template into a new database owned by <c>owner</c>.</summary>
-    public async Task<TestDatabase> CreateDatabaseAsync()
+    public async Task<TestDatabase> CreateDatabaseAsync(CancellationToken cancellationToken)
     {
         string name = $"wattwise_{Guid.NewGuid():N}";
-        await createLock.WaitAsync();
+        await createLock.WaitAsync(cancellationToken);
         try
         {
-            await using NpgsqlConnection connection = await OpenAdminConnectionAsync();
-            await ExecuteAsync(connection, $"CREATE DATABASE \"{name}\" TEMPLATE {TemplateDatabase} OWNER \"owner\"");
+            await using NpgsqlConnection connection = await OpenAdminConnectionAsync(cancellationToken);
+            await ExecuteAsync(connection, $"CREATE DATABASE \"{name}\" TEMPLATE {TemplateDatabase} OWNER \"owner\"", cancellationToken);
             // Database-level ACLs are not copied by TEMPLATE, so the bootstrap's are applied again.
-            await ExecuteAsync(connection, $"REVOKE ALL ON DATABASE \"{name}\" FROM PUBLIC");
-            await ExecuteAsync(connection, $"GRANT CONNECT ON DATABASE \"{name}\" TO cli, api, hangfire, backup");
+            await ExecuteAsync(connection, $"REVOKE ALL ON DATABASE \"{name}\" FROM PUBLIC", cancellationToken);
+            await ExecuteAsync(connection, $"GRANT CONNECT ON DATABASE \"{name}\" TO cli, api, hangfire, backup", cancellationToken);
         }
         finally
         {
@@ -122,29 +125,30 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
         Pooling = false,
     }.ConnectionString;
 
-    private async Task RunBootstrapAsync()
+    private async Task RunBootstrapAsync(CancellationToken cancellationToken)
     {
         string script = Path.Combine(AppContext.BaseDirectory, "bootstrap.sql");
-        await container.CopyAsync(script, ContainerScriptDirectory);
+        await container.CopyAsync(script, ContainerScriptDirectory, ct: cancellationToken);
 
         DotNet.Testcontainers.Containers.ExecResult result = await container.ExecAsync(
-            ["psql", "-v", "ON_ERROR_STOP=1", "-U", AdminUser, "-d", "postgres", "-f", ContainerScriptPath]);
+            ["psql", "-v", "ON_ERROR_STOP=1", "-U", AdminUser, "-d", "postgres", "-f", ContainerScriptPath],
+            cancellationToken);
         if (result.ExitCode != 0)
         {
             throw new InvalidOperationException($"bootstrap.sql failed with exit code {result.ExitCode}: {result.Stderr}");
         }
     }
 
-    private async Task SetPasswordsAsync()
+    private async Task SetPasswordsAsync(CancellationToken cancellationToken)
     {
-        await using NpgsqlConnection connection = await OpenAdminConnectionAsync();
+        await using NpgsqlConnection connection = await OpenAdminConnectionAsync(cancellationToken);
         foreach ((DatabaseRole role, string password) in passwords)
         {
-            await ExecuteAsync(connection, $"ALTER ROLE {role.ToString().ToLowerInvariant()} PASSWORD '{password}'");
+            await ExecuteAsync(connection, $"ALTER ROLE {role.ToString().ToLowerInvariant()} PASSWORD '{password}'", cancellationToken);
         }
     }
 
-    private async Task MigrateAsync()
+    private async Task MigrateAsync(CancellationToken cancellationToken)
     {
         TestDatabase template = new(TemplateDatabase, container.Hostname, container.GetMappedPublicPort(5432), AdminConnectionString, passwords);
         IConfiguration configuration = new ConfigurationBuilder()
@@ -158,22 +162,23 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
         await using (ServiceProvider provider = services.BuildServiceProvider())
         {
             await using AsyncServiceScope scope = provider.CreateAsyncScope();
-            await scope.ServiceProvider.GetRequiredService<DatabaseMigrator>().MigrateAsync(CancellationToken.None);
+            await scope.ServiceProvider.GetRequiredService<DatabaseMigrator>().MigrateAsync(cancellationToken);
         }
 
-        await DisconnectSessionsAsync(TemplateDatabase);
+        await DisconnectSessionsAsync(TemplateDatabase, cancellationToken);
     }
 
     // A template must have no sessions. EF Core keeps its own Npgsql data source alive past the
     // service provider, and ClearAllPools doesn't reach it, so the idle connection is ended server-side.
-    private async Task DisconnectSessionsAsync(string database)
+    private async Task DisconnectSessionsAsync(string database, CancellationToken cancellationToken)
     {
-        await using NpgsqlConnection connection = await OpenAdminConnectionAsync();
+        await using NpgsqlConnection connection = await OpenAdminConnectionAsync(cancellationToken);
         await using NpgsqlCommand command = new(
             "SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE datname = @name AND pid <> pg_backend_pid()",
             connection);
         command.Parameters.AddWithValue("name", database);
-        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10));
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(10));
         // Termination is signalled, not waited for, so repeat until no session is left.
         while ((long)(await command.ExecuteScalarAsync(timeout.Token))! > 0)
         {
@@ -181,16 +186,16 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
         }
     }
 
-    private async Task<NpgsqlConnection> OpenAdminConnectionAsync()
+    private async Task<NpgsqlConnection> OpenAdminConnectionAsync(CancellationToken cancellationToken)
     {
         NpgsqlConnection connection = new(AdminConnectionString);
-        await connection.OpenAsync();
+        await connection.OpenAsync(cancellationToken);
         return connection;
     }
 
-    private static async Task ExecuteAsync(NpgsqlConnection connection, string sql)
+    private static async Task ExecuteAsync(NpgsqlConnection connection, string sql, CancellationToken cancellationToken)
     {
         await using NpgsqlCommand command = new(sql, connection);
-        await command.ExecuteNonQueryAsync();
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 }

@@ -12,8 +12,10 @@ public sealed class DatabaseFixture(PostgresContainerFixture postgres) : IAsyncL
 
     public TestDatabase Database => database ?? throw new InvalidOperationException("The fixture is not initialized.");
 
-    public async ValueTask InitializeAsync() => database = await postgres.CreateDatabaseAsync();
+    public async ValueTask InitializeAsync() =>
+        database = await postgres.CreateDatabaseAsync(TestContext.Current.CancellationToken);
 
+    // The drop takes no token: cleanup must finish even when the run was cancelled.
     public async ValueTask DisposeAsync()
     {
         if (database is not null)

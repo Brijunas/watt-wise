@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using WattWise.Infrastructure.Persistence;
+using WattWise.Infrastructure.Persistence.Schema;
 
 namespace WattWise.Cli.Commands;
 
@@ -27,7 +27,7 @@ internal static class MigrateCommand
         string? settingsError = CliHost.ValidateSettings(host);
         if (settingsError is not null)
         {
-            await Console.Error.WriteLineAsync(settingsError);
+            await Console.Error.WriteLineAsync(settingsError.AsMemory(), cancellationToken);
             return 1;
         }
 
@@ -40,6 +40,14 @@ internal static class MigrateCommand
             await using AsyncServiceScope scope = host.Services.CreateAsyncScope();
             await scope.ServiceProvider.GetRequiredService<DatabaseMigrator>().MigrateAsync(cancellationToken);
             return 0;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Ctrl+C or SIGTERM: not a failure of the migration itself. Each EF Core migration runs in
+            // its own transaction, so the ones applied before the cancel stay applied.
+            activity?.SetStatus(ActivityStatusCode.Error, "Migration cancelled.");
+            logger.LogWarning("Migration cancelled.");
+            return 130;
         }
         catch (Exception ex)
         {

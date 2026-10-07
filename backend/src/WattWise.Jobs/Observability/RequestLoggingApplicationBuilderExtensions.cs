@@ -1,11 +1,11 @@
 using Serilog;
 
-namespace WattWise.Api.Observability;
+namespace WattWise.Jobs.Observability;
 
 public static class RequestLoggingApplicationBuilderExtensions
 {
     /// <summary>Logs one structured line per HTTP request, at the level <see cref="RequestLogLevel"/> picks.</summary>
-    public static WebApplication UseApiRequestLogging(this WebApplication app)
+    public static WebApplication UseJobsRequestLogging(this WebApplication app)
     {
         app.UseSerilogRequestLogging(options =>
         {

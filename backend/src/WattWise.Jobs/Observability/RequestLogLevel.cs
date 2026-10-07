@@ -1,6 +1,6 @@
 using Serilog.Events;
 
-namespace WattWise.Api.Observability;
+namespace WattWise.Jobs.Observability;
 
 /// <summary>Chooses the level of the one log line written per HTTP request.</summary>
 public static class RequestLogLevel

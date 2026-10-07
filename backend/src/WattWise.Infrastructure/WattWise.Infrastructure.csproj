@@ -2,8 +2,11 @@
 
   <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" NoWarn="NU1608" />
+    <PackageReference Include="Hangfire.PostgreSql" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+    <!-- Direct reference lifts the vulnerable 11.0.1 that Hangfire.Core pulls in transitively (NU1903). -->
+    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" />
     <PackageReference Include="Npgsql.OpenTelemetry" />
