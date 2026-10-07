@@ -101,10 +101,16 @@ One-time setup of the Development PostgreSQL. The roles and why they exist are i
    \password backup
    ```
 
-5. Create the tables. The Cli takes every connection field (host, port, database, user, password, options) from the `postgres-cli` item:
+5. Create the tables, both the app's and Hangfire's. On a machine set up before S2.9, run this again to add Hangfire's. The Cli takes every connection field (host, port, database, user, password, options) from the `postgres-cli` item:
 
    ```bash
    op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- migrate
+   ```
+
+6. Optionally, start the Jobs host to check Hangfire. It connects as `hangfire` from the `postgres-hangfire` item and listens on the `jobs` item's `url` (http://localhost:5063 today); the dashboard is at `/hangfire`:
+
+   ```bash
+   op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs
    ```
 
 pgAdmin listens on the address and port in the `pgadmin` item (http://127.0.0.1:5050 today). The first time you open the server, it asks for the `postgres-admin` password.

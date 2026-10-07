@@ -10,7 +10,7 @@ Every host calls `builder.AddObservability("<service name>")` (`WattWise.Infrast
 | --------------- | --------------- | -------------------------------------------------------------- |
 | `WattWise.Api`  | `wattwise-api`  | Request logging (`UseApiRequestLogging`, `Api/Observability/`) |
 | `WattWise.Cli`  | `wattwise-cli`  | A root span per command ([Cli](#cli))                          |
-| `WattWise.Jobs` | `wattwise-jobs` | From S2.9                                                      |
+| `WattWise.Jobs` | `wattwise-jobs` | Request logging (`UseJobsRequestLogging`, a copy of the Api's) |
 
 `AddObservability` sets up the following.
 
@@ -56,15 +56,16 @@ Development reads the same JSON as production. To browse it more comfortably, us
 
 Each host's `appsettings.json` holds a `Serilog` section with `MinimumLevel.Default` set to Information. The `MinimumLevel.Override` entries hold back framework noise:
 
-| Category                                   | Api     | Cli         |
-| ------------------------------------------ | ------- | ----------- |
-| `Microsoft.AspNetCore`                     | Warning | not used    |
-| `Microsoft.EntityFrameworkCore`            | Warning | Warning     |
-| `Microsoft.EntityFrameworkCore.Migrations` | Warning | Information |
-| `Npgsql`                                   | Warning | Warning     |
-| `System.Net.Http.HttpClient`               | Warning | not used    |
+| Category                                   | Api      | Jobs    | Cli         |
+| ------------------------------------------ | -------- | ------- | ----------- |
+| `Microsoft.AspNetCore`                     | Warning  | Warning | not used    |
+| `Microsoft.EntityFrameworkCore`            | Warning  | Warning | Warning     |
+| `Microsoft.EntityFrameworkCore.Migrations` | Warning  | Warning | Information |
+| `Npgsql`                                   | Warning  | Warning | Warning     |
+| `System.Net.Http.HttpClient`               | Warning  | Warning | not used    |
+| `Hangfire`                                 | not used | Warning | not used    |
 
-The Cli keeps migration messages at Information, so a deployment log shows which migrations ran. `Microsoft.Hosting.Lifetime` stays at Information for the start and stop lines.
+The Cli keeps migration messages at Information, so a deployment log shows which migrations ran. Jobs holds Hangfire's own server and worker chatter at Warning; a job's own log lines still show at Information. `Microsoft.Hosting.Lifetime` stays at Information for the start and stop lines.
 
 ## One log line per request
 
