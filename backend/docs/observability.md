@@ -80,13 +80,15 @@ HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed} ms
   - Error, when an exception escaped the pipeline (which shouldn't happen behind the exception handler);
   - Warning, for any 5xx status;
   - Information otherwise.
-  - A 5xx is Warning rather than Serilog's default Error because the exception handler already logs the exception once at Error, with its stack trace. So one unexpected failure means one Error event plus one Warning request line.
+  - A 5xx is Warning rather than Serilog's default Error because the Api's exception handler already logs the exception once at Error, with its stack trace. So in the Api one unexpected failure means one Error event plus one Warning request line.
+  - Jobs copies the same rules (`UseJobsRequestLogging`) but has no exception handler: an exception escaping the dashboard is logged at Error by the request line and once more by the developer exception page or Kestrel.
 - **Use cases:** `LoggingBehavior` logs a successful use case at Debug, so it doesn't add a second line at the default level. A failed use case (a `Result` error) does log at Information, with its error code ([error-handling.md](error-handling.md#logging)).
 - **Other framework logs:** the overrides above keep ASP.NET Core's own request start/finish lines and EF Core's command logs out.
 
 ## Correlation
 
 - **One trace per request.** The ASP.NET Core server span is the root. Database commands become Npgsql child spans of the same trace.
+- **No parentless database spans.** SQL run outside any request, job or command (Hangfire's workers and queue listener poll all the time) would make one single-span trace per command. `ParentlessDatabaseSpanFilter` (`Infrastructure/Observability/`), added to every host's tracer, marks Npgsql spans without a parent as not recorded, so the exporters skip them. They are still created, so the ids on log events don't change. A database span with a parent is kept.
 - **Log events carry the ids.** Serilog takes the trace and span ids from the current `Activity`, so every event logged during a request carries the trace id as `@tr`. The request line carries the server span's id as `@sp`.
 - **The id clients see.** The ProblemDetails `traceId` ([error-handling.md](error-handling.md#the-contract)) is the W3C `traceparent` of the server span: `00-<trace id>-<span id>-<flags>`. Its second segment is the `@tr` to search for in the logs, and the trace id to open in Tempo; its third segment is the request line's `@sp`.
 
@@ -103,5 +105,5 @@ HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed} ms
 The Cli builds its host (`CliHost.Build`) but never starts it, since System.CommandLine runs the command itself. Because of that:
 
 - **Telemetry is started by hand.** `CliHost.StartTelemetry` resolves the tracer and meter providers, which is what OpenTelemetry's hosted service would do on start.
-- **Each command runs in one root span** from the `WattWise.Cli` activity source (`CliTelemetry.Source`), e.g. `migrate`, so all its SQL commands land in one trace. A failure sets the span status to Error.
+- **Each command runs in one root span** from the `WattWise.Cli` activity source (`CliTelemetry.Source`), e.g. `migrate`, so all its SQL commands land in one trace. A failure sets the span status to Error. Inside `migrate`, each schema step gets a child span (`schema-step <name>`, from the `WattWise.Infrastructure` source, `InfrastructureTelemetry.Source`).
 - **Disposing the host flushes everything** (`using IHost`): pending spans, a last metrics export and the logger. If the collector is unreachable, exit can wait up to the exporter timeout (10 s).

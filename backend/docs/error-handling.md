@@ -106,4 +106,4 @@ Responses with no body of their own (routing 404, 405, binding failures) get Pro
 
 1. Application: request `record` implementing `IQuery<Result<T>>` or `ICommand<Result<T>>`, its handler, and a validator if it takes input.
 2. Api: an endpoint in an `IEndpointModule` that sends the request and returns `result.ToHttpResult()` (its return type documents the 200 response), with `.ProducesProblem(...)` for each other status it can return.
-3. Tests: handler and validator unit tests; one functional test through `ApiFactory` for the happy path and one error path.
+3. Tests: handler and validator unit tests; one functional test through `TestHostFactory<Program>` for the happy path and one error path.

@@ -22,7 +22,7 @@ public class OtlpExportTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         {
             ["Observability:OtlpEndpoint"] = $"http://127.0.0.1:{port}",
         };
-        await using ApiFactory factory = new(settings);
+        await using TestHostFactory<Program> factory = new(settings);
         using HttpClient client = factory.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync("/health", Token);

@@ -16,7 +16,7 @@ public class CorsValidationTests(DatabaseFixture fixture) : IClassFixture<Databa
         {
             ["Cors:AllowedOrigins:0"] = origin,
         };
-        await using ApiFactory factory = new(settings);
+        await using TestHostFactory<Program> factory = new(settings);
 
         Exception? exception = Record.Exception(() => factory.CreateClient());
 

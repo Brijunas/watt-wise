@@ -6,8 +6,9 @@ namespace WattWise.Jobs.Observability;
 public static class RequestLogLevel
 {
     /// <summary>
-    /// Error when the request threw, Warning for a 5xx response, otherwise Information. The exception
-    /// handler already logs each exception once at Error, so a 5xx request line is only a Warning.
+    /// Error when the request threw, Warning for a 5xx response without an exception, otherwise
+    /// Information. Unlike the Api, Jobs has no exception handler: an exception escaping the dashboard
+    /// is logged here at Error and once more by the developer exception page or Kestrel.
     /// </summary>
     public static LogEventLevel For(HttpContext context, Exception? exception)
     {

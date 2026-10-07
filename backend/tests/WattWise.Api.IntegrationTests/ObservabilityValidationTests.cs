@@ -16,7 +16,7 @@ public class ObservabilityValidationTests(DatabaseFixture fixture) : IClassFixtu
         {
             ["Observability:OtlpEndpoint"] = endpoint,
         };
-        await using ApiFactory factory = new(settings);
+        await using TestHostFactory<Program> factory = new(settings);
 
         Exception? exception = Record.Exception(() => factory.CreateClient());
 

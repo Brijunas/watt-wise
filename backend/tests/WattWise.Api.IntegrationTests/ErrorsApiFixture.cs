@@ -20,9 +20,9 @@ public sealed class ErrorsApiFixture(PostgresContainerFixture postgres) : IAsync
     public const string AllowedOrigin = "https://app.example.test";
 
     private readonly DatabaseFixture databaseFixture = new(postgres);
-    private ApiFactory? factory;
+    private TestHostFactory<Program>? factory;
 
-    public ApiFactory Factory => factory ?? throw new InvalidOperationException("The fixture is not initialized.");
+    public TestHostFactory<Program> Factory => factory ?? throw new InvalidOperationException("The fixture is not initialized.");
 
     /// <summary>Every log event the host wrote.</summary>
     public LogEventCollector Logs { get; } = new();
@@ -37,7 +37,7 @@ public sealed class ErrorsApiFixture(PostgresContainerFixture postgres) : IAsync
         {
             ["Cors:AllowedOrigins:0"] = AllowedOrigin,
         };
-        factory = new ApiFactory(
+        factory = new TestHostFactory<Program>(
             settings,
             services =>
             {
