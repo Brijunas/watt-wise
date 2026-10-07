@@ -44,7 +44,7 @@ Writing an integration test:
 
 - Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `hangfire` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
 - Api tests start the host through `TestHostFactory<Program>` (`WattWise.Testing`, a `WebApplicationFactory` for any web host) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
-- Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `hangfire` settings, so the real Hangfire server runs against the clone. Those test classes join `JobsHostCollection` and run one host at a time, because Hangfire's state is process-wide. To test a job, trigger it through `IRecurringJobManager` and wait with `Poll.UntilAsync` until Hangfire's monitoring API lists it as succeeded ([jobs.md](jobs.md#testing-a-job)).
+- Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `hangfire` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
 
 ## Testing the pipeline and error mapping
