@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using WattWise.Infrastructure.Persistence.Schema;
@@ -27,5 +30,31 @@ public class DatabaseMigratorTests(DatabaseFixture fixture) : IClassFixture<Data
 
         // The clone is already migrated by the fixture, so every step must be a no-op here.
         await scope.ServiceProvider.GetRequiredService<DatabaseMigrator>().MigrateAsync(Token);
+    }
+
+    [Fact]
+    public async Task Each_schema_step_runs_in_its_own_span()
+    {
+        using ActivitySource testSource = new("WattWise.Tests.Migrator");
+        ConcurrentQueue<Activity> stopped = new();
+        using ActivityListener listener = new()
+        {
+            ShouldListenTo = source => source.Name is "WattWise.Infrastructure" or "WattWise.Tests.Migrator",
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = stopped.Enqueue,
+        };
+        ActivitySource.AddActivityListener(listener);
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Cli);
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+
+        using (Activity? root = testSource.StartActivity("migrate"))
+        {
+            Assert.NotNull(root);
+            await scope.ServiceProvider.GetRequiredService<DatabaseMigrator>().MigrateAsync(Token);
+
+            // Listeners are process-wide, so keep only this test's trace.
+            string[] names = [.. stopped.Where(span => span.TraceId == root.TraceId).Select(span => span.DisplayName)];
+            Assert.Equal(["schema-step ef-core-migrations", "schema-step hangfire-storage"], names);
+        }
     }
 }

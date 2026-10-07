@@ -8,7 +8,7 @@ namespace WattWise.Infrastructure.Persistence.Schema;
 /// </summary>
 public interface ISchemaStep
 {
-    /// <summary>Short name used in logs and traces, e.g. <c>ef-core-migrations</c>.</summary>
+    /// <summary>Short name used in logs and as the name of the step's span, e.g. <c>ef-core-migrations</c>.</summary>
     string Name { get; }
 
     Task ApplyAsync(CancellationToken cancellationToken);

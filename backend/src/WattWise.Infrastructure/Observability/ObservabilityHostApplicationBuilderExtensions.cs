@@ -86,7 +86,7 @@ public static class ObservabilityHostApplicationBuilderExtensions
             .ConfigureResource(resource => resource
                 .AddService(serviceName, serviceVersion: serviceVersion)
                 .AddAttributes([new KeyValuePair<string, object>(EnvironmentAttribute, environment)]))
-            .WithTracing(tracing => tracing.AddSource(AppSources).AddNpgsql())
+            .WithTracing(tracing => tracing.AddSource(AppSources).AddNpgsql().AddProcessor(new ParentlessDatabaseSpanFilter()))
             .WithMetrics(metrics => metrics.AddMeter(AppMeters).AddNpgsqlInstrumentation());
 
         // AddOtlpExporter registers services, which a deferred callback cannot do, so the exporters

@@ -48,7 +48,7 @@ To add a recurring job:
 
 1. Add a class next to `NoOpJob`, with a `RecurringJobId` constant and `ExecuteAsync(CancellationToken)`.
 2. Register it in DI in `Program.cs`.
-3. Add it to `RecurringJobs.Register` with its id and cron expression. Hangfire passes its own cancellation token in place of `CancellationToken.None`, so the job stops when the server shuts down.
+3. Add it to `RecurringJobs.Register` with its id and cron expression. Hangfire evaluates cron in UTC unless `RecurringJobOptions.TimeZone` is set, while tariff boundaries are Europe/Vilnius local time ([technical.md](../../docs/technical.md)); a job tied to local time sets that time zone, or it shifts by an hour at each DST change. Hangfire passes its own cancellation token in place of `CancellationToken.None`, so the job stops when the server shuts down.
 4. Add a test ([Testing a job](#testing-a-job)).
 
 `RecurringJobs.Register` runs at every start and uses `AddOrUpdate`, so a changed schedule takes effect on the next deployment. A job removed from the code must also be removed from storage (`RemoveIfExists`), or Hangfire keeps scheduling it and fails to find the class.
@@ -63,17 +63,18 @@ To add a recurring job:
 
 - **Workers.** `WorkerCount` is fixed at 5 instead of Hangfire's default (five per CPU core, capped at 20).
 - **Pool.** Each worker can hold a connection while it runs a job, and the server's own processes need a few more. `Database:MaxPoolSize` is 15, below the `hangfire` role's connection limit of 20 ([postgres.md](../../deploy/docs/postgres.md#hardening)). Raise the workers only together with the pool and the limit.
+- **Second pool.** The bound holds only while jobs don't use `AppDbContext`. Hangfire.PostgreSql opens connections from its own pool, and EF Core keeps a separate one, each capped at `MaxPoolSize`, so together they could reach 30. Jobs don't use EF Core yet; S2.12 sizes the two pools when it decides how jobs reach app data.
 
 ## Testing a job
 
-`WattWise.Jobs.IntegrationTests` starts the real host through `JobsFactory` (a `WebApplicationFactory<Program>`) with a clean database's `hangfire` settings ([testing.md](testing.md)). The real Hangfire server runs against that database.
+`WattWise.Jobs.IntegrationTests` starts the real host through `TestHostFactory<Program>` with a clean database's `hangfire` settings ([testing.md](testing.md)). The real Hangfire server runs against that database. Hangfire keeps process-wide static state, so every test class that starts a Jobs host joins the `JobsHostCollection`, which runs them one host at a time.
 
 1. Trigger the job: `IRecurringJobManager.Trigger(NoOpJob.RecurringJobId)`.
 2. Wait with `Poll.UntilAsync` until `JobStorage.GetMonitoringApi().SucceededJobs(...)` lists a job of that class.
 
-Dashboard tests register `LoopbackClient`, a startup filter that sets the remote address to loopback. TestServer leaves it empty, which Hangfire's local-requests-only filter rejects with 401.
+TestServer leaves the remote address empty, which Hangfire's local-requests-only filter rejects with 401; a test checks exactly that, so a change can't silently open the dashboard. The test that expects 200 registers `LoopbackClient`, a startup filter that sets the address to loopback.
 
 ## Not yet
 
-- **Traces.** Hangfire creates no OpenTelemetry spans for job runs, so a job's database calls don't share one trace. Adding a server filter that starts an activity per job is left for when a real job needs it.
+- **Traces.** Hangfire creates no OpenTelemetry spans for job runs. A job's database calls therefore have no parent and are dropped by `ParentlessDatabaseSpanFilter` along with the polling ([observability.md](observability.md#correlation)). A server filter that starts an activity per job comes with the first real job, so its calls form one trace.
 - **Data access.** The `hangfire` role can't reach the `app` schema, which real jobs will need. S2.12 settles the access model ([epics.md](../../docs/epics.md)).
