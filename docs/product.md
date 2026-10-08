@@ -8,13 +8,13 @@ Watt-Wise helps Lithuanian households find the cheapest electricity setup. A use
 
 - **Market:** Lithuania. Grid operator is ESO; suppliers include Ignitis, Enefit, Elektrum and others.
 - **Users:** the general public. Anyone with an ESO account can use it.
-- **Business model:** free at launch. Monetization is undecided (affiliate fees, premium tier, or ads are all possible); the design must not block any of them.
+- **Business model:** free and open source.
 - **Scale for first release:** hundreds of users, hosted on a cheap single server or PaaS. Optimize for low cost and simplicity.
 
 ## Core user flow
 
 1. User signs up / logs in.
-2. User creates a **consumption object** (e.g. home, summer house). MVP supports one object per account; the data model and UI must be designed so that multiple objects can be added later.
+2. User creates a **consumption object** (e.g. home, summer house). An account can have any number of objects, each with its own uploads, current plans and results.
 3. For each object the user:
    - uploads the hourly consumption CSV exported from the ESO "Mano ESO" portal;
    - enters their **current grid plan** and **current supplier plan** with their pricing, so the product has a baseline to compare against.
@@ -62,7 +62,6 @@ The UI is designed mobile-first: every screen works well on a phone and scales u
 ## Non-goals for MVP
 
 - Prosumers (solar generation, net metering, ESO storage fees) — keep in mind in the data model, no UI.
-- Multiple consumption objects per account — designed for, not exposed in MVP.
 - OAuth / third-party sign-in — designed for, not exposed in MVP.
 - Price-change alerts or notifications.
 
