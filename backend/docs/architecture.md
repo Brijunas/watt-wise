@@ -119,12 +119,15 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
 - Hangfire with PostgreSQL storage in the dedicated `hangfire` schema, used only by the Jobs host.
 - Jobs runs Hangfire with `PrepareSchemaIfNecessary = false`. `WattWise.Cli migrate` installs and upgrades Hangfire's tables (`HangfireStorageStep`, see [Persistence](#persistence)), so the `jobs` role needs no DDL rights.
 - Recurring cron jobs: spot price ingestion and catalog refresh, with retries.
-- The dashboard is served by the Jobs host at `/hangfire`; admin-only access comes in E4.
+- The dashboard is served by the Jobs host at `/hangfire`; admin-only access comes in E6.
 - Storage options, the job-class template and how to add a job are in [jobs.md](jobs.md).
 
 ## Authentication
 
-ASP.NET Core Identity for users, password hashing, lockout and (later) external OAuth logins. The Api issues short-lived JWT access tokens and rotating refresh tokens; the token flow seen by clients is in the root technical.md.
+ASP.NET Core Identity in Infrastructure, on `AppDbContext`, for accounts, password hashing, lockout, email tokens and (later) external OAuth logins. The rules it enforces (passwords, lockout, tokens, sessions, admins) are in the root [security.md](../../docs/security.md); the token flow seen by clients is in the root [technical.md](../../docs/technical.md#backend).
+
+- **Data Protection keys** are stored in the database, so email links signed with them survive a restart.
+- **Email sending:** the Api sends directly over SMTP through an Application port ([technical.md](../../docs/technical.md#cross-cutting)). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
 
 ## Logging and observability
 
