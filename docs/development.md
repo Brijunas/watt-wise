@@ -17,7 +17,7 @@ dotnet test --solution backend/WattWise.slnx
 
 Run all eight before committing; CI enforces the same from E5. `typecheck` and `test` run in every package under `packages/`. Until the apps exist (E3), `build` has nothing to run and passes trivially. The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
 
-## Commands
+## Workspace (JS)
 
 | Command                                  | What it does                                                                                            |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -73,7 +73,7 @@ Each host gets its settings and its database role from 1Password through its own
 | `op run --env-file backend/src/WattWise.Api/.env.development -- dotnet run --project backend/src/WattWise.Api`   | Starts the Api on the `api` item's `url`: `/health`, `/scalar` and `/openapi/v1.json` ([architecture.md](../backend/docs/architecture.md#http-surface)). |
 | `op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs` | Starts the Jobs host on the `jobs` item's `url`, with the Hangfire dashboard at `/hangfire` ([jobs.md](../backend/docs/jobs.md)).                        |
 
-`op run` conceals every value it injected, so the listen address shows as `<concealed by 1Password>` in the log. The URLs are in the 1Password items.
+The listen address in the log shows as `<concealed by 1Password>` (see "Troubleshooting" in [setup.md](setup.md#troubleshooting)); the URLs are in the 1Password items.
 
 ## Development database
 
