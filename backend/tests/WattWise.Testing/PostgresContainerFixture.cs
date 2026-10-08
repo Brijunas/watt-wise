@@ -30,7 +30,7 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
     {
         [DatabaseRole.Cli] = Guid.NewGuid().ToString("N"),
         [DatabaseRole.Api] = Guid.NewGuid().ToString("N"),
-        [DatabaseRole.Hangfire] = Guid.NewGuid().ToString("N"),
+        [DatabaseRole.Jobs] = Guid.NewGuid().ToString("N"),
     };
     private readonly SemaphoreSlim createLock = new(1, 1);
     private const int StartAttempts = 5;
@@ -105,7 +105,7 @@ public sealed class PostgresContainerFixture : IAsyncLifetime
             await ExecuteAsync(connection, $"CREATE DATABASE \"{name}\" TEMPLATE {TemplateDatabase} OWNER \"owner\"", cancellationToken);
             // Database-level ACLs are not copied by TEMPLATE, so the bootstrap's are applied again.
             await ExecuteAsync(connection, $"REVOKE ALL ON DATABASE \"{name}\" FROM PUBLIC", cancellationToken);
-            await ExecuteAsync(connection, $"GRANT CONNECT ON DATABASE \"{name}\" TO cli, api, hangfire, backup", cancellationToken);
+            await ExecuteAsync(connection, $"GRANT CONNECT ON DATABASE \"{name}\" TO cli, api, jobs, backup", cancellationToken);
         }
         finally
         {

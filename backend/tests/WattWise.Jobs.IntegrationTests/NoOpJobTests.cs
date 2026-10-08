@@ -19,7 +19,7 @@ public class NoOpJobTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
     [Fact]
     public async Task The_no_op_job_executes()
     {
-        await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Hangfire));
+        await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Jobs));
         using HttpClient client = factory.CreateClient();
         IRecurringJobManager manager = factory.Services.GetRequiredService<IRecurringJobManager>();
         JobStorage storage = factory.Services.GetRequiredService<JobStorage>();
@@ -41,7 +41,7 @@ public class NoOpJobTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
     [Fact]
     public async Task The_no_op_job_is_registered_as_recurring()
     {
-        await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Hangfire));
+        await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Jobs));
         using HttpClient client = factory.CreateClient();
         JobStorage storage = factory.Services.GetRequiredService<JobStorage>();
 
@@ -55,7 +55,7 @@ public class NoOpJobTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
     public async Task The_dashboard_is_served()
     {
         await using TestHostFactory<Program> factory = new(
-            fixture.Database.ConfigurationFor(DatabaseRole.Hangfire),
+            fixture.Database.ConfigurationFor(DatabaseRole.Jobs),
             services => services.AddSingleton<IStartupFilter, LoopbackClient>());
         using HttpClient client = factory.CreateClient();
 
@@ -68,7 +68,7 @@ public class NoOpJobTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
     [Fact]
     public async Task The_dashboard_rejects_a_non_local_request()
     {
-        await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Hangfire));
+        await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Jobs));
         using HttpClient client = factory.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync("/hangfire", Token);

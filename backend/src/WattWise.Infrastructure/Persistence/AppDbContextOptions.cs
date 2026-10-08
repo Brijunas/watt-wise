@@ -14,7 +14,7 @@ public static class AppDbContextOptions
                 connectionString,
                 npgsql => npgsql
                     .UseNodaTime()
-                    .MigrationsHistoryTable("__ef_migrations_history", DatabaseSchemas.App))
+                    .MigrationsHistoryTable("__ef_migrations_history", DatabaseSchemas.Migrations))
             .UseSnakeCaseNamingConvention();
     }
 }

@@ -18,7 +18,7 @@ public class BackgroundSpanTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         ParentlessNpgsqlSpans spans = new();
         await using TestHostFactory<Program> factory = new(
-            fixture.Database.ConfigurationFor(DatabaseRole.Hangfire),
+            fixture.Database.ConfigurationFor(DatabaseRole.Jobs),
             services => services.ConfigureOpenTelemetryTracerProvider(tracing => tracing.AddProcessor(spans)));
         using HttpClient client = factory.CreateClient();
 
