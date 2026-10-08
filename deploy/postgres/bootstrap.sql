@@ -29,6 +29,13 @@ SELECT 'CREATE ROLE api LOGIN'
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'api')
 \gexec
 
+-- Clusters bootstrapped before S2.12 have the Jobs role as hangfire; renaming keeps its
+-- password and grants.
+SELECT 'ALTER ROLE hangfire RENAME TO jobs'
+WHERE EXISTS (SELECT FROM pg_roles WHERE rolname = 'hangfire')
+  AND NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'jobs')
+\gexec
+
 SELECT 'CREATE ROLE jobs LOGIN'
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'jobs')
 \gexec
@@ -36,6 +43,13 @@ WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'jobs')
 SELECT 'CREATE ROLE backup LOGIN'
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'backup')
 \gexec
+
+-- No per-role connection limit (see deploy/docs/postgres.md); re-asserted so clusters
+-- that had one lose it.
+ALTER ROLE cli CONNECTION LIMIT -1;
+ALTER ROLE api CONNECTION LIMIT -1;
+ALTER ROLE jobs CONNECTION LIMIT -1;
+ALTER ROLE backup CONNECTION LIMIT -1;
 
 -- cli can SET ROLE owner but does not inherit its privileges implicitly.
 GRANT "owner" TO cli WITH INHERIT FALSE, SET TRUE;
