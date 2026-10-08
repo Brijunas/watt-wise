@@ -10,4 +10,4 @@ Notes for Claude Code when working in `backend/`. The rules themselves live in [
 
 ## Before committing
 
-Run `dotnet build`, `dotnet format --verify-no-changes` and `dotnet test` from `backend/`; all must pass with 0 warnings. `dotnet format` also reports unused usings across the whole solution.
+Run the backend [checks](../docs/development.md#checks) (`dotnet build`, `dotnet format --verify-no-changes`, `dotnet test`); all must pass with 0 warnings. `dotnet format` also reports unused usings across the whole solution.
