@@ -56,7 +56,7 @@ The UI is designed mobile-first: every screen works well on a phone and scales u
 
 ### Accounts and data
 
-- Login via username and password in MVP. OAuth / third-party sign-in may be added later; the account model must not block it.
+- Login via email and password in MVP. A new account must confirm its email before its first sign-in, and a forgotten password is reset through a link sent to that email. OAuth / third-party sign-in may be added later; the account model must not block it.
 - Data is kept until the user deletes it. Users can fully delete their account and data, and fully export their data (GDPR).
 
 ## Non-goals for MVP
