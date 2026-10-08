@@ -38,6 +38,8 @@ A story never makes an architecture or product decision on its own.
 - **S<epic>.<n> <Title>.** <Body.> Done: <verifiable outcome>.
 ```
 
+Shipped stories move to `docs/implemented.md` with their epic, so the S2 examples cited below are there.
+
 - **ID:** the next free number in the epic. Never reuse or renumber an ID: commits and PRs refer to them, and a dropped story leaves its gap (S2.2).
 - **Title:** a short noun phrase in sentence case, ending with a period inside the bold: `**S3.5 i18n.**`.
 - **Body:** one paragraph. Use nested bullets only when the story has several separate deliverables (see S2.3).
@@ -45,7 +47,7 @@ A story never makes an architecture or product decision on its own.
 
 ### What the body says
 
-1. **Why, when it isn't obvious.** One sentence on the trigger or the user value, e.g. "The trigger: the `hangfire` role … has no access to the `app` schema". User-facing stories start with what the user can do once it ships, in plain words. Don't use "As a … I want … so that"; the epic already says who the user is.
+1. **Why, when it isn't obvious.** One sentence on the trigger or the user value, as S2.12 did with "The trigger: …". User-facing stories start with what the user can do once it ships, in plain words. Don't use "As a … I want … so that"; the epic already says who the user is.
 2. **What gets delivered.** Projects, packages, files, endpoints, screens, jobs and tables, named as the code and the specs name them (`WattWise.Infrastructure`, `@wattwise/ui`, `deploy/docs/postgres.md`). Name libraries and tools only when a spec already chose them.
 3. **Who does what, when it isn't all Claude.** Scaffolders whose output must match the current release are run by the developer, then Claude takes over: "The developer runs `pnpm create vite` … Claude then …". Ditto anything that needs the user's 1Password or a manual secret.
 4. **Docs the story changes.** A new command → `docs/development.md`. A setup change → `docs/setup.md`. A new or changed decision → the spec that owns it; a security decision → `docs/security.md`. A workaround for an upstream problem → `docs/known-issues.md`.
