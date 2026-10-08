@@ -10,18 +10,18 @@ PostgreSQL 18.6, the official `postgres:18.6-trixie` image. The same tag is pinn
 
 Each environment has its own cluster, so role names carry no prefix.
 
-| Role       | Login | Used by                        | May do                                                                                                                       |
-| ---------- | ----- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `admin`    | yes   | People (and Claude) only       | Superuser. Creates roles and databases, runs the bootstrap, fixes things by hand. Never put its password in an app's config. |
-| `owner`    | no    | Nobody logs in as it           | Owns the `wattwise` database, the `app` and `hangfire` schemas and every table in them.                                      |
-| `cli`      | yes   | `WattWise.Cli`                 | Nothing on its own. It switches to `owner` (`SET ROLE owner`) to run migrations, scripts and maintenance.                    |
-| `api`      | yes   | `WattWise.Api`                 | Read and write rows in schema `app`. No DDL, no access to `hangfire`.                                                        |
-| `hangfire` | yes   | `WattWise.Jobs` (Hangfire)     | Read and write rows in schema `hangfire`. No DDL, no access to `app` (job code reaches app data through the Api's layers).   |
-| `backup`   | yes   | `pg_dump` (backups come in E6) | Read every table (`pg_read_all_data`), nothing else.                                                                         |
+| Role     | Login | Used by                        | May do                                                                                                                       |
+| -------- | ----- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `admin`  | yes   | People (and Claude) only       | Superuser. Creates roles and databases, runs the bootstrap, fixes things by hand. Never put its password in an app's config. |
+| `owner`  | no    | Nobody logs in as it           | Owns the `wattwise` database, the `app`, `hangfire` and `migrations` schemas and every table in them.                        |
+| `cli`    | yes   | `WattWise.Cli`                 | Nothing on its own. It switches to `owner` (`SET ROLE owner`) to run migrations, scripts and maintenance.                    |
+| `api`    | yes   | `WattWise.Api`                 | Read and write rows in schema `app`. No DDL, no access to `hangfire` or `migrations`.                                        |
+| `jobs`   | yes   | `WattWise.Jobs`                | Read and write rows in schemas `app` and `hangfire`. No DDL, no access to `migrations`.                                      |
+| `backup` | yes   | `pg_dump` (backups come in E6) | Read every table (`pg_read_all_data`), nothing else.                                                                         |
 
 ### Why `owner` and `cli` are separate
 
-`owner` exists so that every object has one owner no matter who ran the migration. PostgreSQL default privileges are attached to the role that creates an object (`ALTER DEFAULT PRIVILEGES FOR ROLE owner`), so a table created as `owner` immediately gets the grants for `api` or `hangfire`. If `cli` created tables as itself, it would own them, the defaults would not fire and the apps would get "permission denied".
+`owner` exists so that every object has one owner no matter who ran the migration. PostgreSQL default privileges are attached to the role that creates an object (`ALTER DEFAULT PRIVILEGES FOR ROLE owner`), so a table created as `owner` immediately gets the grants for `api` and `jobs`. If `cli` created tables as itself, it would own them, the defaults would not fire and the apps would get "permission denied".
 
 `cli` is a member of `owner` with `INHERIT FALSE, SET TRUE`: it doesn't get `owner`'s rights automatically, it has to switch explicitly. Its connection does that on connect: the `postgres-cli` item's connection options are `-c role=owner`, so every session of the Cli acts as `owner`, and a session without the switch can't touch any table.
 
@@ -29,25 +29,28 @@ Each environment has its own cluster, so role names carry no prefix.
 
 ## Schemas and privileges
 
-| Schema     | Owner   | Contents                                                                   | Granted to                                                                               |
-| ---------- | ------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `app`      | `owner` | Application tables and the EF Core history table `__ef_migrations_history` | `api`: `USAGE`; `SELECT, INSERT, UPDATE, DELETE` on tables; `USAGE, SELECT` on sequences |
-| `hangfire` | `owner` | Hangfire storage                                                           | `hangfire`: the same set                                                                 |
-| `public`   | `admin` | Only the `pg_stat_statements` extension                                    | Nothing: every privilege is revoked from `PUBLIC`                                        |
+| Schema       | Owner   | Contents                                            | Granted to                                                                                          |
+| ------------ | ------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `app`        | `owner` | Application tables                                  | `api` and `jobs`: `USAGE`; `SELECT, INSERT, UPDATE, DELETE` on tables; `USAGE, SELECT` on sequences |
+| `hangfire`   | `owner` | Hangfire storage                                    | `jobs`: the same set                                                                                |
+| `migrations` | `owner` | The EF Core history table `__ef_migrations_history` | Nobody: only `owner`, so only the Cli, reads or writes migration history                            |
+| `public`     | `admin` | Only the `pg_stat_statements` extension             | Nothing: every privilege is revoked from `PUBLIC`                                                   |
 
-- The grants are default privileges `FOR ROLE owner`, so they apply to every table a migration creates. The bootstrap doesn't grant on existing tables, so a re-run never undoes a revoke made by a migration. The Initial migration revokes `api`'s access to `__ef_migrations_history`, so only the Cli touches migration history.
-- `CONNECT` and `TEMPORARY` are revoked from `PUBLIC` on `wattwise`, `postgres` and `template1`. `CONNECT` on `wattwise` is granted only to `cli`, `api`, `hangfire` and `backup`.
+- **Why `jobs` reaches `app`.** Jobs run Application use cases, which read and write app data through `AppDbContext` like the Api's endpoints do ([architecture.md](../../backend/docs/architecture.md#hosts)). It has its own role rather than reusing `api`'s, so the Api still can't see Hangfire's tables and each connection shows which host made it.
+- **Why `migrations` is separate.** The default privileges on `app` would give every app role access to the history table, and each one would need a revoke in a migration. In its own schema with no grants, no app role ever sees it.
+- The grants are default privileges `FOR ROLE owner`, so they apply to every table a migration creates. The bootstrap doesn't grant on existing tables, so a re-run never undoes a revoke a migration makes on one table.
+- `CONNECT` and `TEMPORARY` are revoked from `PUBLIC` on `wattwise`, `postgres` and `template1`. `CONNECT` on `wattwise` is granted only to `cli`, `api`, `jobs` and `backup`.
 - `public` would by default belong to `pg_database_owner`, which is `owner` here. The bootstrap gives it to `admin`, so migrations can't create objects in it.
-- The bootstrap re-asserts the owner of the `wattwise` database and the `app` and `hangfire` schemas on every run, so they belong to `owner` even if they existed before.
+- The bootstrap re-asserts the owner of the `wattwise` database and the `app`, `hangfire` and `migrations` schemas on every run, so they belong to `owner` even if they existed before.
 - The apps never create or alter tables. Schema changes go through `WattWise.Cli`, which runs before Api and Jobs start; how Hangfire's tables fit in is under "Background jobs" in [architecture.md](../../backend/docs/architecture.md#background-jobs).
 
 ## Hardening
 
 | Setting                               | Value                                                                                                                                                                                                                                                |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection limits                     | `api` 30, `hangfire` 20, `cli` 3, `backup` 2. Each app's Npgsql pool stays below its limit (`Database:MaxPoolSize`, see [architecture.md](../../backend/docs/architecture.md#persistence)).                                                          |
-| `statement_timeout`                   | `api` 30 s, `hangfire` 5 min, `cli` none                                                                                                                                                                                                             |
-| `idle_in_transaction_session_timeout` | `api` and `hangfire` 60 s                                                                                                                                                                                                                            |
+| Connections                           | No per-role limit and no pool settings: Npgsql's default pool (up to 100 per pool) and the server's `max_connections` (100) apply. Revisit if a host ever exhausts the server.                                                                       |
+| `statement_timeout`                   | `api` 30 s, `jobs` 5 min, `cli` none                                                                                                                                                                                                                 |
+| `idle_in_transaction_session_timeout` | `api` and `jobs` 60 s                                                                                                                                                                                                                                |
 | Password hashing                      | `scram-sha-256` (the default; MD5 is deprecated in 18)                                                                                                                                                                                               |
 | Query statistics                      | `pg_stat_statements` preloaded and created in `wattwise`                                                                                                                                                                                             |
 | Audit logging                         | `log_connections`, `log_disconnections`, `log_statement = ddl` (pgaudit isn't in the official image)                                                                                                                                                 |
@@ -68,7 +71,7 @@ Development steps are under "Development database" in [setup.md](../../docs/setu
 
 Docker never handles application passwords. Each password belongs to one role and reaches only the process that uses it.
 
-- **Storage:** every role's password is a Database item in the environment's 1Password vault. `Watt Wise Development` holds `postgres-admin`, `postgres-api`, `postgres-hangfire`, `postgres-cli` and `postgres-backup`, plus `pgadmin` for the pgAdmin container. The non-database items `api`, `jobs`, `frontend` and `admin` hold the apps' URLs, and `grafana` and `otlp` the Grafana LGTM addresses ([lgtm.md](lgtm.md)).
+- **Storage:** every role's password is a Database item in the environment's 1Password vault. `Watt Wise Development` holds `postgres-admin`, `postgres-api`, `postgres-jobs`, `postgres-cli` and `postgres-backup`, plus `pgadmin` for the pgAdmin container. The non-database items `api`, `jobs`, `frontend` and `admin` hold the apps' URLs, and `grafana` and `otlp` the Grafana LGTM addresses ([lgtm.md](lgtm.md)).
 - **Setting one:** an admin sets it on the role with psql's `\password <role>`, pasting the value from 1Password. psql hashes it (SCRAM) before sending, so the plain password never reaches the server or its DDL log, unlike `ALTER ROLE ... PASSWORD '...'`.
 - **Rotating one:** change it in 1Password, then run `\password <role>` again.
 - **Apps:** nothing about the connection is in the repo. Each process gets every connection field (`Database__Host`, `__Port`, `__Name`, `__Username`, `__Password`, `__Options`) from its role's 1Password item, through its own env file and `op run`. Infrastructure builds the connection string from them.

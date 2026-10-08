@@ -24,8 +24,8 @@ How `WattWise.Jobs` runs background work. Where Jobs sits among the hosts is in 
 
 | Option                     | Value      | Why                                                                                                      |
 | -------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| `SchemaName`               | `hangfire` | The dedicated schema the `hangfire` role works in (`DatabaseSchemas.Hangfire`)                           |
-| `PrepareSchemaIfNecessary` | `false`    | The `hangfire` role has no DDL rights; `migrate` installs the tables                                     |
+| `SchemaName`               | `hangfire` | The dedicated schema for Hangfire's storage (`DatabaseSchemas.Hangfire`)                                 |
+| `PrepareSchemaIfNecessary` | `false`    | The `jobs` role has no DDL rights; `migrate` installs the tables                                         |
 | `EnableLongPolling`        | `true`     | Workers wait on PostgreSQL `LISTEN/NOTIFY`, so an enqueued job starts at once, not after a poll interval |
 
 - **Connection.** The connection string comes from the bound `DatabaseSettings` options, the same `Database:*` keys as every host, read when the container is built. So test overrides applied at `Build()` count.
@@ -34,7 +34,7 @@ How `WattWise.Jobs` runs background work. Where Jobs sits among the hosts is in 
 ## Schema
 
 - **Who installs it.** `WattWise.Cli migrate` does, through `DatabaseMigrator`: its `HangfireStorageStep` runs after the EF Core step and calls Hangfire.PostgreSql's `PostgreSqlObjectsInstaller` ([architecture.md](architecture.md#persistence)).
-- **Who owns it.** The Cli's connection runs as `owner` (`-c role=owner`), so the tables belong to `owner`, and the default privileges give the `hangfire` role read and write on their rows.
+- **Who owns it.** The Cli's connection runs as `owner` (`-c role=owner`), so the tables belong to `owner`, and the default privileges give the `jobs` role read and write on their rows.
 - **Upgrades.** The installer is idempotent and applies only the scripts a database is missing. After a Hangfire.PostgreSql upgrade, `migrate` brings the tables up to date before Jobs starts.
 - **Tests.** The test fixture migrates through the same `DatabaseMigrator`, so every test database already has the tables ([testing.md](testing.md#shared-postgresql-fixture)).
 
@@ -62,12 +62,11 @@ To add a recurring job:
 ## Sizing
 
 - **Workers.** `WorkerCount` is fixed at 5 instead of Hangfire's default (five per CPU core, capped at 20).
-- **Pool.** Each worker can hold a connection while it runs a job, and the server's own processes need a few more. `Database:MaxPoolSize` is 15, below the `hangfire` role's connection limit of 20 ([postgres.md](../../deploy/docs/postgres.md#hardening)). Raise the workers only together with the pool and the limit.
-- **Second pool.** The bound holds only while jobs don't use `AppDbContext`. Hangfire.PostgreSql opens connections from its own pool, and EF Core keeps a separate one, each capped at `MaxPoolSize`, so together they could reach 30. Jobs don't use EF Core yet; S2.12 sizes the two pools when it decides how jobs reach app data.
+- **Connections.** Hangfire.PostgreSql and EF Core each keep their own Npgsql pool, on Npgsql's defaults; nothing about pooling is configured ([postgres.md](../../deploy/docs/postgres.md#hardening)). With long polling, each idle worker holds one `LISTEN` connection.
 
 ## Testing a job
 
-`WattWise.Jobs.IntegrationTests` starts the real host through `TestHostFactory<Program>` with a clean database's `hangfire` settings ([testing.md](testing.md)). The real Hangfire server runs against that database. Hangfire keeps process-wide static state, so every test class that starts a Jobs host joins the `JobsHostCollection`, which runs them one host at a time.
+`WattWise.Jobs.IntegrationTests` starts the real host through `TestHostFactory<Program>` with a clean database's `jobs` settings ([testing.md](testing.md)). The real Hangfire server runs against that database. Hangfire keeps process-wide static state, so every test class that starts a Jobs host joins the `JobsHostCollection`, which runs them one host at a time.
 
 1. Trigger the job: `IRecurringJobManager.Trigger(NoOpJob.RecurringJobId)`.
 2. Wait with `Poll.UntilAsync` until `JobStorage.GetMonitoringApi().SucceededJobs(...)` lists a job of that class.
@@ -77,4 +76,3 @@ TestServer leaves the remote address empty, which Hangfire's local-requests-only
 ## Not yet
 
 - **Traces.** Hangfire creates no OpenTelemetry spans for job runs. A job's database calls therefore have no parent and are dropped by `ParentlessDatabaseSpanFilter` along with the polling ([observability.md](observability.md#correlation)). A server filter that starts an activity per job comes with the first real job, so its calls form one trace.
-- **Data access.** The `hangfire` role can't reach the `app` schema, which real jobs will need. S2.12 settles the access model ([epics.md](../../docs/epics.md)).

@@ -5,5 +5,5 @@ public enum DatabaseRole
 {
     Cli,
     Api,
-    Hangfire,
+    Jobs,
 }

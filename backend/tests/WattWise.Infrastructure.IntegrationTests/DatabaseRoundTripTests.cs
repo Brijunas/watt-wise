@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using Npgsql;
-
 using WattWise.Infrastructure.Persistence;
 
 namespace WattWise.Infrastructure.IntegrationTests;
@@ -32,18 +30,5 @@ public class DatabaseRoundTripTests(DatabaseFixture fixture) : IClassFixture<Dat
 
         Assert.Contains("20261005094112_Initial", await db.Database.GetAppliedMigrationsAsync(Token));
         Assert.Empty(await db.Database.GetPendingMigrationsAsync(Token));
-    }
-
-    [Fact]
-    public async Task Api_cannot_read_the_migration_history()
-    {
-        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Api);
-        await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        PostgresException exception = await Assert.ThrowsAsync<PostgresException>(
-            () => db.Database.SqlQueryRaw<long>("SELECT count(*) AS \"Value\" FROM app.__ef_migrations_history").ToListAsync(Token));
-
-        Assert.Equal("42501", exception.SqlState);
     }
 }

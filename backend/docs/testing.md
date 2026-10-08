@@ -35,16 +35,17 @@ Rules of thumb:
 The integration and functional projects run against a real PostgreSQL started by Testcontainers. The fixture lives in `tests/WattWise.Testing` and sets the database up the way a deployment does, so tests see the same roles, schemas and privileges as production ([deploy/docs/postgres.md](../../deploy/docs/postgres.md)).
 
 - **One container per test assembly.** `PostgresContainerFixture` is an xUnit assembly fixture, declared in each project's `AssemblyFixtures.cs`. It starts the same image as the compose files on a free loopback port, with superuser `admin`.
-- **Bootstrap.** It runs `deploy/postgres/bootstrap.sql` with psql inside the container (the file is linked into the build output), then gives `cli`, `api` and `hangfire` random passwords.
+- **Bootstrap.** It runs `deploy/postgres/bootstrap.sql` with psql inside the container (the file is linked into the build output), then gives `cli`, `api` and `jobs` random passwords.
 - **Migrations.** It applies them as `cli` with `-c role=owner`, through `DatabaseMigrator`, the same code `WattWise.Cli migrate` runs ([architecture.md](architecture.md#persistence)). The migrated `wattwise` database then serves only as a template.
 - **A clean database per test class.** `DatabaseFixture` is a class fixture: it clones the template (`CREATE DATABASE … TEMPLATE wattwise`), re-applies the database-level grants the bootstrap makes, and drops the clone when the class is done. Test classes run in parallel, each on its own clone.
+- **Access per role.** `RoleAccessTests` (Infrastructure.IntegrationTests) checks each role against the matrix in [postgres.md](../../deploy/docs/postgres.md#schemas-and-privileges): a probe table in every schema, data access where the role should have it, `permission denied` where it shouldn't, and no `CREATE TABLE` anywhere. A change to the grants changes that test in the same commit.
 - **No 1Password here.** Host, port and passwords are generated per run and live only as long as the container, so the rule that connection settings come from 1Password doesn't apply. Each role's settings reach the code under test as the usual `Database:*` keys (`TestDatabase.ConfigurationFor(role)`).
 
 Writing an integration test:
 
-- Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `hangfire` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
+- Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `jobs` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
 - Api tests start the host through `TestHostFactory<Program>` (`WattWise.Testing`, a `WebApplicationFactory` for any web host) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
-- Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `hangfire` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
+- Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `jobs` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
 
 ## Testing the pipeline and error mapping

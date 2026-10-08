@@ -92,12 +92,12 @@ One-time setup of the Development PostgreSQL. The roles and why they exist are i
    docker compose -f deploy/docker-compose.development.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
    ```
 
-   Then run these one at a time. For each one, paste the password from the matching 1Password item (`postgres-api`, `postgres-cli`, `postgres-hangfire`, `postgres-backup`) twice. Quit with `\q`.
+   Then run these one at a time. For each one, paste the password from the matching 1Password item (`postgres-api`, `postgres-cli`, `postgres-jobs`, `postgres-backup`) twice. Quit with `\q`.
 
    ```
    \password api
    \password cli
-   \password hangfire
+   \password jobs
    \password backup
    ```
 
@@ -107,7 +107,7 @@ One-time setup of the Development PostgreSQL. The roles and why they exist are i
    op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- migrate
    ```
 
-6. Optionally, start the Jobs host to check Hangfire. It connects as `hangfire` from the `postgres-hangfire` item and listens on the `jobs` item's `url` (http://localhost:5063 today); the dashboard is at `/hangfire`:
+6. Optionally, start the Jobs host to check Hangfire. It connects as `jobs` from the `postgres-jobs` item and listens on the `jobs` item's `url` (http://localhost:5063 today); the dashboard is at `/hangfire`:
 
    ```bash
    op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs

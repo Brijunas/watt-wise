@@ -5,18 +5,18 @@ using WattWise.Infrastructure.Persistence;
 
 namespace WattWise.Jobs.IntegrationTests;
 
-public class HangfireRoleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
+public class JobsRoleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
     [Fact]
-    public async Task Jobs_connect_as_the_hangfire_role()
+    public async Task Jobs_connect_as_the_jobs_role()
     {
-        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Hangfire);
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Jobs);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         string user = await db.Database.SqlQueryRaw<string>("SELECT current_user AS \"Value\"")
             .SingleAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal("hangfire", user);
+        Assert.Equal("jobs", user);
     }
 }

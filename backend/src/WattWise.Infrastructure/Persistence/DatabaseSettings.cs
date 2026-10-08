@@ -22,9 +22,6 @@ public sealed class DatabaseSettings
 
     public string? Options { get; set; }
 
-    /// <summary>Npgsql's Maximum Pool Size; keep it below the role's connection limit in bootstrap.sql.</summary>
-    public int MaxPoolSize { get; set; }
-
     /// <summary>Reads the section without validating it.</summary>
     public static DatabaseSettings Read(IConfiguration configuration)
     {
@@ -43,7 +40,6 @@ public sealed class DatabaseSettings
         Username = section["Username"];
         Password = section["Password"];
         Options = section["Options"];
-        MaxPoolSize = int.TryParse(section["MaxPoolSize"], out int maxPoolSize) ? maxPoolSize : 0;
     }
 
     /// <summary>The keys that are missing or invalid, as "Database:Key"; empty when the settings are usable.</summary>
@@ -55,7 +51,6 @@ public sealed class DatabaseSettings
         if (string.IsNullOrWhiteSpace(Name)) { missing.Add("Name"); }
         if (string.IsNullOrWhiteSpace(Username)) { missing.Add("Username"); }
         if (string.IsNullOrWhiteSpace(Password)) { missing.Add("Password"); }
-        if (MaxPoolSize <= 0) { missing.Add("MaxPoolSize"); }
 
         return [.. missing.Select(key => $"{SectionName}:{key}")];
     }
@@ -72,11 +67,6 @@ public sealed class DatabaseSettings
         if (Port > 0)
         {
             builder.Port = Port;
-        }
-
-        if (MaxPoolSize > 0)
-        {
-            builder.MaxPoolSize = MaxPoolSize;
         }
 
         if (!string.IsNullOrWhiteSpace(Options))

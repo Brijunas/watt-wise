@@ -22,7 +22,6 @@ public sealed class TestDatabase(
             ["Database:Username"] = role.ToString().ToLowerInvariant(),
             ["Database:Password"] = passwords[role],
             ["Database:Options"] = role == DatabaseRole.Cli ? "-c role=owner" : string.Empty,
-            ["Database:MaxPoolSize"] = "5",
         };
 
     public async Task DropAsync()
