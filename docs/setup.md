@@ -119,7 +119,7 @@ The stack also runs Grafana LGTM, which receives the apps' traces, metrics and l
 
 ## 6. Check that everything works
 
-Run the [checks](development.md#checks) from development.md. All five should exit without errors. From here on, [development.md](development.md) covers everyday work.
+Run the [checks](development.md#checks) from development.md. Every one should pass; the backend tests need the Docker daemon running. From here on, [development.md](development.md) covers everyday work.
 
 ## Editor
 
