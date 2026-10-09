@@ -6,9 +6,9 @@ How code is laid out inside `frontend/` and `admin/`. Both apps use the same str
 
 ```
 <app>/src/
-├── main.tsx             entry point Vite's index.html loads; creates the store, renders app/app.tsx
+├── main.tsx             entry point Vite's index.html loads; creates the store, renders AppProvider around App
 ├── app/                 composition root: wires features together; only main.tsx and testing/ import it
-│   ├── app.tsx          root component: AppProvider around the router
+│   ├── app.tsx          root component: the router
 │   ├── provider.tsx     AppProvider: store (passed in as a prop), theme and i18n providers
 │   ├── router.tsx       createBrowserRouter, lazy route modules
 │   └── routes/          one module per route; composes features into pages
@@ -80,7 +80,7 @@ Tags live in the package because they are part of the API contract: both apps ne
 - Features import the typed hooks from `stores/`, which keeps the one-way rule.
 - A feature slice extends `LazyLoadedSlices` with `declare module` and injects itself with `const injected = slice.injectInto(rootReducer)`, so the root reducer never imports a feature.
 - A lazy slice is missing from the state until its module has run, so `RootState` types it as optional. A feature reads its state only through `injected.selectors` or `injected.selectSlice`, which fall back to the initial state, never through `state.<feature>`.
-- `main.tsx` calls the store function once and passes the store to `AppProvider`. Tests create a fresh store per test with the same function and pass it the same way.
+- `main.tsx` calls the store function once and renders `<AppProvider store={store}><App /></AppProvider>`. Tests create a fresh store per test with the same function and pass it the same way.
 
 ## Files and naming
 
