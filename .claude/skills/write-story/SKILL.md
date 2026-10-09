@@ -40,6 +40,8 @@ A story never makes an architecture or product decision on its own.
 
 Shipped stories move to `docs/implemented.md` with their epic, so the S2 examples cited below are there.
 
+**Never change a story that is already implemented.** Before editing any existing story, including one in another epic that a new decision touches, check that it hasn't shipped. A shipped story is in `docs/implemented.md`, has commits on `main` that name its ID (`git log --oneline origin/main | grep 'S3.9'`), or has its code in the repo. An epic still in `epics.md` can have some stories shipped, so check each story, not the epic. If it has shipped, leave it as it is and write the change as a new story in an epic that is still open.
+
 - **ID:** the next free number in the epic. Never reuse or renumber an ID: commits and PRs refer to them, and a dropped story leaves its gap (S2.2).
 - **Title:** a short noun phrase in sentence case, ending with a period inside the bold: `**S3.5 i18n.**`.
 - **Body:** one paragraph. Use nested bullets only when the story has several separate deliverables (see S2.3).

@@ -12,7 +12,7 @@ Each doc has one job. Read or update the one that matches the task:
 
 - `docs/product.md`: what the product does, MVP scope, non-goals, open questions. Source of truth.
 - `docs/technical.md`: whole-system technical decisions (repo layout, stacks, how the apps talk to each other, data model, time handling, hosting, secrets, shared code style). Source of truth; read the relevant section before implementing, and every implementation decision must match it.
-- `docs/security.md`: every security decision (accounts, passwords, tokens, sessions, authorization, transport and limits), linking to the docs that own secrets and database hardening. Source of truth; anything that touches security goes here, not in `technical.md` or a project doc.
+- `docs/security.md`: every security decision (accounts, passwords, tokens, sessions, authorization, transport and limits, deployment, CI and contributions), linking to the docs that own secrets and database hardening. Source of truth; anything that touches security goes here, not in `technical.md` or a project doc.
 - `docs/frontend-structure.md`: how code is laid out inside `frontend/` and `admin/` (folders, import direction, store, naming, tests). Read before adding code to either app.
 - `<project>/docs/`: technical decisions that belong to one project, e.g. `backend/docs/` (architecture, testing, conventions). Source of truth for that project, read before implementing in it.
 - `docs/epics.md`: the epics and stories still to do.
