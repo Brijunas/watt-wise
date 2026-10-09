@@ -15,7 +15,7 @@ The security decisions for the whole system: accounts, sign-in, sessions, author
 
 ## Tokens
 
-- **Access token.** A JWT signed with the key from 1Password, valid for 15 minutes. The response body carries it, the clients keep it in memory only and send it as a Bearer header. It is never written to `localStorage` or `sessionStorage`.
+- **Access token.** A JWT signed with the key from 1Password, valid for 15 minutes. The response body carries it, the clients keep it in memory only and send it as a Bearer header. It is never written to `localStorage` or `sessionStorage`, and Redux DevTools, which would show it, is on only in development builds.
 - **Refresh token.** Valid for 7 days and single-use: every refresh returns a new one. It lives in an httpOnly, Secure, `SameSite=Strict` cookie limited to the auth endpoints, so scripts can't read it. The apps and the API share one registrable domain, so the cookie counts as same-site. Only a hash of each token is stored.
 - **Reuse.** Presenting a refresh token that was already used ends the session it belongs to.
 
