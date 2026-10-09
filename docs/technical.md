@@ -49,6 +49,7 @@ watt-wise/
 - **i18n (Lithuanian and English):** react-i18next; default language picked from browser settings, switchable by the user.
 - **API client:** generated from the backend OpenAPI document with `@rtk-query/codegen-openapi` into `packages/api-client`, consumed by both apps. Regenerated whenever the API changes; generated code is committed.
 - **Testing:** Vitest with React Testing Library for unit and component tests. Playwright end-to-end tests added once the core flow exists.
+- **Folder structure:** feature folders with one-way imports (shared → features → app), the same in `frontend/` and `admin/`; see [frontend-structure.md](frontend-structure.md).
 
 ## Shared frontend packages
 
