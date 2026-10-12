@@ -32,7 +32,7 @@ A session is one sign-in on one device: the chain of refresh tokens that starts 
 
 - Every account's data is reachable only by that account: consumption objects, their rows, current plans and sessions.
 - **Admins.** Admin endpoints live under `/api/v1/admin` and need the Identity `Admin` role. The role is given to and taken from an existing confirmed account with a `WattWise.Cli` command; no endpoint grants it.
-- **Hangfire dashboard.** Never reachable from the internet. It accepts only local requests, no tunnel route leads to the Jobs host, and from E6 it is an internal UI on saturn's loopback address like Grafana ([Deployment](#deployment), [jobs.md](../backend/docs/jobs.md#dashboard)). It has no sign-in of its own, so the `Admin` role doesn't apply to it. Browser access for admins is reconsidered if the system ever gets its own OpenID Connect sign-in.
+- **Hangfire dashboard.** Never reachable from the internet. It accepts only requests from the machine it runs on, no tunnel route leads to the Jobs host, and from E6 it is an internal UI on saturn's loopback address like Grafana ([Deployment](#deployment), [jobs.md](../backend/docs/jobs.md#dashboard)). It has no sign-in of its own, so the `Admin` role doesn't apply to it. Browser access for admins is reconsidered if the system ever gets its own OpenID Connect sign-in.
 
 ## Transport and limits
 
@@ -53,7 +53,7 @@ How releases reach the server and how its secrets are kept. The repository is pu
 - **Secrets on the server.** One 1Password service account per deployed environment, read-only on that environment's vault and nothing else. Its token sits on saturn in a file only root can read, and nowhere else. The agent resolves the environment's `compose.env` with it at deploy time, so each container gets only its own settings: the Api never sees the Jobs or Cli database passwords, and so on. The agent reports each deploy to a GitHub deployment status with a fine-grained token limited to deployments on this repository, kept the same way.
 - **Images.** They hold no settings or secrets, so they are published publicly like the repository. The app containers run as a non-root user.
 - **Internal UIs.** Grafana (the shared LGTM), Testing's Mailpit and, from E6, the Hangfire dashboard publish only on saturn's loopback address; no tunnel route leads to them. PostgreSQL publishes no port at all ([postgres.md](../deploy/docs/postgres.md#hardening)).
-- **What the repo says about saturn.** Its name, that it runs Docker and the Compose stacks, and nothing more: no hostname, address, location, network layout, backup setup or host configuration. Those live in a private runbook, a Secure Note in 1Password. Outgoing email is checked for headers that carry the server's address ([epics.md](epics.md), S5.9).
+- **What the repo says about saturn.** Its name, that it runs Docker and the Compose stacks, and nothing more: no hostname, address, location, network layout or host configuration, and nothing about where backups go once they leave the server: the off-server copy, its retention and the dump folder's path. What the stacks themselves do, such as the daily database dump, is in the repo. Those live in a private runbook, a Secure Note in 1Password. Outgoing email is checked for headers that carry the server's address ([epics.md](epics.md), S5.9).
 
 ## CI and contributions
 
