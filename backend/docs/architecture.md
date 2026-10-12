@@ -119,7 +119,7 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
 - Hangfire with PostgreSQL storage in the dedicated `hangfire` schema, used only by the Jobs host.
 - Jobs runs Hangfire with `PrepareSchemaIfNecessary = false`. `WattWise.Cli migrate` installs and upgrades Hangfire's tables (`HangfireStorageStep`, see [Persistence](#persistence)), so the `jobs` role needs no DDL rights.
 - Recurring cron jobs: spot price ingestion and catalog refresh, with retries.
-- The dashboard is served by the Jobs host at `/hangfire`; admin-only access comes in E6.
+- The dashboard is served by the Jobs host at `/hangfire`, for local requests only; it is never put on the internet ([security.md](../../docs/security.md#authorization)).
 - Storage options, the job-class template and how to add a job are in [jobs.md](jobs.md).
 
 ## Authentication
