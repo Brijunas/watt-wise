@@ -17,6 +17,7 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true
   }
 }

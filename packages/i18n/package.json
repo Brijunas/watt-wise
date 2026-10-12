@@ -8,5 +8,15 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc"
+  },
+  "peerDependencies": {
+    "i18next": "catalog:",
+    "react": "catalog:",
+    "react-i18next": "catalog:"
+  },
+  "devDependencies": {
+    "i18next": "catalog:",
+    "react": "catalog:",
+    "react-i18next": "catalog:"
   }
 }

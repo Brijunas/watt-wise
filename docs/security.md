@@ -42,6 +42,7 @@ A session is one sign-in on one device: the chain of refresh tokens that starts 
 - **Rate limits (E6).** The auth endpoints share one counter: 10 requests a minute per IP address across all of them together. The endpoints that send email (register, resend confirmation, forgot password) share a second one: 5 requests an hour per IP address across the three. Uploads: 20 an hour per account. A request over a limit gets 429 ProblemDetails with `Retry-After`.
 - **Size limits (E6).** An upload body is at most 5 MB; a larger one gets 413 ProblemDetails.
 - **Security headers (E6).** Every response of the Api, the Jobs host and both apps carries `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a `Content-Security-Policy` with `frame-ancestors 'none'`. The Api's policy is `default-src 'none'`; the Scalar page outside Production and the Hangfire dashboard get a looser one, only as far as they need. The apps' policy allows scripts only from their own origin plus the hashes of their inline scripts, and connections only to their own origin and the API. The exact policies and the `Strict-Transport-Security` value are recorded here by S6.2.
+- **Inline script.** Each app's `index.html` carries one inline script, the one that applies the stored appearance before first paint ([technical.md](technical.md#frontend)). Its content is fixed at build time, so its hash is the one the apps' policy lists.
 
 ## Deployment
 
