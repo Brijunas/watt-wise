@@ -10,9 +10,6 @@
     "test": "vitest run",
     "typecheck": "tsc"
   },
-  "dependencies": {
-    "@wattwise/i18n": "workspace:*"
-  },
   "peerDependencies": {
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
@@ -36,6 +33,7 @@
     "@testing-library/user-event": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@wattwise/i18n": "workspace:*",
     "i18next": "catalog:",
     "jsdom": "catalog:",
     "react": "catalog:",

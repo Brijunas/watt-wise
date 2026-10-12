@@ -262,10 +262,6 @@ importers:
         version: 17.0.16(i18next@26.4.3(typescript@6.0.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
 
   packages/ui:
-    dependencies:
-      '@wattwise/i18n':
-        specifier: workspace:*
-        version: link:../i18n
     devDependencies:
       '@emotion/react':
         specifier: 'catalog:'
@@ -297,6 +293,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
+      '@wattwise/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       i18next:
         specifier: 'catalog:'
         version: 26.4.3(typescript@6.0.3)
