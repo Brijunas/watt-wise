@@ -8,7 +8,6 @@ Creates the `frontend/` and `admin/` Vite React TypeScript apps in the workspace
 
 ### Stories
 
-- **S3.2 Pre-commit hook covers the apps.** Confirm the S1.2 hook (Husky + root `lint-staged.config.js`) lints and formats staged files in `frontend/` and `admin/`. Adjust the lint-staged globs or ESLint config only if app files are missed. Done: a commit with a lint error in either app is rejected locally.
 - **S3.3 MUI theme with light/dark/auto.** `@wattwise/ui` exports the MUI CSS-variables theme with `colorSchemes`, a `ThemeProvider` wrapper and a mode switch using `useColorScheme`. The choice is stored in `localStorage` and an inline `<head>` script applies it before first paint. Both apps use it. Done: no flash on reload in either mode, mode switch covered by RTL tests.
 - **S3.4 App shell and routing.** React Router in both apps with a mobile-first layout from `@wattwise/ui`: app bar, bottom navigation on phone and side navigation from the `md` breakpoint up, placeholder routes and a not-found page. Done: shell renders correctly at `xs` and `md` in component tests.
 - **S3.5 i18n.** `@wattwise/i18n` sets up react-i18next with LT and EN resources, browser-language detection, a language switch component and a typed key convention. Both apps wrap with it. Done: switching language re-renders the shell, tests cover detection and switching.
