@@ -1,6 +1,6 @@
 # Development
 
-Everyday commands and workflow. For first-time machine setup, see [setup.md](setup.md). Every command runs from the repo root. Commands for the apps (E3) are added here by the stories that introduce them.
+Everyday commands and workflow. For first-time machine setup, see [setup.md](setup.md). Every command runs from the repo root. The apps' own commands (dev server, single test, API client) are added in S3.10.
 
 ## Checks
 
@@ -15,7 +15,7 @@ dotnet format backend/WattWise.slnx --verify-no-changes
 dotnet test --solution backend/WattWise.slnx
 ```
 
-Run all eight before committing; CI enforces the same from E5. `typecheck` and `test` run in every package under `packages/`. Until the apps exist (E3), `build` has nothing to run and passes trivially. The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
+Run all eight before committing; CI enforces the same from E5. `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
 
 ## Workspace (JS)
 
