@@ -6,6 +6,7 @@ import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescrip
 import importX from 'eslint-plugin-import-x'
 import reactHooks from 'eslint-plugin-react-hooks'
 import fs from 'node:fs'
+import path from 'node:path'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
@@ -23,8 +24,10 @@ const appZones = apps.flatMap((app) => {
   const src = `${app}/src`
   const featuresDir = `${src}/features`
   // One zone per feature, built when the config loads: no features folder, no zones.
-  const features = fs.existsSync(featuresDir)
-    ? fs.readdirSync(featuresDir, { withFileTypes: true }).filter((entry) => entry.isDirectory())
+  // Read from the config's folder, so the listing doesn't depend on where ESLint is started.
+  const featuresPath = path.join(import.meta.dirname, featuresDir)
+  const features = fs.existsSync(featuresPath)
+    ? fs.readdirSync(featuresPath, { withFileTypes: true }).filter((entry) => entry.isDirectory())
     : []
   return [
     {
@@ -48,6 +51,13 @@ const appZones = apps.flatMap((app) => {
       from: `${src}/app`,
       message: 'features/ must not import app/.',
     },
+    ...apps
+      .filter((other) => other !== app)
+      .map((other) => ({
+        target: src,
+        from: other,
+        message: `${app} must not import ${other}. Move shared code to a @wattwise/* package.`,
+      })),
     ...features.map((feature) => ({
       target: `${featuresDir}/${feature.name}`,
       from: featuresDir,

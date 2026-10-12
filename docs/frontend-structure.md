@@ -143,8 +143,8 @@ Tags live in the package because they are part of the API contract: both apps ne
 The root `eslint.config.js` checks the import rules for both apps with `eslint-plugin-import-x` (`eslint-plugin-import` doesn't support ESLint 10):
 
 - A TypeScript import resolver that reads the tsconfig `paths`, so the rules see through `@/` and the `@wattwise/*` source exports. Without it they silently skip those imports.
-- `import-x/no-restricted-paths` zones: shared folders can't import `features/` or `app/`, except `testing/` importing `app/provider.tsx`; features can't import `app/`; and no feature can import another. The feature zones are generated from each app's `src/features/` listing, so a new feature is covered without editing the config. Further zones hold the package graph above, and keep the packages from importing an app.
-- `no-restricted-imports` by package name for the same graph. A zone silently skips an import the resolver can't follow, and pnpm doesn't link a workspace package that isn't a declared dependency, so the by-name rule doesn't depend on resolution.
+- `import-x/no-restricted-paths` zones: shared folders can't import `features/` or `app/`, except `testing/` importing `app/provider.tsx`; features can't import `app/`; and no feature can import another. The feature zones are generated from each app's `src/features/` listing, so a new feature is covered without editing the config. Further zones hold the package graph above, and keep the packages from importing an app and one app from importing the other.
+- `no-restricted-imports` by package name for the same graph. A zone silently skips an import the resolver can't follow, and a workspace package that isn't a declared dependency isn't guaranteed to resolve; the by-name rule doesn't depend on resolution.
 - `import-x/no-cycle`.
 - `no-restricted-imports` for `useSelector` and `useDispatch` from `react-redux`, off for `stores/hooks.ts`.
 
