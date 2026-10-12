@@ -1,6 +1,6 @@
 # Development
 
-Everyday commands and workflow. For first-time machine setup, see [setup.md](setup.md). Every command runs from the repo root. Commands for the apps (E3) are added here by the stories that introduce them.
+Everyday commands and workflow. For first-time machine setup, see [setup.md](setup.md). Every command runs from the repo root. The apps' own commands (dev server, single test, API client) are added in S3.10.
 
 ## Checks
 
@@ -15,7 +15,7 @@ dotnet format backend/WattWise.slnx --verify-no-changes
 dotnet test --solution backend/WattWise.slnx
 ```
 
-Run all eight before committing; CI enforces the same from E5. `typecheck` and `test` run in every package under `packages/`. Until the apps exist (E3), `build` has nothing to run and passes trivially. The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
+Run all eight before committing; CI enforces the same from E5. `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
 
 ## Workspace (JS)
 
@@ -125,7 +125,7 @@ The pre-commit hook (`.husky/pre-commit`) runs two checks on the staged changes.
    - Remove the secret from the change. Secrets live in 1Password and reach the app as environment variables; see "Secrets and configuration" in [technical.md](technical.md).
    - Don't bypass the hook with `git commit --no-verify`, and don't add an exception without agreeing on it first.
    - If the hook says `betterleaks not found`, mise isn't active in the shell git runs in, or you haven't run `mise install`.
-2. **Lint and format** (lint-staged, configured in `lint-staged.config.js`). ESLint `--fix` and Prettier run on the staged files; fixes are added to the commit automatically. Any remaining lint error stops the commit.
+2. **Lint and format** (lint-staged, configured in `lint-staged.config.js`). ESLint `--fix` and Prettier run on the staged files, wherever they are in the repo (both apps, the packages, the root); fixes are added to the commit automatically. Any remaining lint error stops the commit.
    - Staged `.cs` files under `backend/` go through `dotnet format` twice: once to fix what it can (added to the commit like the ESLint fixes), then with `--verify-no-changes`, so any issue it can't fix (an analyzer warning such as CA2013) stops the commit and is printed. Generated migrations are skipped. This adds about 15–20 seconds to a commit that touches C#.
 
 ## Troubleshooting

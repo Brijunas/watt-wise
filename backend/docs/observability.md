@@ -90,7 +90,7 @@ HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed} ms
 - **One trace per request.** The ASP.NET Core server span is the root. Database commands become Npgsql child spans of the same trace.
 - **No parentless database spans.** SQL run outside any request, job or command (Hangfire's workers and queue listener poll all the time) would make one single-span trace per command. `ParentlessDatabaseSpanFilter` (`Infrastructure/Observability/`), added to every host's tracer, marks Npgsql spans without a parent as not recorded, so the exporters skip them. They are still created, so the ids on log events don't change. A database span with a parent is kept.
 - **Log events carry the ids.** Serilog takes the trace and span ids from the current `Activity`, so every event logged during a request carries the trace id as `@tr`. The request line carries the server span's id as `@sp`.
-- **The id clients see.** The ProblemDetails `traceId` ([error-handling.md](error-handling.md#the-contract)) is the W3C `traceparent` of the server span: `00-<trace id>-<span id>-<flags>`. Its second segment is the `@tr` to search for in the logs, and the trace id to open in Tempo; its third segment is the request line's `@sp`.
+- **The id clients see.** The ProblemDetails `traceId` ([error-handling.md](error-handling.md#the-contract-clients-see)) is the W3C `traceparent` of the server span: `00-<trace id>-<span id>-<flags>`. Its second segment is the `@tr` to search for in the logs, and the trace id to open in Tempo; its third segment is the request line's `@sp`.
 
 ## OTLP endpoint
 
@@ -98,7 +98,7 @@ HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed} ms
 - **Validation:** `ObservabilitySettingsValidator` runs with `ValidateOnStart`. The value must be an absolute http or https URI with no path, query, fragment or user info; otherwise the host stops at start.
 - **Empty means off.** No exporter is added, and logs go only to the console. Spans are still recorded, so the log ids work either way. The integration tests rely on this, and so does any environment without a collector.
 - **When the decision is made.** When the logger and the tracer and meter providers are built, from the bound `ObservabilitySettings` options. So every configuration source counts, including test overrides that `WebApplicationFactory` applies only at `Build()`. Don't read `builder.Configuration` during registration for such decisions: those overrides aren't there yet.
-- **Where the value comes from.** It is a URL, so it comes from 1Password like every connection setting. `appsettings.json` lists the key empty, and `.env.development` maps `Observability__OtlpEndpoint` to the `otlp` item's `url`. In Development the receiver is the Grafana LGTM container ([deploy/docs/lgtm.md](../../deploy/docs/lgtm.md)). Testing, Staging and Production pick theirs in E5.
+- **Where the value comes from.** It is a URL, so it comes from 1Password like every connection setting. `appsettings.json` lists the key empty, and `.env.development` maps `Observability__OtlpEndpoint` to the `otlp` item's `url`. In Development the receiver is the Grafana LGTM container ([deploy/docs/lgtm.md](../../deploy/docs/lgtm.md)). Testing, Staging and Production send to one shared Grafana LGTM stack on saturn, set up in E5 ([technical.md](../../docs/technical.md#hosting-and-operations)).
 
 ## Cli
 

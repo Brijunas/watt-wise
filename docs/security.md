@@ -1,6 +1,6 @@
 # Watt-Wise — Security
 
-The security decisions for the whole system: accounts, sign-in, sessions, authorization and transport. Facts owned by another doc are linked from here, not repeated. How the pieces are built is in the project docs, e.g. [backend/docs/architecture.md](../backend/docs/architecture.md#authentication).
+The security decisions for the whole system: accounts, sign-in, sessions, authorization, transport, deployment, and CI and contributions. Facts owned by another doc are linked from here, not repeated. How the pieces are built is in the project docs, e.g. [backend/docs/architecture.md](../backend/docs/architecture.md#authentication).
 
 ## Accounts
 
@@ -15,7 +15,7 @@ The security decisions for the whole system: accounts, sign-in, sessions, author
 
 ## Tokens
 
-- **Access token.** A JWT signed with the key from 1Password, valid for 15 minutes. The response body carries it, the clients keep it in memory only and send it as a Bearer header. It is never written to `localStorage` or `sessionStorage`.
+- **Access token.** A JWT signed with the key from 1Password, valid for 15 minutes. The response body carries it, the clients keep it in memory only and send it as a Bearer header. It is never written to `localStorage` or `sessionStorage`, and Redux DevTools, which would show it, is on only in development builds.
 - **Refresh token.** Valid for 7 days and single-use: every refresh returns a new one. It lives in an httpOnly, Secure, `SameSite=Strict` cookie limited to the auth endpoints, so scripts can't read it. The apps and the API share one registrable domain, so the cookie counts as same-site. Only a hash of each token is stored.
 - **Reuse.** Presenting a refresh token that was already used ends the session it belongs to.
 
@@ -32,7 +32,7 @@ A session is one sign-in on one device: the chain of refresh tokens that starts 
 
 - Every account's data is reachable only by that account: consumption objects, their rows, current plans and sessions.
 - **Admins.** Admin endpoints live under `/api/v1/admin` and need the Identity `Admin` role. The role is given to and taken from an existing confirmed account with a `WattWise.Cli` command; no endpoint grants it.
-- **Hangfire dashboard.** Never reachable from the internet. It accepts only local requests, the Cloudflare Tunnel has no route to the Jobs host, and a person with SSH access to the server opens it through an SSH tunnel; E6 sets this up for the deployed stacks ([jobs.md](../backend/docs/jobs.md#dashboard)). It has no sign-in of its own, so the `Admin` role doesn't apply to it. Browser access for admins is reconsidered if the system ever gets its own OpenID Connect sign-in.
+- **Hangfire dashboard.** Never reachable from the internet. It accepts only local requests, no tunnel route leads to the Jobs host, and from E6 it is an internal UI on saturn's loopback address like Grafana ([Deployment](#deployment), [jobs.md](../backend/docs/jobs.md#dashboard)). It has no sign-in of its own, so the `Admin` role doesn't apply to it. Browser access for admins is reconsidered if the system ever gets its own OpenID Connect sign-in.
 
 ## Transport and limits
 
@@ -43,9 +43,30 @@ A session is one sign-in on one device: the chain of refresh tokens that starts 
 - **Size limits (E6).** An upload body is at most 5 MB; a larger one gets 413 ProblemDetails.
 - **Security headers (E6).** Every response of the Api, the Jobs host and both apps carries `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a `Content-Security-Policy` with `frame-ancestors 'none'`. The Api's policy is `default-src 'none'`; the Scalar page outside Production and the Hangfire dashboard get a looser one, only as far as they need. The apps' policy allows scripts only from their own origin plus the hashes of their inline scripts, and connections only to their own origin and the API. The exact policies and the `Strict-Transport-Security` value are recorded here by S6.2.
 
+## Deployment
+
+How releases reach the server and how its secrets are kept. The repository is public, so anyone can fork it and open a pull request; nothing a pull request runs may reach the server or a deploy credential. The deploy flow itself is under "Hosting and operations" in [technical.md](technical.md#hosting-and-operations).
+
+- **Nothing connects in.** saturn opens no inbound port and has no SSH hostname. GitHub holds no credential for it. saturn pulls: an agent on it polls the registry and deploys what it can verify.
+- **Signed images.** The publishing workflow signs every image with keyless cosign (GitHub's OIDC identity). Before it deploys anything, the agent runs `cosign verify` against this repository's publishing workflow and the branch the environment accepts: `main` for Staging and Production, `main` or `dev` for Testing. It deploys by digest, never by tag. A fork, a pull request or a workflow on another branch can't produce a signature it accepts.
+- **Deploy tags.** A deploy or a swap only moves the `testing`, `staging` or `production` tag in the registry. The jobs that move them run in GitHub environments limited to their branch: `testing` to `dev`, `staging` and `production` to `main`. Production changes only through the swap, started by a person; no push moves its tag. Moving a tag can at worst point an environment at an older signed image.
+- **Secrets on the server.** One 1Password service account per deployed environment, read-only on that environment's vault and nothing else. Its token sits on saturn in a file only root can read, and nowhere else. The agent resolves the environment's `compose.env` with it at deploy time, so each container gets only its own settings: the Api never sees the Jobs or Cli database passwords, and so on. The agent reports each deploy to a GitHub deployment status with a fine-grained token limited to deployments on this repository, kept the same way.
+- **Images.** They hold no settings or secrets, so they are published publicly like the repository. The app containers run as a non-root user.
+- **Internal UIs.** Grafana (the shared LGTM), Testing's Mailpit and, from E6, the Hangfire dashboard publish only on saturn's loopback address; no tunnel route leads to them. PostgreSQL publishes no port at all ([postgres.md](../deploy/docs/postgres.md#hardening)).
+- **What the repo says about saturn.** Its name, that it runs Docker and the Compose stacks, and nothing more: no hostname, address, location, network layout, backup setup or host configuration. Those live in a private runbook, a Secure Note in 1Password. Outgoing email is checked for headers that carry the server's address ([epics.md](epics.md), S5.9).
+
+## CI and contributions
+
+- **Hosted runners only.** Every workflow runs on GitHub-hosted runners. No self-hosted runner is ever attached to this repository.
+- **Fork pull requests.** Workflows from every external contributor wait for the maintainer's approval (the repository's strictest setting). No workflow uses `pull_request_target`, which runs with the base repository's secrets and skips that approval. The pull request workflow gets no secrets.
+- **Least privilege.** The default `GITHUB_TOKEN` is read-only, and each job grants itself only the `permissions` it needs; only the signing job gets `id-token: write`. GitHub Actions may not create or approve pull requests.
+- **Pinned actions.** Every action is pinned to a full commit SHA, enforced by the repository's SHA-pinning policy and kept current by Renovate. The pull request workflow lints the workflows with zizmor.
+- **Signed commits.** `main` accepts only signed commits. Pull requests are squash-merged, so GitHub signs the commit that lands.
+- **External pull requests.** The maintainer reads the diff before approving its workflows, above all `.github/`, `*.csproj`, `Directory.Build.*`, `package.json` scripts and the hook configuration. If it has to run, it runs in a Codespace or a throwaway VM, never on a machine that holds SSH keys, a 1Password session or `.env` files.
+
 ## Elsewhere
 
 - **Secrets.** How secrets are kept in 1Password, injected at runtime and kept out of commits: "Secrets and configuration" in [technical.md](technical.md#cross-cutting).
-- **Backups.** Database dumps hold email addresses and password hashes. Each dump is encrypted with a key from 1Password before it is written, and its folder is readable only by the dump service's user and root. A deleted account's data stays in the off-server backup history until that history's retention period ends; S6.7 records the period here ([postgres.md](../deploy/docs/postgres.md)).
+- **Backups.** Database dumps hold email addresses and password hashes. Each dump is encrypted with a key from 1Password before it is written, and its folder is readable only by the dump service's user and root. A deleted account's data stays in the off-server backup history until that history's retention period ends; the period is in the private runbook ([postgres.md](../deploy/docs/postgres.md)).
 - **Database.** Least-privilege roles, schemas and hardening: [deploy/docs/postgres.md](../deploy/docs/postgres.md).
 - **Errors.** Error responses never carry exception details: [backend/docs/error-handling.md](../backend/docs/error-handling.md).

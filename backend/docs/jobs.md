@@ -56,7 +56,7 @@ To add a recurring job:
 ## Dashboard
 
 - **Where.** `/hangfire` on the Jobs URL (the `jobs` 1Password item's `url` in Development). The `http` launch profile opens it.
-- **Access.** Hangfire's default filter, which allows only local requests. The dashboard is never put on the internet; E6 (S6.4) makes it reachable over SSH in the deployed stacks ([security.md](../../docs/security.md#authorization)).
+- **Access.** Hangfire's default filter, which allows only local requests. The dashboard is never put on the internet; E6 (S6.4) makes it an internal UI on saturn's loopback address in the deployed stacks ([security.md](../../docs/security.md#authorization)).
 - **Logging.** Dashboard requests get the same one-line request log as the Api ([observability.md](observability.md#one-log-line-per-request)). An open dashboard polls its stats every few seconds, so expect a line per poll.
 
 ## Sizing

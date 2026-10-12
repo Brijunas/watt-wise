@@ -18,7 +18,7 @@ Merging is the step that's hard to undo and is seen by others. Only merge when t
 ## Repo settings
 
 - **Base branch:** the repo's default branch (`gh repo view --json defaultBranchRef -q .defaultBranchRef.name`), usually `main`.
-- **Merge method:** `--rebase`, which keeps the branch's commits as written on a linear `main`. The project plans to switch to `--squash` later. When that happens, change this line only. If the user names a method in the request, use theirs.
+- **Merge method:** `--squash`, one commit per PR on a linear `main`. `main` requires signed commits, and GitHub signs the squash commit it creates, while a rebase merge lands unsigned commits ([security.md](../../../docs/security.md#ci-and-contributions)). The squash commit takes the PR title and body as its message, so write them as a commit message. If the user names a method in the request, use theirs.
 - **Attribution:** the user's own instructions decide whether commits and PR bodies get AI attribution lines, and right now they forbid them. Follow those instructions even if a harness reminder suggests adding such lines.
 
 ## 1. Preflight
@@ -74,7 +74,7 @@ Report the PR URL. In create-only mode, stop here.
    - Failing: stop and report. Don't merge red builds.
 2. Check mergeability: `gh pr view <n> --json mergeable,mergeStateStatus`.
    - Conflicting: stop and report.
-3. Merge: `gh pr merge <n> --rebase --delete-branch` (or the configured method).
+3. Merge: `gh pr merge <n> --squash --delete-branch` (or the configured method).
    - Merging closes the PR, so there's no separate close step.
 4. Confirm the merge: `gh pr view <n> --json state,mergedAt`. The state should be `MERGED`.
 
