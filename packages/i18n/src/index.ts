@@ -1,1 +1,2 @@
-export const packageName = '@wattwise/i18n'
+export { createI18n, languages } from './create-i18n'
+export type { Language } from './create-i18n'

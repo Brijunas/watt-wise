@@ -39,6 +39,7 @@ A session is one sign-in on one device: the chain of refresh tokens that starts 
 - **HTTPS only.** Cloudflare terminates HTTPS and reaches the containers through a tunnel; no port is open on the server ([technical.md](technical.md#hosting-and-operations)).
 - **CORS.** Only the frontend and admin origins, and credentials only on the auth endpoints for the refresh cookie. The policy is in [architecture.md](../backend/docs/architecture.md#http-surface); E6 narrows it before the MVP release.
 - **Rate and size limits.** Rate limiting on the auth and upload endpoints, upload size limits and security headers come in E6.
+- **Inline script.** Each app's `index.html` carries one inline script, the one that applies the stored appearance before first paint ([technical.md](technical.md#frontend)). Its content is fixed at build time, so a Content Security Policy, once one is decided, allows it by hash, not with `'unsafe-inline'`.
 
 ## Deployment
 

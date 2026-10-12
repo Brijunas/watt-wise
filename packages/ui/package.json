@@ -3,10 +3,44 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./vite": "./src/vite.ts"
   },
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@wattwise/i18n": "workspace:*"
+  },
+  "peerDependencies": {
+    "@emotion/react": "catalog:",
+    "@emotion/styled": "catalog:",
+    "@fontsource-variable/roboto": "catalog:",
+    "@mui/icons-material": "catalog:",
+    "@mui/material": "catalog:",
+    "i18next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:",
+    "vite": "catalog:"
+  },
+  "devDependencies": {
+    "@emotion/react": "catalog:",
+    "@emotion/styled": "catalog:",
+    "@fontsource-variable/roboto": "catalog:",
+    "@mui/icons-material": "catalog:",
+    "@mui/material": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "i18next": "catalog:",
+    "jsdom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:",
+    "vite": "catalog:"
   }
 }
