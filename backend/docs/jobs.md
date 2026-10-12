@@ -56,7 +56,7 @@ To add a recurring job:
 ## Dashboard
 
 - **Where.** `/hangfire` on the Jobs URL (the `jobs` 1Password item's `url` in Development). The `http` launch profile opens it.
-- **Access.** Until E6 it keeps Hangfire's default filter, which allows only local requests. E6 restricts it to admins.
+- **Access.** Hangfire's default filter, which allows only local requests. The dashboard is never put on the internet; E6 (S6.4) makes it an internal UI on saturn's loopback address in the deployed stacks ([security.md](../../docs/security.md#authorization)).
 - **Logging.** Dashboard requests get the same one-line request log as the Api ([observability.md](observability.md#one-log-line-per-request)). An open dashboard polls its stats every few seconds, so expect a line per poll.
 
 ## Sizing
@@ -75,4 +75,4 @@ TestServer leaves the remote address empty, which Hangfire's local-requests-only
 
 ## Not yet
 
-- **Traces.** Hangfire creates no OpenTelemetry spans for job runs. A job's database calls therefore have no parent and are dropped by `ParentlessDatabaseSpanFilter` along with the polling ([observability.md](observability.md#correlation)). A server filter that starts an activity per job comes with the first real job, so its calls form one trace.
+- **Traces.** Hangfire creates no OpenTelemetry spans for job runs. A job's database calls therefore have no parent and are dropped by `ParentlessDatabaseSpanFilter` along with the polling ([observability.md](observability.md#correlation)). A server filter that starts an activity per job comes in E6 (S6.6), so its calls form one trace.

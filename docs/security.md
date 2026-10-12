@@ -32,13 +32,16 @@ A session is one sign-in on one device: the chain of refresh tokens that starts 
 
 - Every account's data is reachable only by that account: consumption objects, their rows, current plans and sessions.
 - **Admins.** Admin endpoints live under `/api/v1/admin` and need the Identity `Admin` role. The role is given to and taken from an existing confirmed account with a `WattWise.Cli` command; no endpoint grants it.
-- **Hangfire dashboard.** Only local requests until E6, which restricts it to admins ([jobs.md](../backend/docs/jobs.md#dashboard)).
+- **Hangfire dashboard.** Never reachable from the internet. It accepts only requests from the machine it runs on, no tunnel route leads to the Jobs host, and from E6 it is an internal UI on saturn's loopback address like Grafana ([Deployment](#deployment), [jobs.md](../backend/docs/jobs.md#dashboard)). It has no sign-in of its own, so the `Admin` role doesn't apply to it. Browser access for admins is reconsidered if the system ever gets its own OpenID Connect sign-in.
 
 ## Transport and limits
 
-- **HTTPS only.** Cloudflare terminates HTTPS and reaches the containers through a tunnel; no port is open on the server ([technical.md](technical.md#hosting-and-operations)).
+- **HTTPS only.** Cloudflare terminates HTTPS and reaches the containers through a tunnel; no port is open to the network on the server ([technical.md](technical.md#hosting-and-operations)).
 - **CORS.** Only the frontend and admin origins, and credentials only on the auth endpoints for the refresh cookie. The policy is in [architecture.md](../backend/docs/architecture.md#http-surface); E6 narrows it before the MVP release.
-- **Rate and size limits.** Rate limiting on the auth and upload endpoints, upload size limits and security headers come in E6.
+- **Client address.** The Api uses the connection's own address, except on requests that come from the tunnel container: there it takes the address from Cloudflare's `CF-Connecting-IP` header. It is used for rate limiting, held in memory only and never stored or logged.
+- **Rate limits (E6).** The auth endpoints share one counter: 10 requests a minute per IP address across all of them together. The endpoints that send email (register, resend confirmation, forgot password) share a second one: 5 requests an hour per IP address across the three. Uploads: 20 an hour per account. A request over a limit gets 429 ProblemDetails with `Retry-After`.
+- **Size limits (E6).** An upload body is at most 5 MB; a larger one gets 413 ProblemDetails.
+- **Security headers (E6).** Every response of the Api, the Jobs host and both apps carries `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and a `Content-Security-Policy` with `frame-ancestors 'none'`. The Api's policy is `default-src 'none'`; the Scalar page outside Production and the Hangfire dashboard get a looser one, only as far as they need. The apps' policy allows scripts only from their own origin plus the hashes of their inline scripts, and connections only to their own origin and the API. The exact policies and the `Strict-Transport-Security` value are recorded here by S6.2.
 
 ## Deployment
 
@@ -49,8 +52,8 @@ How releases reach the server and how its secrets are kept. The repository is pu
 - **Deploy tags.** A deploy or a swap only moves the `testing`, `staging` or `production` tag in the registry. The jobs that move them run in GitHub environments limited to their branch: `testing` to `dev`, `staging` and `production` to `main`. Production changes only through the swap, started by a person; no push moves its tag. Moving a tag can at worst point an environment at an older signed image.
 - **Secrets on the server.** One 1Password service account per deployed environment, read-only on that environment's vault and nothing else. Its token sits on saturn in a file only root can read, and nowhere else. The agent resolves the environment's `compose.env` with it at deploy time, so each container gets only its own settings: the Api never sees the Jobs or Cli database passwords, and so on. The agent reports each deploy to a GitHub deployment status with a fine-grained token limited to deployments on this repository, kept the same way.
 - **Images.** They hold no settings or secrets, so they are published publicly like the repository. The app containers run as a non-root user.
-- **Internal UIs.** Grafana (the shared LGTM) and Testing's Mailpit publish only on saturn's loopback address; no tunnel route leads to them. PostgreSQL publishes no port at all ([postgres.md](../deploy/docs/postgres.md#hardening)).
-- **What the repo says about saturn.** Its name, that it runs Docker and the Compose stacks, and nothing more: no hostname, address, location, network layout, backup setup or host configuration. Those live in a private runbook, a Secure Note in 1Password. Outgoing email is checked for headers that carry the server's address ([epics.md](epics.md), S5.9).
+- **Internal UIs.** Grafana (the shared LGTM), Testing's Mailpit and, from E6, the Hangfire dashboard publish only on saturn's loopback address; no tunnel route leads to them. PostgreSQL publishes no port at all ([postgres.md](../deploy/docs/postgres.md#hardening)).
+- **What the repo says about saturn.** Its name, that it runs Docker and the Compose stacks, and nothing more: no hostname, address, location, network layout or host configuration, and nothing about where backups go once they leave the server: the off-server copy, its retention and the dump folder's path. What the stacks themselves do, such as the daily database dump, is in the repo. Those live in a private runbook, a Secure Note in 1Password. Outgoing email is checked for headers that carry the server's address ([epics.md](epics.md), S5.9).
 
 ## CI and contributions
 
@@ -64,5 +67,6 @@ How releases reach the server and how its secrets are kept. The repository is pu
 ## Elsewhere
 
 - **Secrets.** How secrets are kept in 1Password, injected at runtime and kept out of commits: "Secrets and configuration" in [technical.md](technical.md#cross-cutting).
+- **Backups.** Database dumps hold email addresses and password hashes. Each dump is encrypted with a key from 1Password before it is written, and its folder is readable only by the dump service's user and root. A deleted account's data stays in the off-server backup history until that history's retention period ends; the period is in the private runbook ([postgres.md](../deploy/docs/postgres.md)).
 - **Database.** Least-privilege roles, schemas and hardening: [deploy/docs/postgres.md](../deploy/docs/postgres.md).
 - **Errors.** Error responses never carry exception details: [backend/docs/error-handling.md](../backend/docs/error-handling.md).
