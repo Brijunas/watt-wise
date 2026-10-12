@@ -8,3 +8,20 @@ engineStrict: true
 
 # Don't install versions published less than a day ago (minutes). Guards against compromised releases.
 minimumReleaseAge: 1440
+
+# Versions shared by frontend and admin. Each app lists these as "catalog:".
+catalog:
+  react: ^19.2.8
+  react-dom: ^19.2.8
+  '@types/react': ^19.2.18
+  '@types/react-dom': ^19.2.7
+  '@vitejs/plugin-react': ^6.1.1
+  vite: ^8.3.0
+  '@testing-library/react': ^16.3.3
+  '@testing-library/dom': ^10.4.2
+  jsdom: ^30.1.2
+
+# unrs-resolver (used by eslint-import-resolver-typescript) ships its native binary as an
+# optional dependency; its postinstall script is only a fallback, so it doesn't run.
+allowBuilds:
+  unrs-resolver: false
