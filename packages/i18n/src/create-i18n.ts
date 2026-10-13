@@ -30,8 +30,20 @@ export interface CreateI18nOptions {
   namespaces?: Record<Language, Record<string, object>>
 }
 
+const sharedNamespaces = ['common', 'shell']
+
 export function createI18n(options: CreateI18nOptions = {}): i18n {
   const extra = options.namespaces
+  const enNames = Object.keys(extra?.en ?? {})
+  const ltNames = Object.keys(extra?.lt ?? {})
+  if ([...enNames, ...ltNames].some((name) => sharedNamespaces.includes(name))) {
+    throw new Error(
+      `App namespaces cannot reuse a shared namespace: ${sharedNamespaces.join(', ')}`,
+    )
+  }
+  if (enNames.length !== ltNames.length || enNames.some((name) => !ltNames.includes(name))) {
+    throw new Error('Both languages must register the same namespaces')
+  }
   const instance = createInstance()
 
   // The detector returns every code it finds and i18next takes the first supported one, so this
@@ -58,7 +70,7 @@ export function createI18n(options: CreateI18nOptions = {}): i18n {
       load: 'languageOnly',
       fallbackLng: 'en',
       defaultNS: 'common',
-      ns: ['common', 'shell', ...Object.keys(extra?.en ?? {})],
+      ns: [...sharedNamespaces, ...enNames],
       detection: {
         order: ['localStorage', 'navigator', 'marketDefault'],
         caches: ['localStorage'],

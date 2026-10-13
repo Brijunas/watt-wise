@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
 import { flattenKeys } from '@wattwise/i18n/testing'
+import { beforeEach, describe, expect, it } from 'vitest'
 import en from '@/locales/en.json'
 import lt from '@/locales/lt.json'
 import { createAppI18n } from './i18n'
@@ -10,7 +10,7 @@ beforeEach(() => {
 
 describe('app i18n', () => {
   it('has the same keys in both languages', () => {
-    expect(flattenKeys(lt)).toEqual(flattenKeys(en))
+    expect(flattenKeys(lt).sort()).toEqual(flattenKeys(en).sort())
   })
 
   it('resolves the app namespace in English and Lithuanian', async () => {
@@ -25,5 +25,7 @@ describe('app i18n', () => {
     const i18n = createAppI18n()
     await i18n.changeLanguage('en')
     expect(i18n.t('language.label', { ns: 'common' })).toBe('Language')
+    await i18n.changeLanguage('lt')
+    expect(i18n.t('language.label', { ns: 'common' })).toBe('Kalba')
   })
 })

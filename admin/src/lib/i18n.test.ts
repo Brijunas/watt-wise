@@ -13,7 +13,7 @@ describe('app i18n', () => {
     expect(flattenKeys(lt).sort()).toEqual(flattenKeys(en).sort())
   })
 
-  it('resolves the app namespace in English and in Lithuanian', async () => {
+  it('resolves the app namespace in English and Lithuanian', async () => {
     const i18n = createAppI18n()
     await i18n.changeLanguage('en')
     expect(i18n.t('nav.home', { ns: 'app' })).toBe('Home')
@@ -24,8 +24,8 @@ describe('app i18n', () => {
   it('still resolves the shared namespaces', async () => {
     const i18n = createAppI18n()
     await i18n.changeLanguage('en')
-    expect(i18n.t('language.label')).toBe('Language')
+    expect(i18n.t('language.label', { ns: 'common' })).toBe('Language')
     await i18n.changeLanguage('lt')
-    expect(i18n.t('language.label')).toBe('Kalba')
+    expect(i18n.t('language.label', { ns: 'common' })).toBe('Kalba')
   })
 })

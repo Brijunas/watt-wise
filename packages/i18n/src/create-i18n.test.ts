@@ -29,7 +29,8 @@ beforeEach(() => {
 })
 
 describe('createI18n', () => {
-  it('defaults to English and resolves the appearance keys', () => {
+  it('uses English for an English browser and resolves the appearance keys', () => {
+    stubBrowserLanguages(['en-US'])
     const i18n = createI18n()
 
     expect(i18n.language).toBe('en')
@@ -126,6 +127,18 @@ describe('translations', () => {
     expect(translate(createI18n({ namespaces: extraNamespaces }), 'demo:greeting')).toBe('Hello')
     expect(translate(createI18n({ lng: 'lt', namespaces: extraNamespaces }), 'demo:greeting')).toBe(
       'Labas',
+    )
+  })
+
+  it('rejects an app namespace that replaces a shared one', () => {
+    expect(() => createI18n({ namespaces: { en: { shell: {} }, lt: { shell: {} } } })).toThrow(
+      'shared namespace',
+    )
+  })
+
+  it('rejects languages that register different app namespaces', () => {
+    expect(() => createI18n({ namespaces: { en: { demo: {} }, lt: {} } })).toThrow(
+      'the same namespaces',
     )
   })
 

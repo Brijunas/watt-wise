@@ -101,12 +101,13 @@ describe('RootLayout', () => {
     expect(localStorage.getItem('wattwise-mode')).toBe('dark')
   })
 
-  it.each([360, 900])('switches the shell to Lithuanian at width %i', async (width) => {
+  it.each([360, 900])('switches the shell to Lithuanian at %i px', async (width) => {
     const user = userEvent.setup()
     renderAt('/', width)
     await screen.findByRole('heading', { level: 1, name: 'Home' })
     await user.click(screen.getByRole('button', { name: 'Language' }))
     await user.click(screen.getByRole('menuitemradio', { name: 'Lietuvių' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Pradžia' })).toBeTruthy()
     const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
     expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
     expect(within(nav).getByRole('link', { name: 'Pavyzdys' })).toBeTruthy()
