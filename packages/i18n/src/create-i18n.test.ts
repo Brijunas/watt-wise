@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import enCommon from './locales/en/common.json'
 import ltCommon from './locales/lt/common.json'
+import enShell from './locales/en/shell.json'
+import ltShell from './locales/lt/shell.json'
 import { createI18n } from './create-i18n'
 
 function flattenKeys(value: object, prefix = ''): string[] {
@@ -30,6 +32,13 @@ describe('createI18n', () => {
     expect(i18n.t('appearance.auto')).toBe('Automatinė')
   })
 
+  it('resolves the shell namespace in both languages', () => {
+    expect(createI18n().t('navigation.label', { ns: 'shell' })).toBe('Main navigation')
+    expect(createI18n({ lng: 'lt' }).t('navigation.label', { ns: 'shell' })).toBe(
+      'Pagrindinė navigacija',
+    )
+  })
+
   it('returns independent instances', async () => {
     const first = createI18n()
     const second = createI18n()
@@ -43,7 +52,10 @@ describe('createI18n', () => {
 })
 
 describe('locale files', () => {
-  it('have the same keys in English and Lithuanian', () => {
-    expect(flattenKeys(ltCommon).sort()).toEqual(flattenKeys(enCommon).sort())
+  it.each([
+    ['common', enCommon, ltCommon],
+    ['shell', enShell, ltShell],
+  ])('have the same %s keys in English and Lithuanian', (_name, en, lt) => {
+    expect(flattenKeys(lt).sort()).toEqual(flattenKeys(en).sort())
   })
 })

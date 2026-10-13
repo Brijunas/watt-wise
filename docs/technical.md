@@ -44,7 +44,7 @@ watt-wise/
 - **Appearance:** light, dark and auto modes using MUI's CSS-variables theme with `colorSchemes` and `useColorScheme`. Auto follows `prefers-color-scheme`; the user's choice is stored in `localStorage` under `wattwise-mode` and applied before first paint to avoid a flash. The apps have no server rendering, so a Vite plugin from `@wattwise/ui/vite` writes MUI's own `InitColorSchemeScript` into each `index.html` `<head>` at build time.
 - **Palette and font:** the brand palette lives in `packages/ui` (the theme): a blue-violet primary, a neutral slate secondary and tinted neutrals, every colour meeting WCAG AA (4.5:1) as text on both backgrounds, checked by the theme's tests. Green, red and amber are reserved for cheaper, pricier and caution, so they are never used as brand or decoration. The font is Roboto, bundled with the apps (`@fontsource-variable/roboto`), so no request goes to a font CDN.
 - **Data fetching / server state:** RTK Query (Redux Toolkit).
-- **Routing:** React Router.
+- **Routing:** React Router 8 in data mode: `createBrowserRouter` with lazy page routes, `RouterProvider` from `react-router/dom` and everything else from `react-router`. The app shell (app bar, bottom navigation on a phone, side navigation from the `md` breakpoint up) and the not-found page come from `@wattwise/ui`; how they get their links is under "Import direction" in [frontend-structure.md](frontend-structure.md#import-direction).
 - **Forms and validation:** react-hook-form with zod schemas.
 - **Charts (consumption chart, catalog UI):** MUI X Charts.
 - **i18n (Lithuanian and English):** react-i18next; default language picked from browser settings, switchable by the user. Until S3.5 adds detection and the switch, the apps start in English.

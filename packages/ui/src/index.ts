@@ -1,3 +1,7 @@
 export { AppThemeProvider } from './theme/app-theme-provider'
 export { ModeSwitch } from './theme/mode-switch'
 export { theme } from './theme/theme'
+export { AppShell } from './shell/app-shell'
+export type { AppShellNavItem } from './shell/app-shell-nav-item'
+export { NotFound } from './shell/not-found'
+export { PageLoading } from './shell/page-loading'

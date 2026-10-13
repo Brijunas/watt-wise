@@ -34,6 +34,7 @@ export function ModeSwitch() {
   return (
     <>
       <IconButton
+        color="inherit"
         aria-label={t('appearance.label')}
         aria-haspopup="menu"
         aria-expanded={open}
