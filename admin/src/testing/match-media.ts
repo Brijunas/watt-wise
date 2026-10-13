@@ -1,12 +1,6 @@
+import { createMatchMedia } from '@wattwise/ui/testing'
 import { vi } from 'vitest'
 
-export function stubMatchMedia() {
-  vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: false,
-    media: query,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-  }))
+export function stubMatchMedia({ width = 360 }: { width?: number } = {}) {
+  vi.stubGlobal('matchMedia', createMatchMedia({ width }))
 }

@@ -38,7 +38,7 @@ A feature creates only the subfolders it needs. A subfolder that would hold one 
 ## Features
 
 - **One feature per route section:** the pages under one route prefix belong together. The backend's endpoint groups don't decide it: the sessions endpoints sit in the auth group, yet the devices pages are their own feature. A demo or a single page is a feature like any other.
-- **Expected first features.** `frontend`: `account` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `account` (sign-in only), `catalog-review`, `jobs`.
+- **Expected first features.** `frontend`: `account` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `account` (sign-in only), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](technical.md#admin-application)).
 - **Worked example (S4.9 sign-in):**
 
 ```
@@ -86,26 +86,26 @@ The packages never import an app, and import each other only in this direction, 
 | `@wattwise/api-client` | `core` (the base query)               |
 | `@wattwise/ui`         | `core`, `i18n`; never `api-client`    |
 
-Because `i18n` imports nothing, `core` → `i18n` can't close a cycle. `core` never imports `api-client`: its store factory receives the API slice as a parameter, and its token refresh calls the refresh endpoint with `fetch` inside the base query instead of through a generated endpoint. `ui` stays free of data fetching: a component both apps need takes data and callbacks as props, and each app's feature connects it to the API.
+Because `i18n` imports nothing, `core` → `i18n` can't close a cycle. `core` never imports `api-client`: its store factory receives the API slice as a parameter, and its token refresh calls the refresh endpoint with `fetch` inside the base query instead of through a generated endpoint. `ui` stays free of data fetching: a component both apps need takes data and callbacks as props, and each app's feature connects it to the API. It doesn't import React Router either: a component that links, such as `AppShell`, takes the link component and the paths as props.
 
 ## Where things go
 
-| Thing                           | Place                                                                                                                                                             |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Generic or themed UI            | `@wattwise/ui`. Only layouts and pieces used by one app go in `<app>/src/components/`.                                                                            |
-| A page                          | A route module in `app/routes/` that renders feature components. Pages hold no business logic.                                                                    |
-| Route guards                    | Layout routes in `app/routes/` that check the session from `@wattwise/core` (and the `Admin` role in admin). Guards are not route loaders.                        |
-| A component used by one feature | `features/<f>/components/`                                                                                                                                        |
-| Endpoints                       | Generated into `@wattwise/api-client`. Never call `createApi` in an app.                                                                                          |
-| Cache tags                      | `@wattwise/api-client`: tag types and `providesTags`/`invalidatesTags` with IDs, in one enhanced-API file next to the generated code.                             |
-| Data shaping for one feature    | `features/<f>/api/`: selectors, `selectFromResult` and composed hooks. Features never call `enhanceEndpoints`; it changes the one shared API.                     |
-| Client-only state               | A `createSlice` file in `features/<f>/model/`, injected into the root reducer (see "Store").                                                                      |
-| Form state                      | react-hook-form, never Redux. Schema in `features/<f>/schemas/`; shared zod helpers in `@wattwise/core`.                                                          |
-| API error messages              | Every ProblemDetails error code maps to an i18n key in `@wattwise/core`; the text is in `@wattwise/i18n`. Features add behaviour, not text.                       |
-| Text both apps show             | `@wattwise/i18n`, one namespace per topic (`common`, `errors`, `auth`…). A shared namespace is never named after a feature, so it can't collide with a feature's. |
-| Text only one feature shows     | `features/<f>/locales/`, namespace named after the feature. How app namespaces are registered and loaded is settled in S3.5.                                      |
-| Env, route paths, constants     | `config/`                                                                                                                                                         |
-| Static files                    | With the feature that uses them, or `assets/` when shared.                                                                                                        |
+| Thing                           | Place                                                                                                                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Generic or themed UI            | `@wattwise/ui`. Only layouts and pieces used by one app go in `<app>/src/components/`.                                                                                     |
+| A page                          | A route module in `app/routes/` that renders feature components. Pages hold no business logic.                                                                             |
+| Route guards                    | Layout routes in `app/routes/` that check the session from `@wattwise/core` (and the `Admin` role in admin). Guards are not route loaders.                                 |
+| A component used by one feature | `features/<f>/components/`                                                                                                                                                 |
+| Endpoints                       | Generated into `@wattwise/api-client`. Never call `createApi` in an app.                                                                                                   |
+| Cache tags                      | `@wattwise/api-client`: tag types and `providesTags`/`invalidatesTags` with IDs, in one enhanced-API file next to the generated code.                                      |
+| Data shaping for one feature    | `features/<f>/api/`: selectors, `selectFromResult` and composed hooks. Features never call `enhanceEndpoints`; it changes the one shared API.                              |
+| Client-only state               | A `createSlice` file in `features/<f>/model/`, injected into the root reducer (see "Store").                                                                               |
+| Form state                      | react-hook-form, never Redux. Schema in `features/<f>/schemas/`; shared zod helpers in `@wattwise/core`.                                                                   |
+| API error messages              | Every ProblemDetails error code maps to an i18n key in `@wattwise/core`; the text is in `@wattwise/i18n`. Features add behaviour, not text.                                |
+| Text both apps show             | `@wattwise/i18n`, one namespace per topic (`common`, `shell`, `errors`, `auth`…). A shared namespace is never named after a feature, so it can't collide with a feature's. |
+| Text only one feature shows     | `features/<f>/locales/`, namespace named after the feature. How app namespaces are registered and loaded is settled in S3.5.                                               |
+| Env, route paths, constants     | `config/`                                                                                                                                                                  |
+| Static files                    | With the feature that uses them, or `assets/` when shared.                                                                                                                 |
 
 Tags live in the package because they are part of the API contract: both apps need the same ones, and a mutation must invalidate another feature's query whichever lazy routes have loaded.
 
@@ -136,6 +136,7 @@ Tags live in the package because they are part of the API contract: both apps ne
 - A route's integration test sits next to its route module in `app/routes/`.
 - `testing/test-utils.tsx` renders through `AppProvider` from `app/provider.tsx` with a fresh store, so tests use the real provider tree instead of a copy.
 - MSW handlers live in `testing/mocks/handlers/`, one file per API resource, so features and routes reuse them.
+- A test that depends on the screen width stubs `matchMedia` with `createMatchMedia({ width })` from `@wattwise/ui/testing` (in an app, through `stubMatchMedia({ width })` in `testing/match-media.ts`): 360 for a phone (`xs`), 900 for `md`. Layout that changes with the breakpoint therefore uses `useMediaQuery`, not CSS `display`, so jsdom renders only the variant under test.
 - Playwright end-to-end tests go in `<app>/e2e/` once they exist.
 
 ## Enforcement

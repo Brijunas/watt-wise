@@ -1,0 +1,9 @@
+{
+  "navigation": { "label": "Pagrindinė navigacija" },
+  "nav": { "home": "Pradžia", "placeholder": "Pavyzdys", "catalogReview": "Katalogo peržiūra" },
+  "notFound": {
+    "title": "Puslapis nerastas",
+    "message": "Puslapio, kurio ieškote, nėra.",
+    "home": "Grįžti į pradžią"
+  }
+}
