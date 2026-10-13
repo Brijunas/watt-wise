@@ -1,1 +1,4 @@
-{ "appearance": { "label": "Appearance", "light": "Light", "dark": "Dark", "auto": "Auto" } }
+{
+  "appearance": { "label": "Appearance", "light": "Light", "dark": "Dark", "auto": "Auto" },
+  "language": { "label": "Language" }
+}

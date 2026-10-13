@@ -31,9 +31,22 @@ const appZones = apps.flatMap((app) => {
     : []
   return [
     {
-      target: `${src}/!(app|features|testing)/**`,
+      // lib/i18n.ts is excluded here and gets its own zones below.
+      target: [`${src}/!(app|features|testing|lib)/**`, `${src}/lib/!(i18n.ts)`, `${src}/lib/*/**`],
       from: [featuresDir, `${src}/app`],
       message: 'Shared folders must not import features/ or app/.',
+    },
+    {
+      target: `${src}/lib/i18n.ts`,
+      from: `${src}/app`,
+      message: 'Shared folders must not import features/ or app/.',
+    },
+    {
+      // A glob `from` takes its `except` as globs on absolute paths.
+      target: `${src}/lib/i18n.ts`,
+      from: `${featuresDir}/**`,
+      except: [path.join(import.meta.dirname, featuresDir, '*/locales/*.json')],
+      message: 'lib/i18n.ts may only import features/<feature>/locales/*.json from features/.',
     },
     {
       target: `${src}/testing`,

@@ -42,6 +42,9 @@ catalogs:
     i18next:
       specifier: ^26.4.3
       version: 26.4.3
+    i18next-browser-languagedetector:
+      specifier: ^8.2.1
+      version: 8.2.1
     jsdom:
       specifier: ^30.1.2
       version: 30.1.2
@@ -259,10 +262,17 @@ importers:
   packages/core: {}
 
   packages/i18n:
+    dependencies:
+      i18next-browser-languagedetector:
+        specifier: 'catalog:'
+        version: 8.2.1
     devDependencies:
       i18next:
         specifier: 'catalog:'
         version: 26.4.3(typescript@6.0.3)
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.1.2
       react:
         specifier: 'catalog:'
         version: 19.3.0
@@ -271,6 +281,10 @@ importers:
         version: 17.0.16(i18next@26.4.3(typescript@6.0.3))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
 
   packages/ui:
+    dependencies:
+      '@wattwise/i18n':
+        specifier: workspace:*
+        version: link:../i18n
     devDependencies:
       '@emotion/react':
         specifier: 'catalog:'
@@ -302,9 +316,6 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.3.0(@types/react@19.3.0)
-      '@wattwise/i18n':
-        specifier: workspace:*
-        version: link:../i18n
       i18next:
         specifier: 'catalog:'
         version: 26.4.3(typescript@6.0.3)
@@ -1694,6 +1705,9 @@ packages:
     resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
     engines: {node: '>=18'}
     hasBin: true
+
+  i18next-browser-languagedetector@8.2.1:
+    resolution: {integrity: sha512-bZg8+4bdmaOiApD7N7BPT9W8MLZG+nPTOFlLiJiT8uzKXFjhxw4v2ierCXOwB5sFDMtuA5G4kgYZ0AznZxQ/cw==}
 
   i18next@26.4.3:
     resolution: {integrity: sha512-QIIueUYS2giFVIY3hu/X5Dz7/qTzwcXE06H29m1DKVhUGVPCyT0wnsh14wEn/cTy9nZ/B6VhbDItdXotOKSO8A==}
@@ -3671,6 +3685,10 @@ snapshots:
   html-parse-stringify@4.0.1: {}
 
   husky@9.1.7: {}
+
+  i18next-browser-languagedetector@8.2.1:
+    dependencies:
+      '@babel/runtime': 7.29.10
 
   i18next@26.4.3(typescript@6.0.3):
     optionalDependencies:

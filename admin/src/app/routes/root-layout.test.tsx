@@ -10,6 +10,7 @@ import { routes } from '../router'
 beforeEach(() => {
   localStorage.clear()
   document.documentElement.className = ''
+  document.documentElement.lang = ''
 })
 
 afterEach(() => {
@@ -98,5 +99,37 @@ describe('RootLayout', () => {
     await user.click(screen.getByRole('menuitemradio', { name: 'Dark' }))
     expect(document.documentElement.classList.contains('dark')).toBe(true)
     expect(localStorage.getItem('wattwise-mode')).toBe('dark')
+  })
+
+  it.each([360, 900])('switches the shell to Lithuanian at %i px', async (width) => {
+    const user = userEvent.setup()
+    renderAt('/', width)
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await user.click(screen.getByRole('button', { name: 'Language' }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Lietuvių' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Pradžia' })).toBeTruthy()
+    const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
+    expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
+    expect(within(nav).getByRole('link', { name: 'Katalogo peržiūra' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Išvaizda' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Kalba' })).toBeTruthy()
+    expect(localStorage.getItem('wattwise-language')).toBe('lt')
+    expect(document.documentElement.lang).toBe('lt')
+  })
+
+  it('starts in Lithuanian when the browser prefers it', async () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['lt-LT', 'en'])
+    renderAt('/', 360)
+    await screen.findByRole('heading', { level: 1, name: 'Pradžia' })
+    const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
+    expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
+  })
+
+  it('starts in the stored language', async () => {
+    localStorage.setItem('wattwise-language', 'lt')
+    renderAt('/', 360)
+    await screen.findByRole('heading', { level: 1, name: 'Pradžia' })
+    const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
+    expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
   })
 })

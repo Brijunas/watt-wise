@@ -2,12 +2,12 @@ import FactCheckIcon from '@mui/icons-material/FactCheck'
 import HomeIcon from '@mui/icons-material/Home'
 import { useTranslation } from 'react-i18next'
 import { Link, matchPath, Outlet, useLocation } from 'react-router'
-import { AppShell, ModeSwitch } from '@wattwise/ui'
+import { AppShell, LanguageSwitch, ModeSwitch } from '@wattwise/ui'
 import type { AppShellNavItem } from '@wattwise/ui'
 import { paths } from '@/config/routes'
 
 export function RootLayout() {
-  const { t } = useTranslation('shell')
+  const { t } = useTranslation('app')
   const { pathname } = useLocation()
 
   const items: readonly AppShellNavItem[] = [
@@ -29,7 +29,12 @@ export function RootLayout() {
       items={items}
       activeKey={active?.key ?? null}
       linkComponent={Link}
-      actions={<ModeSwitch />}
+      actions={
+        <>
+          <LanguageSwitch />
+          <ModeSwitch />
+        </>
+      }
     >
       <Outlet />
     </AppShell>
