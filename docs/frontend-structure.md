@@ -25,7 +25,8 @@ How code is laid out inside `frontend/` and `admin/`, and how they and the share
 ├── components/          app-only shared UI (layouts, app shell pieces)
 ├── hooks/               app-only shared hooks
 ├── stores/              root reducer, store function, hooks.ts with the typed hooks
-├── lib/                 app-level setup of a library, e.g. lib/i18n.ts adds the app's namespaces
+├── lib/                 app-level setup of a library, e.g. lib/i18n.ts registers the app's namespaces
+├── locales/             lt.json, en.json: app-wide text no feature owns (nav labels), the `app` namespace
 ├── config/              env.ts (typed import.meta.env), routes.ts (route paths), other constants
 ├── types/               app-wide types not owned by one feature
 ├── utils/               app-wide pure helpers, e.g. utils/format-kwh.ts
@@ -64,13 +65,13 @@ frontend/src/
 
 Code flows one way: **shared → features → app**. "Shared folders" means every folder in `src/` except `app/` and `features/`.
 
-| From            | May import                                                                |
-| --------------- | ------------------------------------------------------------------------- |
-| `main.tsx`      | `app/`, `stores/`                                                         |
-| `app/`          | everything in the app, `@wattwise/*`                                      |
-| `features/<f>/` | its own files, the shared folders, `@wattwise/*`                          |
-| `testing/`      | the shared folders, `app/provider.tsx`, `@wattwise/*`; used only by tests |
-| shared folders  | other shared folders, `@wattwise/*`                                       |
+| From            | May import                                                                        |
+| --------------- | --------------------------------------------------------------------------------- |
+| `main.tsx`      | `app/`, `stores/`                                                                 |
+| `app/`          | everything in the app, `@wattwise/*`                                              |
+| `features/<f>/` | its own files, the shared folders, `@wattwise/*`                                  |
+| `testing/`      | the shared folders, `app/provider.tsx`, `@wattwise/*`; used only by tests         |
+| shared folders  | other shared folders, `@wattwise/*`; `lib/i18n.ts` also the features' locale JSON |
 
 - **No cross-feature imports.** `features/a` never imports `features/b`. When a page needs both, the route module in `app/routes/` composes them. When a feature's component needs another feature's behaviour, the route passes it in as a prop or slot.
 - **Data shared between features goes through RTK Query**, not imports: a mutation's tags invalidate the other feature's queries.
@@ -103,11 +104,19 @@ Because `i18n` imports nothing, `core` → `i18n` can't close a cycle. `core` ne
 | Form state                      | react-hook-form, never Redux. Schema in `features/<f>/schemas/`; shared zod helpers in `@wattwise/core`.                                                                   |
 | API error messages              | Every ProblemDetails error code maps to an i18n key in `@wattwise/core`; the text is in `@wattwise/i18n`. Features add behaviour, not text.                                |
 | Text both apps show             | `@wattwise/i18n`, one namespace per topic (`common`, `shell`, `errors`, `auth`…). A shared namespace is never named after a feature, so it can't collide with a feature's. |
-| Text only one feature shows     | `features/<f>/locales/`, namespace named after the feature. How app namespaces are registered and loaded is settled in S3.5.                                               |
+| Text only one feature shows     | `features/<f>/locales/`, namespace named after the feature. Registered in `lib/i18n.ts` (see "Translations").                                                              |
+| Text only one app shows         | `locales/`, the `app` namespace: text of the app's shell that no feature owns, such as nav labels.                                                                         |
 | Env, route paths, constants     | `config/`                                                                                                                                                                  |
 | Static files                    | With the feature that uses them, or `assets/` when shared.                                                                                                                 |
 
 Tags live in the package because they are part of the API contract: both apps need the same ones, and a mutation must invalidate another feature's query whichever lazy routes have loaded.
+
+## Translations
+
+- **One instance per app, made in `lib/i18n.ts`.** `createAppI18n()` calls `createI18n` from `@wattwise/i18n` with the app's namespaces: `app` from `locales/` and one per feature from `features/<f>/locales/`. The JSON is imported statically and bundled, so the instance is ready synchronously and no component waits for text. `main.tsx` uses the instance the module exports; `testing/test-utils.tsx` calls `createAppI18n()` for a fresh one per test.
+- **Keys are type-checked.** `@wattwise/i18n` declares its namespaces in i18next's `ResourceNamespaceMap`, and `lib/i18n.ts` adds the app's to the same interface with `declare module 'i18next'`, typed from the English file. A key that doesn't exist fails `pnpm typecheck`. Name the namespace in `useTranslation('<namespace>')`; without one, keys come from `common`.
+- **Both languages have the same keys.** `lib/i18n.test.ts` compares every pair of locale files with `flattenKeys` from `@wattwise/i18n/testing`; a new namespace is added to that test.
+- **Detection, the stored choice and `<html lang>`** belong to `@wattwise/i18n` ([technical.md](technical.md#frontend)); the switch is `LanguageSwitch` in `@wattwise/ui`. Language names shown in the switch are endonyms from `languageNames`, not translated.
 
 ## Store
 
@@ -144,7 +153,7 @@ Tags live in the package because they are part of the API contract: both apps ne
 The root `eslint.config.js` checks the import rules for both apps with `eslint-plugin-import-x` (`eslint-plugin-import` doesn't support ESLint 10):
 
 - A TypeScript import resolver that reads the tsconfig `paths`, so the rules see through `@/` and the `@wattwise/*` source exports. Without it they silently skip those imports.
-- `import-x/no-restricted-paths` zones: shared folders can't import `features/` or `app/`, except `testing/` importing `app/provider.tsx`; features can't import `app/`; and no feature can import another. The feature zones are generated from each app's `src/features/` listing, so a new feature is covered without editing the config. Further zones hold the package graph above, and keep the packages from importing an app and one app from importing the other.
+- `import-x/no-restricted-paths` zones: shared folders can't import `features/` or `app/`, except `testing/` importing `app/provider.tsx`; features can't import `app/`; and no feature can import another. One exception: `lib/i18n.ts` may import `features/<f>/locales/*.json`, and nothing else from a feature (see "Translations"). The feature zones are generated from each app's `src/features/` listing, so a new feature is covered without editing the config. Further zones hold the package graph above, and keep the packages from importing an app and one app from importing the other.
 - `no-restricted-imports` by package name for the same graph. A zone silently skips an import the resolver can't follow, and a workspace package that isn't a declared dependency isn't guaranteed to resolve; the by-name rule doesn't depend on resolution.
 - `import-x/no-cycle`.
 - `no-restricted-imports` for `useSelector` and `useDispatch` from `react-redux`, off for `stores/hooks.ts`.

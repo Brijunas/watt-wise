@@ -1,2 +1,2 @@
-export { createI18n, languages } from './create-i18n'
-export type { Language } from './create-i18n'
+export { createI18n, languageNames, languages, languageStorageKey } from './create-i18n'
+export type { CreateI18nOptions, Language } from './create-i18n'

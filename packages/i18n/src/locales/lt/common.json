@@ -1,1 +1,4 @@
-{ "appearance": { "label": "Išvaizda", "light": "Šviesi", "dark": "Tamsi", "auto": "Automatinė" } }
+{
+  "appearance": { "label": "Išvaizda", "light": "Šviesi", "dark": "Tamsi", "auto": "Automatinė" },
+  "language": { "label": "Kalba" }
+}
