@@ -1,8 +1,8 @@
 import { cleanup, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { stubMatchMedia } from '@/testing/match-media'
 import { renderWithProviders } from '@/testing/test-utils'
 import { routes } from '../router'
@@ -17,14 +17,22 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderAt(path: string, width = 360) {
+function renderAt(path: string, width: number) {
   stubMatchMedia({ width })
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   return renderWithProviders(<RouterProvider router={router} />)
 }
 
 describe('RootLayout', () => {
-  it('shows the phone shell with the Home page at 360 px', async () => {
+  it('shows the shell with a loading indicator while the first page loads', async () => {
+    renderAt('/', 360)
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy()
+    expect(screen.getByRole('progressbar', { name: 'Loading' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
+  it('renders the phone shell with the Home page', async () => {
     renderAt('/', 360)
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
     expect(screen.getByText('Watt-Wise Admin')).toBeTruthy()
@@ -37,7 +45,7 @@ describe('RootLayout', () => {
     )
   })
 
-  it('shows the side navigation with the Home page at 900 px', async () => {
+  it('renders the side navigation from md up', async () => {
     renderAt('/', 900)
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
     expect(screen.getByText('Watt-Wise Admin')).toBeTruthy()
@@ -50,9 +58,9 @@ describe('RootLayout', () => {
     )
   })
 
-  it('opens Catalog review from the navigation and moves the current item', async () => {
+  it('moves to the Catalog review page and the current marker with a click', async () => {
     const user = userEvent.setup()
-    renderAt('/')
+    renderAt('/', 360)
     await screen.findByRole('heading', { level: 1, name: 'Home' })
     await user.click(screen.getByRole('link', { name: 'Catalog review' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'Catalog review' })).toBeTruthy()
@@ -62,20 +70,20 @@ describe('RootLayout', () => {
     expect(screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBeNull()
   })
 
-  it('renders Catalog review directly at its URL', async () => {
-    renderAt('/catalog-review')
+  it('renders the Catalog review page directly', async () => {
+    renderAt('/catalog-review', 900)
     expect(await screen.findByRole('heading', { level: 1, name: 'Catalog review' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Catalog review' }).getAttribute('aria-current')).toBe(
       'page',
     )
   })
 
-  it('shows Page not found inside the shell and goes home', async () => {
+  it('shows Page not found inside the shell and links back home', async () => {
     const user = userEvent.setup()
-    renderAt('/nope')
+    renderAt('/nope', 900)
     expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeTruthy()
-    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy()
-    for (const link of within(screen.getByRole('navigation')).getAllByRole('link')) {
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+    for (const link of within(nav).getAllByRole('link')) {
       expect(link.getAttribute('aria-current')).toBeNull()
     }
     await user.click(screen.getByRole('link', { name: 'Go to home' }))
@@ -84,7 +92,7 @@ describe('RootLayout', () => {
 
   it('stores Dark and sets the class on html', async () => {
     const user = userEvent.setup()
-    renderAt('/')
+    renderAt('/', 360)
     await screen.findByRole('heading', { level: 1, name: 'Home' })
     await user.click(screen.getByRole('button', { name: 'Appearance' }))
     await user.click(screen.getByRole('menuitemradio', { name: 'Dark' }))

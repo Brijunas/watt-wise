@@ -24,6 +24,14 @@ function renderAt(path: string, width: number) {
 }
 
 describe('RootLayout', () => {
+  it('shows the shell with a loading indicator while the first page loads', async () => {
+    renderAt('/', 360)
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeTruthy()
+    expect(screen.getByRole('progressbar', { name: 'Loading' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
   it('renders the phone shell with the Home page', async () => {
     renderAt('/', 360)
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()

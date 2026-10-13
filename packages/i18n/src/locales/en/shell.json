@@ -1,9 +1,16 @@
 {
-  "navigation": { "label": "Main navigation" },
-  "nav": { "home": "Home", "placeholder": "Placeholder", "catalogReview": "Catalog review" },
+  "navigation": {
+    "label": "Main navigation"
+  },
+  "nav": {
+    "home": "Home",
+    "placeholder": "Placeholder",
+    "catalogReview": "Catalog review"
+  },
   "notFound": {
     "title": "Page not found",
     "message": "The page you are looking for does not exist.",
     "home": "Go to home"
-  }
+  },
+  "loading": "Loading"
 }
