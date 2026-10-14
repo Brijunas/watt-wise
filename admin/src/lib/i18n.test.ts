@@ -1,4 +1,4 @@
-import { flattenKeys } from '@wattwise/i18n/testing'
+import flattenKeys from '@wattwise/i18n/testing'
 import { beforeEach, describe, expect, it } from 'vitest'
 import en from '@/locales/en.json'
 import lt from '@/locales/lt.json'

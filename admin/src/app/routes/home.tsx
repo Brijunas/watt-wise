@@ -1,7 +1,7 @@
 import Typography from '@mui/material/Typography'
 import { useTranslation } from 'react-i18next'
 
-export function Home() {
+const Home = () => {
   const { t } = useTranslation('app')
 
   return (
@@ -10,3 +10,5 @@ export function Home() {
     </Typography>
   )
 }
+
+export default Home

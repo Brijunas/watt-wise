@@ -3,9 +3,9 @@ import { cleanup, render, screen } from '@testing-library/react'
 import type { AnchorHTMLAttributes } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppThemeProvider } from '../theme/app-theme-provider'
-import { createMatchMedia } from '../testing/create-match-media'
-import { NotFound } from './not-found'
+import AppThemeProvider from '../theme/app-theme-provider'
+import createMatchMedia from '../testing/create-match-media'
+import NotFound from './not-found'
 
 function TestLink({ to, ...rest }: { to: string } & AnchorHTMLAttributes<HTMLAnchorElement>) {
   return <a href={to} {...rest} />

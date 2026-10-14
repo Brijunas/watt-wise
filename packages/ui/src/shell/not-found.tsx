@@ -4,13 +4,13 @@ import Typography from '@mui/material/Typography'
 import type { ElementType } from 'react'
 import { useTranslation } from 'react-i18next'
 
-export function NotFound({
+const NotFound = ({
   linkComponent,
   homeTo,
 }: {
   linkComponent: ElementType<{ to: string }>
   homeTo: string
-}) {
+}) => {
   const { t } = useTranslation('shell')
 
   return (
@@ -25,3 +25,5 @@ export function NotFound({
     </Box>
   )
 }
+
+export default NotFound

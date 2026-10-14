@@ -18,12 +18,7 @@ export interface IconMenuProps<Key extends string> {
 }
 
 // An icon button that opens a menu of radio items; choosing an item selects it and closes the menu.
-export function IconMenu<Key extends string>({
-  label,
-  icon,
-  options,
-  onSelect,
-}: IconMenuProps<Key>) {
+const IconMenu = <Key extends string>({ label, icon, options, onSelect }: IconMenuProps<Key>) => {
   const menuId = useId()
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
 
@@ -70,3 +65,5 @@ export function IconMenu<Key extends string>({
     </>
   )
 }
+
+export default IconMenu

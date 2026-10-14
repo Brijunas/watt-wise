@@ -2,8 +2,8 @@ import { createBrowserRouter } from 'react-router'
 import type { RouteObject } from 'react-router'
 import { PageLoading } from '@wattwise/ui'
 import { paths } from '@/config/routes'
-import { NotFoundRoute } from './routes/not-found'
-import { RootLayout } from './routes/root-layout'
+import NotFoundRoute from './routes/not-found'
+import RootLayout from './routes/root-layout'
 
 // `lazy` is a function, not an object of loaders: React Router empties a `lazy` object once it has
 // loaded, so a second router built from these routes (each test builds one) would match nothing.
@@ -17,12 +17,12 @@ export const routes: RouteObject[] = [
       {
         index: true,
         HydrateFallback: PageLoading,
-        lazy: async () => ({ Component: (await import('./routes/home')).Home }),
+        lazy: async () => ({ Component: (await import('./routes/home')).default }),
       },
       {
         path: paths.catalogReview,
         HydrateFallback: PageLoading,
-        lazy: async () => ({ Component: (await import('./routes/catalog-review')).CatalogReview }),
+        lazy: async () => ({ Component: (await import('./routes/catalog-review')).default }),
       },
       { path: '*', Component: NotFoundRoute },
     ],

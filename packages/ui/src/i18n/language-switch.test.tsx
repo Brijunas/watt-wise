@@ -3,8 +3,8 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppThemeProvider } from '../theme/app-theme-provider'
-import { LanguageSwitch } from './language-switch'
+import AppThemeProvider from '../theme/app-theme-provider'
+import LanguageSwitch from './language-switch'
 
 beforeEach(() => {
   vi.stubGlobal('matchMedia', (query: string) => ({

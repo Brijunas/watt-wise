@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createMatchMedia } from './create-match-media'
+import createMatchMedia from './create-match-media'
 
 describe('createMatchMedia', () => {
   it('evaluates min-width against the width', () => {

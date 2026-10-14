@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
-import { stubMatchMedia } from '@/testing/match-media'
-import { renderWithProviders } from '@/testing/test-utils'
+import stubMatchMedia from '@/testing/match-media'
+import renderWithProviders from '@/testing/test-utils'
 import { routes } from '../router'
 
 beforeEach(() => {

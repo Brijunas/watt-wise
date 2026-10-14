@@ -1,1 +1,1 @@
-export { createMatchMedia } from './testing/create-match-media'
+export { default as createMatchMedia } from './testing/create-match-media'

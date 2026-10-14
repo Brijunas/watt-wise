@@ -3,8 +3,8 @@ import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppThemeProvider } from './app-theme-provider'
-import { ModeSwitch } from './mode-switch'
+import AppThemeProvider from './app-theme-provider'
+import ModeSwitch from './mode-switch'
 
 let prefersDark = false
 const listeners = new Set<(event: MediaQueryListEvent) => void>()
