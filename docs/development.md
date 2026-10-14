@@ -19,6 +19,8 @@ Run all eight before committing; CI enforces the same from E5. `typecheck` and `
 
 ## Workspace (JS)
 
+The rules behind these (lint rules, the shared Vitest and TypeScript configs, where tests go) are in [frontend/docs/conventions.md](../frontend/docs/conventions.md), [frontend/docs/architecture.md](../frontend/docs/architecture.md#shared-packages) and [frontend/docs/testing.md](../frontend/docs/testing.md).
+
 | Command                                  | What it does                                                                                            |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `mise install`                           | Installs the tool versions from `mise.toml`. Rerun after pulling a change to it.                        |
