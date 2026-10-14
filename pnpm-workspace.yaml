@@ -36,6 +36,9 @@ catalog:
   zod: ^4.6.7
   react-hook-form: ^7.90.0
   '@hookform/resolvers': ^5.9.1
+  vite-plugin-pwa: ^2.0.0
+  workbox-window: ^7.4.1
+  '@vite-pwa/assets-generator': ^2.0.0
 
 # unrs-resolver (used by eslint-import-resolver-typescript) ships its native binary as an
 # optional dependency; its postinstall script is only a fallback, so it doesn't run.

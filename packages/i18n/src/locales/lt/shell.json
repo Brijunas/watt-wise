@@ -7,5 +7,10 @@
     "message": "Puslapio, kurio ieškote, nėra.",
     "home": "Grįžti į pradžią"
   },
-  "loading": "Kraunama"
+  "loading": "Kraunama",
+  "update": {
+    "message": "Yra nauja versija.",
+    "reload": "Atnaujinti",
+    "later": "Vėliau"
+  }
 }
