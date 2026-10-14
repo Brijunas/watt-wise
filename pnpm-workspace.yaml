@@ -11,12 +11,12 @@ minimumReleaseAge: 1440
 
 # Versions shared by frontend and admin, listed in their package.json (and the root's vite) as "catalog:".
 catalog:
-  react: ^19.2.8
-  react-dom: ^19.2.8
-  '@types/react': ^19.2.18
-  '@types/react-dom': ^19.2.7
-  '@vitejs/plugin-react': ^6.1.1
-  vite: ^8.3.2
+  react: ^19.3.0
+  react-dom: ^19.3.0
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
+  '@vitejs/plugin-react': ^6.1.2
+  vite: ^8.3.4
   '@testing-library/react': ^16.3.3
   '@testing-library/dom': ^10.4.2
   jsdom: ^30.1.2
@@ -25,9 +25,9 @@ catalog:
   '@emotion/react': ^11.14.0
   '@emotion/styled': ^11.14.1
   '@fontsource-variable/roboto': ^5.3.0
-  i18next: ^26.4.3
+  i18next: ^26.4.4
   react-i18next: ^17.0.16
-  '@testing-library/user-event': ^14.6.7
+  '@testing-library/user-event': ^14.6.8
   react-router: ^8.4.0
   i18next-browser-languagedetector: ^8.2.1
 
