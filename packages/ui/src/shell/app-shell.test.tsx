@@ -5,9 +5,9 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import type { AnchorHTMLAttributes } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AppThemeProvider } from '../theme/app-theme-provider'
-import { createMatchMedia } from '../testing/create-match-media'
-import { AppShell } from './app-shell'
+import AppThemeProvider from '../theme/app-theme-provider'
+import createMatchMedia from '../testing/create-match-media'
+import AppShell from './app-shell'
 import type { AppShellNavItem } from './app-shell-nav-item'
 
 function TestLink({ to, ...rest }: { to: string } & AnchorHTMLAttributes<HTMLAnchorElement>) {

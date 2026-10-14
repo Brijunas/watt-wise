@@ -2,7 +2,7 @@ import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import { useTranslation } from 'react-i18next'
 
-export function PageLoading() {
+const PageLoading = () => {
   const { t } = useTranslation('shell')
 
   return (
@@ -11,3 +11,5 @@ export function PageLoading() {
     </Box>
   )
 }
+
+export default PageLoading

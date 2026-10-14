@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { colorSchemeStorageKey, defaultMode, modeStorageKey } from './color-scheme'
 import { theme } from './theme'
 
-export function AppThemeProvider({ children }: { children: ReactNode }) {
+const AppThemeProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ThemeProvider
       theme={theme}
@@ -19,3 +19,5 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     </ThemeProvider>
   )
 }
+
+export default AppThemeProvider

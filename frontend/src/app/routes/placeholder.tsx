@@ -1,7 +1,7 @@
 import Typography from '@mui/material/Typography'
 import { useTranslation } from 'react-i18next'
 
-export function Placeholder() {
+const Placeholder = () => {
   const { t } = useTranslation('app')
   return (
     <Typography component="h1" variant="h4">
@@ -9,3 +9,5 @@ export function Placeholder() {
     </Typography>
   )
 }
+
+export default Placeholder

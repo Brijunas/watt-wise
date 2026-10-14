@@ -5,7 +5,7 @@ import ltCommon from './locales/lt/common.json'
 import enShell from './locales/en/shell.json'
 import ltShell from './locales/lt/shell.json'
 import { createI18n, languageNames, languageStorageKey } from './create-i18n'
-import { flattenKeys } from './testing'
+import flattenKeys from './testing'
 
 const extraNamespaces = {
   en: { demo: { greeting: 'Hello', onlyEnglish: 'Only English' } },

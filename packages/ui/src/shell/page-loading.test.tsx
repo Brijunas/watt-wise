@@ -2,7 +2,7 @@ import { createI18n } from '@wattwise/i18n'
 import { cleanup, render, screen } from '@testing-library/react'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, describe, expect, it } from 'vitest'
-import { PageLoading } from './page-loading'
+import PageLoading from './page-loading'
 
 afterEach(() => {
   cleanup()

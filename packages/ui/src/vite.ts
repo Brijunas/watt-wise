@@ -10,7 +10,7 @@ import {
   modeStorageKey,
 } from './theme/color-scheme.ts'
 
-export function colorSchemeScriptBody(): string {
+export const colorSchemeScriptBody = (): string => {
   const markup = renderToStaticMarkup(
     createElement(InitColorSchemeScript, {
       attribute: colorSchemeAttribute,
@@ -29,7 +29,7 @@ export function colorSchemeScriptBody(): string {
   return body
 }
 
-export function colorSchemeScript(): Plugin {
+export const colorSchemeScript = (): Plugin => {
   return {
     name: 'wattwise:color-scheme-script',
     transformIndexHtml() {

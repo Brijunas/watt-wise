@@ -20,7 +20,7 @@ import type { AppShellNavItem } from './app-shell-nav-item'
 const drawerWidth = 240
 const bottomBarHeight = '56px'
 
-export function AppShell({
+const AppShell = ({
   title,
   items,
   activeKey,
@@ -35,7 +35,7 @@ export function AppShell({
   linkComponent: ElementType<{ to: string }>
   actions?: ReactNode
   children: ReactNode
-}) {
+}) => {
   const { t } = useTranslation('shell')
   const theme = useTheme()
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'))
@@ -127,3 +127,5 @@ export function AppShell({
     </Box>
   )
 }
+
+export default AppShell

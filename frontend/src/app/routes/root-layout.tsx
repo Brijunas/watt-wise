@@ -6,7 +6,7 @@ import { AppShell, LanguageSwitch, ModeSwitch } from '@wattwise/ui'
 import type { AppShellNavItem } from '@wattwise/ui'
 import { paths } from '@/config/routes'
 
-export function RootLayout() {
+const RootLayout = () => {
   const { t } = useTranslation('app')
   const { pathname } = useLocation()
 
@@ -40,3 +40,5 @@ export function RootLayout() {
     </AppShell>
   )
 }
+
+export default RootLayout

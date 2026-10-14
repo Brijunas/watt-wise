@@ -5,7 +5,7 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import { useColorScheme } from '@mui/material/styles'
 import { useTranslation } from 'react-i18next'
-import { IconMenu } from '../menu/icon-menu'
+import IconMenu from '../menu/icon-menu'
 
 type Mode = 'light' | 'dark' | 'system'
 
@@ -15,7 +15,7 @@ const options = [
   { mode: 'system', labelKey: 'appearance.auto', Icon: BrightnessAutoIcon },
 ] as const satisfies readonly { mode: Mode; labelKey: string; Icon: unknown }[]
 
-export function ModeSwitch() {
+const ModeSwitch = () => {
   const { t } = useTranslation('common')
   const { mode, setMode } = useColorScheme()
 
@@ -45,3 +45,5 @@ export function ModeSwitch() {
     />
   )
 }
+
+export default ModeSwitch

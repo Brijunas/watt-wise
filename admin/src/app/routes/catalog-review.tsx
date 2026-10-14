@@ -1,7 +1,7 @@
 import Typography from '@mui/material/Typography'
 import { useTranslation } from 'react-i18next'
 
-export function CatalogReview() {
+const CatalogReview = () => {
   const { t } = useTranslation('app')
 
   return (
@@ -10,3 +10,5 @@ export function CatalogReview() {
     </Typography>
   )
 }
+
+export default CatalogReview

@@ -171,5 +171,24 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // The style rule of "Files and naming" in frontend/docs/conventions.md: an exported function is
+    // a const arrow function.
+    files: [...apps.map((app) => `${app}/src/**/*.{ts,tsx}`), 'packages/*/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ExportNamedDeclaration > FunctionDeclaration',
+          message:
+            'Declare it as a const arrow function and `export default` it. A file with several exports uses `export const name = () => ...`.',
+        },
+        {
+          selector: 'ExportDefaultDeclaration > FunctionDeclaration',
+          message: 'Declare it as a const arrow function, then `export default Name`.',
+        },
+      ],
+    },
+  },
   prettier,
 )

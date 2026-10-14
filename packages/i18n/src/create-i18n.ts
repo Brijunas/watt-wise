@@ -32,7 +32,7 @@ export interface CreateI18nOptions {
 
 const sharedNamespaces = ['common', 'shell']
 
-export function createI18n(options: CreateI18nOptions = {}): i18n {
+export const createI18n = (options: CreateI18nOptions = {}): i18n => {
   const extra = options.namespaces
   const enNames = Object.keys(extra?.en ?? {})
   const ltNames = Object.keys(extra?.lt ?? {})

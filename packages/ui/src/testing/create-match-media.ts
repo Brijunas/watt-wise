@@ -12,10 +12,10 @@ function evaluate(condition: string, options: { width: number; prefersDark: bool
 }
 
 /** A `matchMedia` fake for jsdom, which has none. Answers width and dark-mode queries. */
-export function createMatchMedia(options: {
+const createMatchMedia = (options: {
   width: number
   prefersDark?: boolean
-}): (query: string) => MediaQueryList {
+}): ((query: string) => MediaQueryList) => {
   const settings = { width: options.width, prefersDark: options.prefersDark ?? false }
   return (query) => {
     const media = query.replace(/^@media\s+/, '')
@@ -33,3 +33,5 @@ export function createMatchMedia(options: {
     return list
   }
 }
+
+export default createMatchMedia

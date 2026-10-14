@@ -13,6 +13,10 @@ ESLint runs once from the root `eslint.config.js` across both apps and every pac
 
 - File and folder names are kebab-case: `plan-card.tsx`, `use-plan-filter.ts`, `plans-slice.ts`. Component names inside stay PascalCase.
 - One component per file, named after the file.
+- **Arrow functions with a default export.** A file whose only export is a function (component, hook or helper) declares it as a `const` arrow function and ends with `export default Name`; importers use `import Name from '...'`, and lazy routes read `.default`. A package's `index.ts` re-exports defaults as `export { default as Name } from './name'`.
+- **Several exports in one file** (`lib/i18n.ts`, `config/routes.ts`, `router.tsx`, a package's `create-i18n.ts`) use named exports, and exported functions there are still const arrows: `export const createI18n = (...) => {...}`. Exported types and interfaces stay named.
+- **Enforced in part.** ESLint (`no-restricted-syntax`) rejects exported function declarations. That a single-function file uses the default export is checked in review. Non-exported helpers may be declarations.
+- A generic arrow in `.tsx` needs `extends` (or a trailing comma, `<T,>`) so it isn't parsed as JSX: `const IconMenu = <Key extends string>(...) => {`.
 - **No barrel files** (`index.ts` re-exports) inside an app. Import from the file itself. Packages are imported through their entry point ("Consumed from source" in [architecture.md](architecture.md#shared-packages)).
 - Imports inside an app use the `@/` alias for `src/` (`@/features/plans/components/plan-card`); relative imports only within the same feature folder.
 

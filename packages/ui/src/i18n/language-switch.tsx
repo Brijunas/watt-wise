@@ -1,9 +1,9 @@
 import TranslateIcon from '@mui/icons-material/Translate'
 import { languageNames, languages } from '@wattwise/i18n'
 import { useTranslation } from 'react-i18next'
-import { IconMenu } from '../menu/icon-menu'
+import IconMenu from '../menu/icon-menu'
 
-export function LanguageSwitch() {
+const LanguageSwitch = () => {
   const { t, i18n } = useTranslation('common')
 
   return (
@@ -22,3 +22,5 @@ export function LanguageSwitch() {
     />
   )
 }
+
+export default LanguageSwitch
