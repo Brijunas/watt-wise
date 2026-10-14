@@ -60,7 +60,7 @@ Three hosts wire the layers together and are deployed separately:
 
 ## Configuration
 
-- Each host's `appsettings.json` lists every key a secret lands in with an empty value, so the file shows where each secret goes. `appsettings.<Environment>.json` holds only non-secret per-environment settings. Blank values count as missing.
+- Each host's `appsettings.json` lists every key a secret lands in with an empty value, so the file shows where each secret goes. `appsettings.<Environment>.json` holds only non-secret per-environment settings. A required setting that is blank counts as missing; what a blank optional setting means (such as `Observability:OtlpEndpoint` or `Cors:AllowedOrigins`) is under its own section.
 - The values come from 1Password as environment variables ([technical.md](../../docs/technical.md#cross-cutting)). In Development they come from the host's committed `.env.development` file (e.g. `WattWise.Api/.env.development`), which `op run` resolves at start. That file also sets the .NET environment name (`launchSettings.json` doesn't), so a host started without it runs as Production and stops on the missing settings. Deployed environments get the values from their compose stack.
 
 ## Request handling
