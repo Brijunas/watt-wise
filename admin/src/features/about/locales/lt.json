@@ -1,0 +1,7 @@
+{
+  "title": "Apie",
+  "apiName": "API",
+  "version": "Versija",
+  "loading": "Įkeliama API informacija",
+  "error": "Nepavyko įkelti API informacijos. Bandykite vėliau."
+}

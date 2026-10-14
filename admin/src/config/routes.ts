@@ -1,1 +1,1 @@
-export const paths = { home: '/', catalogReview: '/catalog-review' } as const
+export const paths = { home: '/', catalogReview: '/catalog-review', about: '/about' } as const

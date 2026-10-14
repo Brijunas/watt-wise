@@ -1,3 +1,4 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import WidgetsIcon from '@mui/icons-material/Widgets'
 import HomeIcon from '@mui/icons-material/Home'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +19,7 @@ const RootLayout = () => {
       icon: <WidgetsIcon />,
       to: paths.placeholder,
     },
+    { key: 'about', label: t('nav.about'), icon: <InfoOutlinedIcon />, to: paths.about },
   ]
   const active = items.find((item) =>
     matchPath({ path: item.to, end: item.to === paths.home }, pathname),

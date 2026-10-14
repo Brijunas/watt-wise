@@ -31,19 +31,23 @@ const appZones = apps.flatMap((app) => {
     : []
   return [
     {
-      // lib/i18n.ts is excluded here and gets its own zones below.
-      target: [`${src}/!(app|features|testing|lib)/**`, `${src}/lib/!(i18n.ts)`, `${src}/lib/*/**`],
+      // lib/i18n.ts and its test are excluded here and get their own zones below.
+      target: [
+        `${src}/!(app|features|testing|lib)/**`,
+        `${src}/lib/!(i18n|i18n.test).ts`,
+        `${src}/lib/*/**`,
+      ],
       from: [featuresDir, `${src}/app`],
       message: 'Shared folders must not import features/ or app/.',
     },
     {
-      target: `${src}/lib/i18n.ts`,
+      target: `${src}/lib/i18n{,.test}.ts`,
       from: `${src}/app`,
       message: 'Shared folders must not import features/ or app/.',
     },
     {
       // A glob `from` takes its `except` as globs on absolute paths.
-      target: `${src}/lib/i18n.ts`,
+      target: `${src}/lib/i18n{,.test}.ts`,
       from: `${featuresDir}/**`,
       except: [path.join(import.meta.dirname, featuresDir, '*/locales/*.json')],
       message: 'lib/i18n.ts may only import features/<feature>/locales/*.json from features/.',
@@ -80,6 +84,12 @@ const appZones = apps.flatMap((app) => {
   ]
 })
 
+const graphPatterns = (name, forbidden) =>
+  forbidden.map((other) => ({
+    group: [`@wattwise/${other}`, `@wattwise/${other}/*`],
+    message: `@wattwise/${name} must not import @wattwise/${other}.`,
+  }))
+
 const packageZones = Object.entries(forbiddenPackageImports).flatMap(([name, forbidden]) => [
   ...forbidden.map((other) => ({
     target: `packages/${name}`,
@@ -95,7 +105,14 @@ const packageZones = Object.entries(forbiddenPackageImports).flatMap(([name, for
 
 export default defineConfig(
   // backend/**/obj/ holds JS the .NET SDK generates (dotnet-watch browser tools since 11 rc.2).
-  globalIgnores(['**/dist/', '**/dev-dist/', '**/coverage/', 'backend/**/bin/', 'backend/**/obj/']),
+  globalIgnores([
+    'packages/api-client/src/generated/',
+    '**/dist/',
+    '**/dev-dist/',
+    '**/coverage/',
+    'backend/**/bin/',
+    'backend/**/obj/',
+  ]),
   js.configs.recommended,
   {
     extends: [tseslint.configs.strictTypeChecked, tseslint.configs.stylisticTypeChecked],
@@ -146,14 +163,31 @@ export default defineConfig(
       'no-restricted-imports': [
         'error',
         {
-          patterns: forbidden.map((other) => ({
-            group: [`@wattwise/${other}`, `@wattwise/${other}/*`],
-            message: `@wattwise/${name} must not import @wattwise/${other}.`,
-          })),
+          patterns: [
+            ...graphPatterns(name, forbidden),
+            // The generated client is reached only through api.ts, which adds the cache tags.
+            ...(name === 'api-client'
+              ? [
+                  {
+                    group: ['**/generated/*'],
+                    message: 'Import the generated client only in src/api.ts.',
+                  },
+                ]
+              : []),
+          ],
         },
       ],
     },
   })),
+  {
+    files: ['packages/api-client/src/api.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: graphPatterns('api-client', forbiddenPackageImports['api-client']) },
+      ],
+    },
+  },
   {
     files: apps.map((app) => `${app}/src/**/*.{ts,tsx}`),
     ignores: apps.map((app) => `${app}/src/stores/hooks.ts`),
