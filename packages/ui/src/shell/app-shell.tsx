@@ -16,9 +16,9 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ElementType, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppShellNavItem } from './app-shell-nav-item'
+import { bottomBarHeight } from './bottom-bar-height'
 
 const drawerWidth = 240
-const bottomBarHeight = '56px'
 
 const AppShell = ({
   title,
