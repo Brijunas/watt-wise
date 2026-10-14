@@ -58,6 +58,11 @@ Three hosts wire the layers together and are deployed separately:
 - **WattWise.Jobs** runs the Hangfire server, the only process that uses Hangfire: it registers recurring jobs, executes them and serves the Hangfire dashboard. Job implementations are Application use cases; the job classes in this project only call them. Those use cases read and write app data through `AppDbContext`, so the Jobs host's `jobs` role reaches both `app` and `hangfire`. It uses the Web SDK because it serves the dashboard over HTTP. Details in [jobs.md](jobs.md).
 - **WattWise.Cli** is a console app built with System.CommandLine on the .NET Generic Host (configuration, DI and logging like the other hosts). It runs one command and exits with a non-zero code on failure, or 130 when cancelled (Ctrl+C or SIGTERM). `migrate` brings every schema up to date (EF Core migrations, Hangfire's tables) through `DatabaseMigrator` (Infrastructure). It is the only host that changes the schema, and it runs as a deploy step before Api and Jobs start. Later commands add one-off scripts and maintenance tasks.
 
+## Configuration
+
+- Each host's `appsettings.json` lists every key a secret lands in with an empty value, so the file shows where each secret goes. `appsettings.<Environment>.json` holds only non-secret per-environment settings. Blank values count as missing.
+- The values come from 1Password as environment variables ([technical.md](../../docs/technical.md#cross-cutting)). In Development they come from the host's committed `.env.development` file (e.g. `WattWise.Api/.env.development`), which `op run` resolves at start. That file also sets the .NET environment name (`launchSettings.json` doesn't), so a host started without it runs as Production and stops on the missing settings. Deployed environments get the values from their compose stack.
+
 ## Request handling
 
 Every use case is a request object (a query or a command) with exactly one handler in Application. Callers (Api endpoints, and later Hangfire jobs and CLI commands) never call a handler directly: they send the request through the mediator, which runs it through a fixed pipeline first:
@@ -105,7 +110,7 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
   - the migrations in `Migrations/`.
 - `AddInfrastructure()` registers `AppDbContext`. The connection string is built from the `Database` section (`Host`, `Port`, `Name`, `Username`, `Password`, optional `Options`) through the validated `DatabaseSettings` options. The settings are read from the built configuration, so sources added after registration (test overrides) count, and `ValidateOnStart` stops the host at startup listing any missing key. `DatabaseSettings` is a class, not a record, so formatting it never prints the password.
 - Each host connects as its own database role (`api`, `jobs`, `cli`). Connection pools use Npgsql's defaults; nothing about pooling is configured.
-- Each host's `appsettings.json` lists every `Database` key with an empty value, so the file shows where each secret lands. In Development the values come from the host's committed `.env.development` file (e.g. `WattWise.Api/.env.development`), which `op run` resolves at start; deployed environments get them from their compose stack ([technical.md](../../docs/technical.md#cross-cutting)). Blank values count as missing. The Development file also sets the .NET environment name (`launchSettings.json` doesn't), so starting without it runs as Production and fails on the missing settings. The design-time factory reads the same environment variables. `migrations add` works without them, and commands that connect run through `op run --env-file backend/src/WattWise.Cli/.env.development`. No connection data is in the repo.
+- The `Database` keys are filled like every secret ([Configuration](#configuration)). The design-time factory reads the same environment variables. `migrations add` works without them, and commands that connect run through `op run --env-file backend/src/WattWise.Cli/.env.development`. No connection data is in the repo.
 - `DatabaseMigrator` (in `Persistence/Schema/`) is the one migrate code path: `WattWise.Cli migrate` runs it, and so does the integration-test fixture ([testing.md](testing.md#shared-postgresql-fixture)), so tests migrate exactly like a deployment. It only runs the registered schema steps in order; each step owns one schema:
   - `ISchemaStep` has a `Name` and an idempotent `ApplyAsync`. Every step runs on every migrate.
   - `EfCoreMigrationsStep` applies pending EF Core migrations (the `app` schema), then `HangfireStorageStep` installs or upgrades Hangfire's tables (the `hangfire` schema). Both use the migrating connection, so everything they create belongs to `owner`.
@@ -128,7 +133,7 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
 ASP.NET Core Identity in Infrastructure, on `AppDbContext`, for accounts, password hashing, lockout, email tokens and (later) external OAuth logins. The rules it enforces (passwords, lockout, tokens, sessions, admins) are in the root [security.md](../../docs/security.md); the token flow seen by clients is in the root [technical.md](../../docs/technical.md#backend).
 
 - **Data Protection keys** are stored in the database, so email links signed with them survive a restart.
-- **Email sending:** the Api sends directly over SMTP through an Application port ([technical.md](../../docs/technical.md#cross-cutting)). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
+- **Email sending:** the Api sends directly over SMTP with MailKit, through an Application port ([technical.md](../../docs/technical.md#cross-cutting)). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
 
 ## Logging and observability
 
@@ -136,4 +141,4 @@ Serilog writes JSON to the console, one request line per HTTP request. OpenTelem
 
 ## Calculation engine
 
-The engine is pure Domain code with no I/O. NodaTime is used in Domain for all date and time logic, so time-of-use zones are evaluated in Europe/Vilnius local time and DST days of 23 and 25 hours come out right. What the engine computes is described in the root technical.md.
+The engine is pure Domain code with no I/O. NodaTime is used in Domain for all date and time logic, so time-of-use zones are evaluated in Europe/Vilnius local time and DST days of 23 and 25 hours come out right. What the engine computes is under "Calculation engine" in the root [technical.md](../../docs/technical.md#calculation-engine).
