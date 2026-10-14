@@ -20,13 +20,6 @@ const forbiddenPackageImports = {
   ui: ['api-client'],
 }
 
-// Files that export several functions or values, so they keep named exports.
-const multiExportFunctionFiles = [
-  ...apps.map((app) => `${app}/src/lib/i18n.ts`),
-  'packages/i18n/src/create-i18n.ts',
-  'packages/ui/src/vite.ts',
-]
-
 const appZones = apps.flatMap((app) => {
   const src = `${app}/src`
   const featuresDir = `${src}/features`
@@ -179,17 +172,16 @@ export default defineConfig(
     },
   },
   {
-    // The style rule of "Files and naming" in frontend/docs/conventions.md: a function is a const
-    // arrow function. Files with several exports keep named function exports and are listed below.
+    // The style rule of "Files and naming" in frontend/docs/conventions.md: an exported function is
+    // a const arrow function.
     files: [...apps.map((app) => `${app}/src/**/*.{ts,tsx}`), 'packages/*/src/**/*.{ts,tsx}'],
-    ignores: multiExportFunctionFiles,
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'ExportNamedDeclaration > FunctionDeclaration',
           message:
-            'Declare it as a const arrow function and `export default` it. A file with several exports goes in multiExportFunctionFiles in eslint.config.js.',
+            'Declare it as a const arrow function and `export default` it. A file with several exports uses `export const name = () => ...`.',
         },
         {
           selector: 'ExportDefaultDeclaration > FunctionDeclaration',

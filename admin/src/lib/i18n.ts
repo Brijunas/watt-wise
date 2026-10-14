@@ -8,7 +8,7 @@ declare module 'i18next' {
   }
 }
 
-export function createAppI18n() {
+export const createAppI18n = () => {
   return createI18n({ namespaces: { en: { app: en }, lt: { app: lt } } })
 }
 
