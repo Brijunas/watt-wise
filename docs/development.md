@@ -1,6 +1,6 @@
 # Development
 
-Everyday commands and workflow. For first-time machine setup, see [setup.md](setup.md). Every command runs from the repo root. The apps' own commands (dev server, single test, API client) are added in S3.10.
+Everyday commands and workflow. For first-time machine setup, see [setup.md](setup.md). Every command runs from the repo root. The apps' own commands (dev server, single test) are added in S3.10.
 
 ## Checks
 
@@ -21,17 +21,18 @@ Run all eight before committing; CI enforces the same from E5. `typecheck` and `
 
 The rules behind these (lint rules, the shared Vitest and TypeScript configs, where tests go) are in [frontend/docs/conventions.md](../frontend/docs/conventions.md), [frontend/docs/architecture.md](../frontend/docs/architecture.md#shared-packages) and [frontend/docs/testing.md](../frontend/docs/testing.md).
 
-| Command                                  | What it does                                                                                            |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `mise install`                           | Installs the tool versions from `mise.toml`. Rerun after pulling a change to it.                        |
-| `pnpm install`                           | Installs the JS dependencies for the whole workspace. Rerun after a pull that changes `pnpm-lock.yaml`. |
-| `pnpm lint`                              | ESLint over the whole repo, using the root `eslint.config.js`. Warnings fail.                           |
-| `pnpm format`                            | Prettier rewrites every file it supports.                                                               |
-| `pnpm format:check`                      | Prettier reports unformatted files without changing them.                                               |
-| `pnpm typecheck`                         | Runs `typecheck` (`tsc`, TypeScript 7) in every workspace package that has one.                         |
-| `pnpm test`                              | Runs `test` (`vitest run`) in every workspace package that has one.                                     |
-| `pnpm build`                             | Runs `build` in every workspace package that has one.                                                   |
-| `pnpm --filter @wattwise/core exec tsc6` | Type-checks one package with TypeScript 6, the version ESLint uses.                                     |
+| Command                                  | What it does                                                                                                                                                                                                                                  |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mise install`                           | Installs the tool versions from `mise.toml`. Rerun after pulling a change to it.                                                                                                                                                              |
+| `pnpm install`                           | Installs the JS dependencies for the whole workspace. Rerun after a pull that changes `pnpm-lock.yaml`.                                                                                                                                       |
+| `pnpm lint`                              | ESLint over the whole repo, using the root `eslint.config.js`. Warnings fail.                                                                                                                                                                 |
+| `pnpm format`                            | Prettier rewrites every file it supports.                                                                                                                                                                                                     |
+| `pnpm format:check`                      | Prettier reports unformatted files without changing them.                                                                                                                                                                                     |
+| `pnpm typecheck`                         | Runs `typecheck` (`tsc`, TypeScript 7) in every workspace package that has one.                                                                                                                                                               |
+| `pnpm test`                              | Runs `test` (`vitest run`) in every workspace package that has one.                                                                                                                                                                           |
+| `pnpm build`                             | Runs `build` in every workspace package that has one.                                                                                                                                                                                         |
+| `pnpm generate:api`                      | Builds the Api (which writes `backend/openapi/wattwise-api.json`) and regenerates `@wattwise/api-client` from it. Run after changing an endpoint; commit both ([frontend/docs/architecture.md](../frontend/docs/architecture.md#api-client)). |
+| `pnpm --filter @wattwise/core exec tsc6` | Type-checks one package with TypeScript 6, the version ESLint uses.                                                                                                                                                                           |
 
 ### Running a single test
 

@@ -71,6 +71,13 @@ describe('RootLayout', () => {
     expect(screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBeNull()
   })
 
+  it('lists the About link', async () => {
+    renderAt('/', 900)
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+    expect(within(nav).getByRole('link', { name: 'About' })).toBeTruthy()
+  })
+
   it('renders the Placeholder page directly', async () => {
     renderAt('/placeholder', 900)
     expect(await screen.findByRole('heading', { level: 1, name: 'Placeholder' })).toBeTruthy()
@@ -111,6 +118,7 @@ describe('RootLayout', () => {
     const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
     expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
     expect(within(nav).getByRole('link', { name: 'Pavyzdys' })).toBeTruthy()
+    expect(within(nav).getByRole('link', { name: 'Apie' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Išvaizda' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Kalba' })).toBeTruthy()
     expect(localStorage.getItem('wattwise-language')).toBe('lt')

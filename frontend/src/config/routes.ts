@@ -1,1 +1,1 @@
-export const paths = { home: '/', placeholder: '/placeholder' } as const
+export const paths = { home: '/', placeholder: '/placeholder', about: '/about' } as const

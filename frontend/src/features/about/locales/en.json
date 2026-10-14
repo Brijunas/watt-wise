@@ -1,0 +1,7 @@
+{
+  "title": "About",
+  "apiName": "API",
+  "version": "Version",
+  "loading": "Loading API information",
+  "error": "Could not load the API information. Try again later."
+}

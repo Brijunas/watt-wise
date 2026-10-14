@@ -1,0 +1,8 @@
+{
+  "schemaFile": "../../backend/openapi/wattwise-api.json",
+  "apiFile": "./src/empty-api.ts",
+  "apiImport": "emptyApi",
+  "outputFile": "./src/generated/api.ts",
+  "exportName": "generatedApi",
+  "hooks": true
+}

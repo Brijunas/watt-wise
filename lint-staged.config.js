@@ -5,7 +5,12 @@ const includeArgs = (files) =>
   files.map((file) => `"${path.relative(process.cwd(), file)}"`).join(' ')
 
 export default {
-  '*.{js,mjs,cjs,jsx,ts,tsx}': ['eslint --fix --max-warnings=0', 'prettier --write'],
+  // --no-warn-ignored: ESLint ignores generated files on purpose (see eslint.config.js), and
+  // without the flag a staged one would print an "ignored file" warning that --max-warnings=0 fails.
+  '*.{js,mjs,cjs,jsx,ts,tsx}': [
+    'eslint --fix --max-warnings=0 --no-warn-ignored',
+    'prettier --write',
+  ],
   '*.{json,md,yml,yaml,css,html}': 'prettier --write',
   // Fix first (lint-staged re-stages the result), then reject what could not be fixed.
   'backend/**/*.cs': (files) => [

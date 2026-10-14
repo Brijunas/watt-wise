@@ -14,7 +14,8 @@
     "format:check": "prettier --check .",
     "test": "pnpm -r --if-present run test",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "build": "pnpm -r --if-present run build"
+    "build": "pnpm -r --if-present run build",
+    "generate:api": "dotnet build backend/src/WattWise.Api && pnpm --filter @wattwise/api-client generate"
   },
   "devDependencies": {
     "@eslint-react/eslint-plugin": "^5.26.5",

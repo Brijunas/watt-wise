@@ -16,6 +16,7 @@
     "@fontsource-variable/roboto": "catalog:",
     "@mui/icons-material": "catalog:",
     "@mui/material": "catalog:",
+    "@reduxjs/toolkit": "catalog:",
     "@wattwise/api-client": "workspace:*",
     "@wattwise/core": "workspace:*",
     "@wattwise/i18n": "workspace:*",
@@ -24,6 +25,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-i18next": "catalog:",
+    "react-redux": "catalog:",
     "react-router": "catalog:"
   },
   "devDependencies": {
@@ -34,6 +36,7 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "jsdom": "catalog:",
+    "msw": "catalog:",
     "vite": "catalog:"
   }
 }

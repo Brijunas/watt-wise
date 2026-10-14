@@ -12,7 +12,7 @@ The stack of `frontend/` and `admin/` and how the shared `@wattwise/*` packages 
 - **Routing:** React Router 8 in data mode: `createBrowserRouter` with lazy page routes, `RouterProvider` from `react-router/dom` and everything else from `react-router`. The app shell (app bar, bottom navigation on a phone, side navigation from the `md` breakpoint up) and the not-found page come from `@wattwise/ui`; how they get their links is under "Import direction" in [structure.md](structure.md#import-direction).
 - **Forms and validation:** react-hook-form with zod schemas.
 - **Charts (consumption chart, catalog UI):** MUI X Charts.
-- **API client:** generated from the backend OpenAPI document with `@rtk-query/codegen-openapi` into `packages/api-client`, consumed by both apps. Regenerated whenever the API changes; generated code is committed.
+- **API client:** generated from the backend OpenAPI document with `@rtk-query/codegen-openapi` into `packages/api-client`, consumed by both apps; how it is generated is under [API client](#api-client).
 - **Tests:** Vitest with React Testing Library; see [testing.md](testing.md).
 
 ## Appearance
@@ -23,6 +23,13 @@ The stack of `frontend/` and `admin/` and how the shared `@wattwise/*` packages 
 ## i18n
 
 react-i18next with `i18next-browser-languagedetector`. The language is the one stored in `localStorage` (`wattwise-language`), else the first Lithuanian or English entry in the browser's language list, else Lithuanian; a key missing in Lithuanian falls back to English. The detected or chosen language is stored on every change, so after the first visit the stored one wins. The user switches it in the app bar. Keys are type-checked; how namespaces are laid out and registered is in [structure.md](structure.md#translations).
+
+## API client
+
+- **Source document.** `dotnet build` of the Api writes its OpenAPI document to the committed `backend/openapi/wattwise-api.json` (`Microsoft.Extensions.ApiDescription.Server`, [backend architecture](../../backend/docs/architecture.md#http-surface)). Codegen reads that file, so regenerating needs no running API, database or 1Password, and gives the same output on every machine.
+- **Pipeline.** `pnpm generate:api` builds the Api, then runs the package's `generate` script: `@rtk-query/codegen-openapi` with `packages/api-client/openapi-config.json` writes `src/generated/api.ts`, and Prettier formats it. The generated file is committed and never edited by hand; ESLint skips it, `tsc` checks it. Run it after any change to an endpoint and commit the document and the client together. Regenerating without an API change produces no diff.
+- **Layers inside the package.** `empty-api.ts` is the one `createApi` call (`reducerPath: 'api'`, the base query from `@wattwise/core`, no endpoints); the codegen injects the endpoints into it. `api.ts` enhances the generated API with the cache tags ([structure.md](structure.md#where-things-go)) and is the only file that imports `generated/`; `index.ts` exports the enhanced `api`, its hooks and the response types. Apps import only `@wattwise/api-client`.
+- **Base URL.** The base query reads the URL from the store's thunk extra argument, which the store factory in `@wattwise/core` sets from the app's `config/env.ts` (`VITE_API_BASE_URL`); see "Store" in [structure.md](structure.md#store).
 
 ## Admin application
 

@@ -71,6 +71,13 @@ describe('RootLayout', () => {
     expect(screen.getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBeNull()
   })
 
+  it('lists the About link', async () => {
+    renderAt('/', 900)
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+    expect(within(nav).getByRole('link', { name: 'About' })).toBeTruthy()
+  })
+
   it('renders the Catalog review page directly', async () => {
     renderAt('/catalog-review', 900)
     expect(await screen.findByRole('heading', { level: 1, name: 'Catalog review' })).toBeTruthy()

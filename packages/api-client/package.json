@@ -7,6 +7,23 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "generate": "mkdir -p src/generated && rtk-query-codegen-openapi openapi-config.json && prettier --write src/generated/api.ts"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": "catalog:",
+    "react": "catalog:"
+  },
+  "dependencies": {
+    "@wattwise/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@reduxjs/toolkit": "catalog:",
+    "@rtk-query/codegen-openapi": "^2.2.0",
+    "@types/react": "catalog:",
+    "msw": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-redux": "catalog:"
   }
 }

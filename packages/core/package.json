@@ -8,5 +8,12 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": "catalog:"
+  },
+  "devDependencies": {
+    "@reduxjs/toolkit": "catalog:",
+    "msw": "catalog:"
   }
 }

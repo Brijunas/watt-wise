@@ -1,6 +1,8 @@
 using Mediator;
 
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 using Scalar.AspNetCore;
 
@@ -32,6 +34,16 @@ builder.Services.AddApiCors();
 builder.Services.AddApiOpenApi();
 builder.Services.AddEndpointModules();
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
+
+if (OpenApiBuildGeneration.IsRunning)
+{
+    // The build-time document generator has no settings; skip the ValidateOnStart checks (only there).
+    // The sync interface is obsolete but the host still calls it when registered.
+#pragma warning disable SYSLIB0066
+    builder.Services.RemoveAll<IStartupValidator>();
+#pragma warning restore SYSLIB0066
+    builder.Services.RemoveAll<IAsyncStartupValidator>();
+}
 
 var app = builder.Build();
 

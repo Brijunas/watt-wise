@@ -79,3 +79,15 @@ curl -s https://api.nuget.org/v3-flatcontainer/efcore.namingconventions/index.js
 1. Bump it in `backend/Directory.Packages.props` and remove `NoWarn="NU1608"` from `WattWise.Infrastructure.csproj`.
 2. Run `dotnet build` (0 warnings) and `dotnet test`.
 3. Delete this entry.
+
+## The API client codegen can't read OpenAPI 3.1.2 or 3.2
+
+_Recorded 2026-10-14 (S3.6). @rtk-query/codegen-openapi 2.2.0, @apidevtools/swagger-parser 10.1.1, Microsoft.AspNetCore.OpenApi 11.0.0-rc.2._
+
+**Problem.** The codegen validates the document with `@apidevtools/swagger-parser`, which accepts OpenAPI 3.0.x and 3.1.0/3.1.1 only. ASP.NET Core's build-time generator writes 3.2.0 by default, and its 3.1 option writes 3.1.2; the codegen rejects both.
+
+**Workaround in place.** The Api emits OpenAPI 3.0: `--openapi-version OpenApi3_0` in `OpenApiGenerateDocumentsOptions` (`WattWise.Api.csproj`) for the build-time file, and `OpenApiVersion = OpenApi3_0` in `OpenApiServiceCollectionExtensions` so `/openapi/v1.json` matches.
+
+**Where to follow it.** Releases of `@rtk-query/codegen-openapi` and `@apidevtools/swagger-parser`; check with `npm view @apidevtools/swagger-parser version` and the parser's supported versions in its README.
+
+**Once fixed.** Drop both settings (or move to 3.1), run `pnpm generate:api`, and commit the document and client together.
