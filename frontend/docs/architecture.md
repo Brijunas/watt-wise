@@ -10,7 +10,7 @@ The stack of `frontend/` and `admin/` and how the shared `@wattwise/*` packages 
 - **Responsive design:** mobile-first. Layouts are built for the smallest MUI breakpoint first and enhanced upward; navigation, tables and charts must be usable on a phone.
 - **Data fetching / server state:** RTK Query (Redux Toolkit).
 - **Routing:** React Router 8 in data mode: `createBrowserRouter` with lazy page routes, `RouterProvider` from `react-router/dom` and everything else from `react-router`. The app shell (app bar, bottom navigation on a phone, side navigation from the `md` breakpoint up) and the not-found page come from `@wattwise/ui`; how they get their links is under "Import direction" in [structure.md](structure.md#import-direction).
-- **Forms and validation:** react-hook-form with zod schemas.
+- **Forms and validation:** react-hook-form with zod schemas; see [Forms](#forms).
 - **Charts (consumption chart, catalog UI):** MUI X Charts.
 - **API client:** generated from the backend OpenAPI document with `@rtk-query/codegen-openapi` into `packages/api-client`, consumed by both apps; how it is generated is under [API client](#api-client).
 - **Tests:** Vitest with React Testing Library; see [testing.md](testing.md).
@@ -30,6 +30,12 @@ react-i18next with `i18next-browser-languagedetector`. The language is the one s
 - **Pipeline.** `pnpm generate:api` builds the Api, then runs the package's `generate` script: `@rtk-query/codegen-openapi` with `packages/api-client/openapi-config.json` writes `src/generated/api.ts`, and Prettier formats it. The generated file is committed and never edited by hand; ESLint skips it, `tsc` checks it. Run it after any change to an endpoint and commit the document and the client together. Regenerating without an API change produces no diff.
 - **Layers inside the package.** `empty-api.ts` is the one `createApi` call (`reducerPath: 'api'`, the base query from `@wattwise/core`, no endpoints); the codegen injects the endpoints into it. `api.ts` enhances the generated API with the cache tags ([structure.md](structure.md#where-things-go)) and is the only file that imports `generated/`; `index.ts` exports the enhanced `api`, its hooks and the response types. Apps import only `@wattwise/api-client`.
 - **Base URL.** The base query reads the URL from the store's thunk extra argument, which the store factory in `@wattwise/core` sets from the app's `config/env.ts` (`VITE_API_BASE_URL`); see "Store" in [structure.md](structure.md#store).
+
+## Forms
+
+- **Pieces.** A form is react-hook-form with `zodResolver` over a zod schema in `features/<f>/schemas/` ([structure.md](structure.md#where-things-go)). Shared field rules are helpers in `@wattwise/core` (`requiredText()`, `email()`, `password()`); the fields are `FormTextField` and `FormPasswordField` in `@wattwise/ui`, MUI text fields bound with `useController` that show the field's error under it.
+- **Messages are keys, not text.** A schema never holds a message. Each issue's message is an encoded key of the shared `validation` namespace in `@wattwise/i18n`, with its parameters (`encodeValidationMessage('password.tooShort', { min: 14 })`); the field decodes it with `decodeValidationMessage` and translates it. So schemas stay language-free, and an error already on screen switches language with the UI. A message that isn't an encoded key, such as zod's own English text from a rule written without one, shows the generic `invalid` text, so a schema rule always passes its key.
+- **Password rules** follow [security.md](../../docs/security.md#accounts) and the server's ASP.NET Core Identity checks: the minimum length (`passwordMinLength`) and Unicode-aware lowercase, uppercase, digit and non-alphanumeric classes matching .NET's `char.IsLower`, `IsUpper`, `IsDigit` and `IsLetterOrDigit`, each with its own message.
 
 ## Admin application
 

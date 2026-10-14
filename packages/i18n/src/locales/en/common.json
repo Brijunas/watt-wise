@@ -1,4 +1,5 @@
 {
   "appearance": { "label": "Appearance", "light": "Light", "dark": "Dark", "auto": "Auto" },
-  "language": { "label": "Language" }
+  "language": { "label": "Language" },
+  "form": { "showPassword": "Show password", "hidePassword": "Hide password" }
 }

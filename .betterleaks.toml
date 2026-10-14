@@ -1,4 +1,4 @@
-# Betterleaks configuration: the built-in rules plus one allowlist.
+# Betterleaks configuration: the built-in rules plus two allowlists.
 # Agreed exceptions only; see "Secrets and configuration" in docs/technical.md.
 
 [extend]
@@ -10,3 +10,11 @@ useDefault = true
 description = "1Password secret references"
 regexTarget = "line"
 regexes = ['''^\s*[A-Za-z_][A-Za-z0-9_]*\s*=\s*"?op://[^"\s]+(\s[^"\s]+)*"?\s*$''']
+
+# The generic-password rule flags UI labels (form.showPassword, form.hidePassword) in the
+# locale files and password literals in test fixtures. They are not secrets.
+# Only that one rule is skipped, and only for these paths; every other rule still scans them.
+[[allowlists]]
+description = "Password labels in locale files and password fixtures in tests"
+targetRules = ["generic-password"]
+paths = ['''(^|/)locales/.+\.json$''', '''\.test\.tsx?$''']

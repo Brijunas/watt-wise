@@ -20,16 +20,19 @@
     "i18next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
     "react-i18next": "catalog:",
     "vite": "catalog:"
   },
   "dependencies": {
+    "@wattwise/core": "workspace:*",
     "@wattwise/i18n": "workspace:*"
   },
   "devDependencies": {
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
     "@fontsource-variable/roboto": "catalog:",
+    "@hookform/resolvers": "catalog:",
     "@mui/icons-material": "catalog:",
     "@mui/material": "catalog:",
     "@testing-library/dom": "catalog:",
@@ -41,7 +44,9 @@
     "jsdom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
     "react-i18next": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "zod": "catalog:"
   }
 }

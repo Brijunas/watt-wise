@@ -10,10 +10,15 @@
     "typecheck": "tsc"
   },
   "peerDependencies": {
-    "@reduxjs/toolkit": "catalog:"
+    "@reduxjs/toolkit": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@reduxjs/toolkit": "catalog:",
-    "msw": "catalog:"
+    "msw": "catalog:",
+    "zod": "catalog:"
+  },
+  "dependencies": {
+    "@wattwise/i18n": "workspace:*"
   }
 }

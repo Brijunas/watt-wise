@@ -1,4 +1,5 @@
 {
   "appearance": { "label": "Išvaizda", "light": "Šviesi", "dark": "Tamsi", "auto": "Automatinė" },
-  "language": { "label": "Kalba" }
+  "language": { "label": "Kalba" },
+  "form": { "showPassword": "Rodyti slaptažodį", "hidePassword": "Slėpti slaptažodį" }
 }
