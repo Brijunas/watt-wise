@@ -16,6 +16,7 @@ A monorepo with plain top-level folders and no task runner: a pnpm workspace for
 - [product.md](docs/product.md): what the product does and the MVP scope.
 - [technical.md](docs/technical.md): whole-system technical decisions, from stacks and architecture to hosting.
 - [backend/docs/](backend/docs/): backend architecture, testing and build conventions.
+- [frontend/docs/](frontend/docs/): architecture, structure, testing and conventions of both web apps and the shared packages.
 - [epics.md](docs/epics.md): the epics and stories still to do.
 - [implemented.md](docs/implemented.md): finished epics, kept for history.
 - [setup.md](docs/setup.md): first-time machine setup and troubleshooting.

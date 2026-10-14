@@ -14,7 +14,7 @@ Read before writing. A story that contradicts a spec is wrong, however good it r
 - `docs/epics.md`: the target epic's paragraph, its other stories, and the epics around it (dependency order).
 - `docs/product.md` for anything user-facing: MVP scope, non-goals, open questions.
 - `docs/security.md` for anything that touches accounts, tokens, sessions, permissions or limits.
-- The section of `docs/technical.md` that covers the area, and the project's own docs (`backend/docs/`, `deploy/docs/`, later `frontend/`, `admin/`, `packages/*`).
+- The section of `docs/technical.md` that covers the area, and the project's own docs (`backend/docs/`, `frontend/docs/` for both web apps and `packages/*`, `deploy/docs/`).
 - `docs/known-issues.md` if the story touches tool versions or the ESO CSV.
 - The code the story builds on, so the story names files and types that really exist.
 
@@ -70,7 +70,7 @@ The Done is what the reviewer and the tests check. Every part of it can pass or 
   - A commit with a lint error in either app is rejected locally.
   - Lighthouse reports installable.
 - **Say what must not happen** as well as what must: "each role can do only what it should", "API requests are never served from cache", "regenerating produces no diff".
-- **Name the test level** when it matters: unit (`Domain.Tests`, `Application.Tests`), integration (Testcontainers, `WebApplicationFactory`), component (Vitest and React Testing Library). The rules are in `backend/docs/testing.md`.
+- **Name the test level** when it matters: unit (`Domain.Tests`, `Application.Tests`), integration (Testcontainers, `WebApplicationFactory`), component (Vitest and React Testing Library). The rules are in `backend/docs/testing.md` and `frontend/docs/testing.md`.
 - **Avoid vague words:** "works correctly", "is fast", "is intuitive". Name the observable result instead.
 - **The checks are a given.** Every story ends with the checks in `docs/development.md` green and the backend building with 0 warnings, so don't repeat them unless the story changes the checks.
 

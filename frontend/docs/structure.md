@@ -1,6 +1,6 @@
-# Frontend folder structure
+# Frontend structure
 
-How code is laid out inside `frontend/` and `admin/`, and how they and the shared `@wattwise/*` packages depend on each other. Both apps use the same structure: Bulletproof React's feature folders with the Redux Toolkit store conventions inside them. What each package is for is under "Shared frontend packages" in [technical.md](technical.md#shared-frontend-packages).
+How code is laid out inside `frontend/` and `admin/`, and how they and the shared `@wattwise/*` packages depend on each other. Both apps use the same structure: Bulletproof React's feature folders with the Redux Toolkit store conventions inside them. The stack and how the packages are built are in [architecture.md](architecture.md); naming and the lint rules that enforce the import rules below are in [conventions.md](conventions.md); tests in [testing.md](testing.md).
 
 ## Layout
 
@@ -39,7 +39,7 @@ A feature creates only the subfolders it needs. A subfolder that would hold one 
 ## Features
 
 - **One feature per route section:** the pages under one route prefix belong together. The backend's endpoint groups don't decide it: the sessions endpoints sit in the auth group, yet the devices pages are their own feature. A demo or a single page is a feature like any other.
-- **Expected first features.** `frontend`: `account` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `account` (sign-in only), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](technical.md#admin-application)).
+- **Expected first features.** `frontend`: `account` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `account` (sign-in only), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](../../docs/technical.md#admin-application)).
 - **Worked example (S4.9 sign-in):**
 
 ```
@@ -116,13 +116,13 @@ Tags live in the package because they are part of the API contract: both apps ne
 - **One instance per app, made in `lib/i18n.ts`.** `createAppI18n()` calls `createI18n` from `@wattwise/i18n` with the app's namespaces: `app` from `locales/` and one per feature from `features/<f>/locales/`. The JSON is imported statically and bundled, so the instance is ready synchronously and no component waits for text. `main.tsx` uses the instance the module exports; `testing/test-utils.tsx` calls `createAppI18n()` for a fresh one per test.
 - **Keys are type-checked.** `@wattwise/i18n` declares its namespaces in i18next's `ResourceNamespaceMap`, and `lib/i18n.ts` adds the app's to the same interface with `declare module 'i18next'`, typed from the English file. A key that doesn't exist fails `pnpm typecheck`. Name the namespace in `useTranslation('<namespace>')`; without one, keys come from `common`.
 - **Both languages have the same keys.** `lib/i18n.test.ts` compares every pair of locale files with `flattenKeys` from `@wattwise/i18n/testing`; a new namespace is added to that test.
-- **Detection, the stored choice and `<html lang>`** belong to `@wattwise/i18n` ([technical.md](technical.md#frontend)); the switch is `LanguageSwitch` in `@wattwise/ui`. Language names shown in the switch are endonyms from `languageNames`, not translated.
+- **Detection, the stored choice and `<html lang>`** belong to `@wattwise/i18n` ([architecture.md](architecture.md#i18n)); the switch is `LanguageSwitch` in `@wattwise/ui`. Language names shown in the switch are endonyms from `languageNames`, not translated.
 
 ## Store
 
 - `@wattwise/core` provides the store factory, the base query and the session slice; `@wattwise/api-client` provides the single API slice. Each app owns its `RootState` and typed hooks because the two apps' state differs.
 - **The store factory takes the API slice and the API base URL as parameters.** Each app reads the URL in `config/env.ts` and passes it in; the factory sets it as the thunk extra argument and the base query reads `api.extra.baseUrl`, so configuration stays out of the state. `core` never reads `import.meta.env`.
-- **The session lives in the store.** The access token is kept in `core`'s session slice, never in a module variable, so a fresh store per test starts signed out. Redux DevTools would show the token, so the factory takes a `devTools` flag and each app passes `import.meta.env.DEV` ([security.md](security.md#tokens)).
+- **The session lives in the store.** The access token is kept in `core`'s session slice, never in a module variable, so a fresh store per test starts signed out. Redux DevTools would show the token, so the factory takes a `devTools` flag and each app passes `import.meta.env.DEV` ([security.md](../../docs/security.md#tokens)).
 - `stores/` holds:
   - the root reducer, `combineSlices(api, sessionSlice).withLazyLoadedSlices<LazyLoadedSlices>()`, with `RootState` derived from it;
   - the app's store function, which calls the `@wattwise/core` factory with that reducer, the API slice, the base URL and the `devTools` flag, and the `AppStore` and `AppDispatch` types;
@@ -131,32 +131,6 @@ Tags live in the package because they are part of the API contract: both apps ne
 - A feature slice extends `LazyLoadedSlices` with `declare module` and injects itself with `const injected = slice.injectInto(rootReducer)`, so the root reducer never imports a feature.
 - A lazy slice is missing from the state until its module has run, so `RootState` types it as optional. A feature reads its state only through `injected.selectors` or `injected.selectSlice`, which fall back to the initial state, never through `state.<feature>`.
 - `main.tsx` calls the store function once and renders `<AppProvider store={store}><App /></AppProvider>`. Tests create a fresh store per test with the same function and pass it the same way.
-
-## Files and naming
-
-- File and folder names are kebab-case: `plan-card.tsx`, `use-plan-filter.ts`, `plans-slice.ts`. Component names inside stay PascalCase.
-- One component per file, named after the file.
-- **No barrel files** (`index.ts` re-exports) inside an app. Import from the file itself. Packages are imported through their entry point ("Consumed from source" in [technical.md](technical.md#shared-frontend-packages)).
-- Imports inside an app use the `@/` alias for `src/` (`@/features/plans/components/plan-card`); relative imports only within the same feature folder.
-
-## Tests
-
-- Unit and component tests sit next to the file: `plan-card.test.tsx` beside `plan-card.tsx`.
-- A route's integration test sits next to its route module in `app/routes/`.
-- `testing/test-utils.tsx` renders through `AppProvider` from `app/provider.tsx` with a fresh store, so tests use the real provider tree instead of a copy.
-- MSW handlers live in `testing/mocks/handlers/`, one file per API resource, so features and routes reuse them.
-- A test that depends on the screen width stubs `matchMedia` with `createMatchMedia({ width })` from `@wattwise/ui/testing` (in an app, through `stubMatchMedia({ width })` in `testing/match-media.ts`): 360 for a phone (`xs`), 900 for `md`. Layout that changes with the breakpoint therefore uses `useMediaQuery`, not CSS `display`, so jsdom renders only the variant under test.
-- Playwright end-to-end tests go in `<app>/e2e/` once they exist.
-
-## Enforcement
-
-The root `eslint.config.js` checks the import rules for both apps with `eslint-plugin-import-x` (`eslint-plugin-import` doesn't support ESLint 10):
-
-- A TypeScript import resolver that reads the tsconfig `paths`, so the rules see through `@/` and the `@wattwise/*` source exports. Without it they silently skip those imports.
-- `import-x/no-restricted-paths` zones: shared folders can't import `features/` or `app/`, except `testing/` importing `app/provider.tsx`; features can't import `app/`; and no feature can import another. One exception: `lib/i18n.ts` may import `features/<f>/locales/*.json`, and nothing else from a feature (see "Translations"). The feature zones are generated from each app's `src/features/` listing, so a new feature is covered without editing the config. Further zones hold the package graph above, and keep the packages from importing an app and one app from importing the other.
-- `no-restricted-imports` by package name for the same graph. A zone silently skips an import the resolver can't follow, and a workspace package that isn't a declared dependency isn't guaranteed to resolve; the by-name rule doesn't depend on resolution.
-- `import-x/no-cycle`.
-- `no-restricted-imports` for `useSelector` and `useDispatch` from `react-redux`, off for `stores/hooks.ts`.
 
 ## Why this structure
 

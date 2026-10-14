@@ -1,6 +1,6 @@
 # Watt-Wise — Technical Specification
 
-Companion to [product.md](product.md). This document records the architecture of the whole Watt-Wise system: the applications, how they talk to each other, the data model, hosting and the rules shared by every project. Technical details that belong to one project live in that project's own docs and are linked from here; for the backend, that is [backend/docs/](../backend/docs/).
+Companion to [product.md](product.md). This document records the architecture of the whole Watt-Wise system: the applications, how they talk to each other, the data model, hosting and the rules shared by every project. Technical details that belong to one project live in that project's own docs and are linked from here; for the backend, that is [backend/docs/](../backend/docs/), and for the web apps and shared packages, [frontend/docs/](../frontend/docs/).
 
 ## Repository
 
@@ -19,8 +19,8 @@ watt-wise/
 ├── pnpm-workspace.yaml        frontend, admin, packages/*
 ├── package.json               root scripts (lint, test, build all JS packages)
 ├── tsconfig.base.json         shared TypeScript settings
-├── frontend/                  React PWA (Vite)
-├── admin/                     React admin PWA (Vite)
+├── frontend/                  React PWA (Vite), docs for both apps and packages/ in frontend/docs/
+├── admin/                     React admin PWA (Vite), follows frontend/docs/
 ├── packages/
 │   ├── api-client/            generated RTK Query client + types
 │   ├── ui/                    MUI theme (light/dark color schemes, mode switch), shared components, charts
@@ -37,33 +37,14 @@ watt-wise/
 
 ## Frontend
 
-- **Stack:** React + TypeScript, built with Vite, delivered as a PWA.
-- **PWA scope:** installable with a manifest; the app shell is cached by a service worker (`vite-plugin-pwa`). API data is always fetched online; no offline data and no push notifications in MVP.
-- **Component library:** MUI.
-- **Responsive design:** mobile-first. Layouts are built for the smallest MUI breakpoint first and enhanced upward; navigation, tables and charts must be usable on a phone.
-- **Appearance:** light, dark and auto modes using MUI's CSS-variables theme with `colorSchemes` and `useColorScheme`. Auto follows `prefers-color-scheme`; the user's choice is stored in `localStorage` under `wattwise-mode` and applied before first paint to avoid a flash. The apps have no server rendering, so a Vite plugin from `@wattwise/ui/vite` writes MUI's own `InitColorSchemeScript` into each `index.html` `<head>` at build time.
-- **Palette and font:** the brand palette lives in `packages/ui` (the theme): a blue-violet primary, a neutral slate secondary and tinted neutrals, every colour meeting WCAG AA (4.5:1) as text on both backgrounds, checked by the theme's tests. Green, red and amber are reserved for cheaper, pricier and caution, so they are never used as brand or decoration. The font is Roboto, bundled with the apps (`@fontsource-variable/roboto`), so no request goes to a font CDN.
-- **Data fetching / server state:** RTK Query (Redux Toolkit).
-- **Routing:** React Router 8 in data mode: `createBrowserRouter` with lazy page routes, `RouterProvider` from `react-router/dom` and everything else from `react-router`. The app shell (app bar, bottom navigation on a phone, side navigation from the `md` breakpoint up) and the not-found page come from `@wattwise/ui`; how they get their links is under "Import direction" in [frontend-structure.md](frontend-structure.md#import-direction).
-- **Forms and validation:** react-hook-form with zod schemas.
-- **Charts (consumption chart, catalog UI):** MUI X Charts.
-- **i18n (Lithuanian and English):** react-i18next with `i18next-browser-languagedetector`. The language is the one stored in `localStorage` (`wattwise-language`), else the first Lithuanian or English entry in the browser's language list, else Lithuanian; a key missing in Lithuanian falls back to English. The detected or chosen language is stored on every change, so after the first visit the stored one wins. The user switches it in the app bar. Keys are type-checked; how namespaces are laid out and registered is in [frontend-structure.md](frontend-structure.md#translations).
-- **API client:** generated from the backend OpenAPI document with `@rtk-query/codegen-openapi` into `packages/api-client`, consumed by both apps. Regenerated whenever the API changes; generated code is committed.
-- **Testing:** Vitest with React Testing Library for unit and component tests. Playwright end-to-end tests added once the core flow exists.
-- **Folder structure:** feature folders with one-way imports (shared → features → app), the same in `frontend/` and `admin/`; see [frontend-structure.md](frontend-structure.md).
-
-## Shared frontend packages
-
-- Shared code lives in `packages/<name>` as private workspace packages (`"private": true`, name `@wattwise/<name>`), consumed by the apps as `"@wattwise/<name>": "workspace:*"`.
-- **Consumed from source.** Each package's entry point is `src/index.ts`, exposed through `"exports": { ".": "./src/index.ts" }`; there is no build step and no `dist/`. Vite compiles shared code as part of each app build, HMR works across packages, and TypeScript sees live types. A package may add a second entry for code that runs at build time instead of in the browser: `@wattwise/ui/vite` (`src/vite.ts`) holds the Vite plugin the apps' `vite.config.ts` imports. Node loads such a file directly, so its relative imports carry the `.ts` extension (`allowImportingTsExtensions` in `tsconfig.base.json`).
-- **Single React/MUI instance.** Packages declare `react`, `react-dom`, `@mui/material` and other framework libraries as `peerDependencies`; only the apps own those versions. A package adds a peer (plus a matching devDependency for its own tests) when its code first imports the library, not ahead of time.
-- **Configuration.** One root `tsconfig.base.json` extended by every app and package. ESLint and Prettier each have one root config (`eslint.config.js`, `.prettierrc.json`) and run once from the root across all apps and packages. Vitest is a root devDependency and its config is shared through the root `vitest.base.js`; each app and package has a `vitest.config.js` that merges it with `mergeConfig(base, defineProject({ ... }))` and adds its own options (name, environment); an app also merges its `vite.config.ts`, for the React plugin and the `@/` alias. Every app and package has `test` (`vitest run`) and `typecheck` (`tsc`, TypeScript 7) scripts, fanned out by the root `pnpm test` and `pnpm typecheck`. TypeScript project references are added only if type-checking becomes slow.
-- **Initial packages:** `api-client`, `ui`, `core`, `i18n`. New packages are created only when code is genuinely needed by more than one app.
+- **System view:** two React + TypeScript web apps built with Vite and delivered as PWAs, `frontend/` for users and `admin/` for internal use, sharing code through the private `@wattwise/*` packages in `packages/`. Both are mobile-first, in Lithuanian and English, with light, dark and auto appearance.
+- **API contract with the backend:** the apps call the API only through the RTK Query client generated from its OpenAPI document into `@wattwise/api-client` (see "Backend").
+- **Inside the frontend:** stack, appearance, i18n, the shared packages, folder structure, testing and code conventions are documented in [frontend/docs/](../frontend/docs/): [architecture.md](../frontend/docs/architecture.md), [structure.md](../frontend/docs/structure.md), [testing.md](../frontend/docs/testing.md) and [conventions.md](../frontend/docs/conventions.md). They cover `admin/` and `packages/*` too.
 
 ## Admin application
 
 - `admin/` — a separate web application in the monorepo for internal use: reviewing and publishing plan catalog entries produced by fetch/scrape jobs, and correcting plan data. Jobs are monitored in the Hangfire dashboard, which is not part of this app and not on the internet ([security.md](security.md#authorization)).
-- **Stack:** identical to `frontend/` (React + TypeScript, Vite PWA with the same manifest and app-shell caching, MUI, RTK Query, generated API client, React Router, react-hook-form with zod, react-i18next, Vitest). Same mobile-first layout rules and light/dark/auto appearance. Served on its own subdomain.
+- **Stack:** the same as `frontend/`, served on its own subdomain ([frontend/docs/architecture.md](../frontend/docs/architecture.md#admin-application)).
 - **Backend:** the same backend serves it. Admin endpoints live under `/api/v1/admin` and require the Identity `Admin` role; how an account gets it is under "Authorization" in [security.md](security.md#authorization).
 
 ## Backend
@@ -114,7 +95,7 @@ watt-wise/
 - **GDPR:** account delete and data export implemented as backend use cases. Delete removes the Identity user, consumption objects, hourly rows, current-plan entries and refresh tokens in one transaction. Export returns a JSON archive of the same data.
 - **External data sources:** spot prices from ENTSO-E Transparency Platform API (free token) as the primary source, with Nord Pool or Litgrid open data as fallback adapters behind the same Application port. Provider catalog sources are decided per provider during implementation (see product.md open questions); each provider gets its own Infrastructure adapter producing draft plans.
 - **Code style / linting:** frontend, admin and shared packages use ESLint and Prettier from root-level shared configs.
-  - ESLint: typescript-eslint `strictTypeChecked` + `stylisticTypeChecked`, `@eslint-react` (`eslint-plugin-react` doesn't support ESLint 10), `eslint-plugin-react-hooks`, and `eslint-config-prettier` last.
+  - ESLint: the rule set and the import rules are in [frontend/docs/conventions.md](../frontend/docs/conventions.md).
   - Prettier: single quotes, no semicolons, 100-column lines, otherwise defaults.
   - Backend: `.editorconfig`, `dotnet format` and the built-in .NET analyzers; see [backend/docs/conventions.md](../backend/docs/conventions.md).
   - One Husky pre-commit hook first runs a Betterleaks secret scan on the staged changes, then a single root `lint-staged.config.js` that lints and formats staged files (JS/TS and C#).
