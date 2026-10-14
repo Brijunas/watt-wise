@@ -44,7 +44,7 @@ watt-wise/
 ## Admin application
 
 - `admin/` — a separate web application in the monorepo for internal use: reviewing and publishing plan catalog entries produced by fetch/scrape jobs, and correcting plan data. Jobs are monitored in the Hangfire dashboard, which is not part of this app and not on the internet ([security.md](security.md#authorization)).
-- **Stack:** the same as `frontend/`, served on its own subdomain ([frontend/docs/architecture.md](../frontend/docs/architecture.md#admin-application)).
+- **Stack:** the same as `frontend/` ([frontend/docs/architecture.md](../frontend/docs/architecture.md#admin-application)), served on its own subdomain.
 - **Backend:** the same backend serves it. Admin endpoints live under `/api/v1/admin` and require the Identity `Admin` role; how an account gets it is under "Authorization" in [security.md](security.md#authorization).
 
 ## Backend

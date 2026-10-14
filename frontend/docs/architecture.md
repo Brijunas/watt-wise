@@ -26,7 +26,7 @@ react-i18next with `i18next-browser-languagedetector`. The language is the one s
 
 ## Admin application
 
-Same stack as `frontend/` (Vite PWA with the same manifest and app-shell caching, MUI, RTK Query, generated API client, React Router, react-hook-form with zod, react-i18next, Vitest), the same mobile-first layout rules and light/dark/auto appearance, and the same folder structure. It is served on its own subdomain. What it is for is under "Admin application" in [technical.md](../../docs/technical.md#admin-application).
+Same stack as `frontend/` (Vite PWA with the same manifest and app-shell caching, MUI, RTK Query, generated API client, React Router, react-hook-form with zod, react-i18next, Vitest), the same mobile-first layout rules and light/dark/auto appearance, and the same folder structure. What it is for and where it is served are under "Admin application" in [technical.md](../../docs/technical.md#admin-application).
 
 ## Shared packages
 

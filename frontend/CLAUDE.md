@@ -6,7 +6,7 @@ Notes for Claude Code when working in `frontend/`, `admin/` or `packages/`. Both
 
 - Follow [docs/conventions.md](docs/conventions.md#files-and-naming): kebab-case file names, one component per file, no barrel files inside an app, the `@/` alias across folders.
 - Put each thing where "Where things go" in [docs/structure.md](docs/structure.md#where-things-go) says. When the import rules block an import, move the code down (shared folder or package) instead of working around the rule.
-- Text the user sees goes through i18n in both Lithuanian and English, never as a literal in a component.
+- No literal user-facing text in a component: see "Translations" in [docs/structure.md](docs/structure.md#translations).
 
 ## Before committing
 

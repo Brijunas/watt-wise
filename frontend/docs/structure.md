@@ -113,6 +113,7 @@ Tags live in the package because they are part of the API contract: both apps ne
 
 ## Translations
 
+- **No literal text in components.** Every text the user sees comes from a namespace, in both Lithuanian and English; a component never holds it as a string literal.
 - **One instance per app, made in `lib/i18n.ts`.** `createAppI18n()` calls `createI18n` from `@wattwise/i18n` with the app's namespaces: `app` from `locales/` and one per feature from `features/<f>/locales/`. The JSON is imported statically and bundled, so the instance is ready synchronously and no component waits for text. `main.tsx` uses the instance the module exports; `testing/test-utils.tsx` calls `createAppI18n()` for a fresh one per test.
 - **Keys are type-checked.** `@wattwise/i18n` declares its namespaces in i18next's `ResourceNamespaceMap`, and `lib/i18n.ts` adds the app's to the same interface with `declare module 'i18next'`, typed from the English file. A key that doesn't exist fails `pnpm typecheck`. Name the namespace in `useTranslation('<namespace>')`; without one, keys come from `common`.
 - **Both languages have the same keys.** `lib/i18n.test.ts` compares every pair of locale files with `flattenKeys` from `@wattwise/i18n/testing`; a new namespace is added to that test.

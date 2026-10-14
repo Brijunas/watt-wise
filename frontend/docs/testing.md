@@ -15,5 +15,5 @@ How `frontend/`, `admin/` and the `@wattwise/*` packages are tested and where th
 - `testing/test-utils.tsx` renders through `AppProvider` from `app/provider.tsx` with a fresh store, so tests use the real provider tree instead of a copy.
 - MSW handlers live in `testing/mocks/handlers/`, one file per API resource, so features and routes reuse them.
 - A test that depends on the screen width stubs `matchMedia` with `createMatchMedia({ width })` from `@wattwise/ui/testing` (in an app, through `stubMatchMedia({ width })` in `testing/match-media.ts`): 360 for a phone (`xs`), 900 for `md`. Layout that changes with the breakpoint therefore uses `useMediaQuery`, not CSS `display`, so jsdom renders only the variant under test.
-- Both languages have the same keys: `lib/i18n.test.ts` checks it ([structure.md](structure.md#translations)).
+- The locale key check is under "Translations" in [structure.md](structure.md#translations).
 - Playwright end-to-end tests go in `<app>/e2e/` once they exist.
