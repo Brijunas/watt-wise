@@ -5,6 +5,8 @@ import enCommon from './locales/en/common.json'
 import ltCommon from './locales/lt/common.json'
 import enShell from './locales/en/shell.json'
 import ltShell from './locales/lt/shell.json'
+import enValidation from './locales/en/validation.json'
+import ltValidation from './locales/lt/validation.json'
 
 declare module 'i18next' {
   interface CustomTypeOptions {
@@ -13,6 +15,7 @@ declare module 'i18next' {
   interface ResourceNamespaceMap {
     common: typeof enCommon
     shell: typeof enShell
+    validation: typeof enValidation
   }
 }
 
@@ -30,7 +33,7 @@ export interface CreateI18nOptions {
   namespaces?: Record<Language, Record<string, object>>
 }
 
-const sharedNamespaces = ['common', 'shell']
+const sharedNamespaces = ['common', 'shell', 'validation']
 
 export const createI18n = (options: CreateI18nOptions = {}): i18n => {
   const extra = options.namespaces
@@ -62,8 +65,8 @@ export const createI18n = (options: CreateI18nOptions = {}): i18n => {
     .use(initReactI18next)
     .init({
       resources: {
-        en: { common: enCommon, shell: enShell, ...extra?.en },
-        lt: { common: ltCommon, shell: ltShell, ...extra?.lt },
+        en: { common: enCommon, shell: enShell, validation: enValidation, ...extra?.en },
+        lt: { common: ltCommon, shell: ltShell, validation: ltValidation, ...extra?.lt },
       },
       lng: options.lng,
       supportedLngs: [...languages],
@@ -82,3 +85,10 @@ export const createI18n = (options: CreateI18nOptions = {}): i18n => {
     })
   return instance
 }
+
+type FlattenKeys<T> = {
+  [K in keyof T & string]: T[K] extends string ? K : `${K}.${FlattenKeys<T[K]>}`
+}[keyof T & string]
+
+/** Every key of the shared `validation` namespace, such as `required` or `password.tooShort`. */
+export type ValidationKey = FlattenKeys<typeof enValidation>

@@ -1,0 +1,12 @@
+{
+  "required": "Privalomas laukas",
+  "email": "Įveskite teisingą el. pašto adresą",
+  "password": {
+    "tooShort": "Slaptažodį turi sudaryti bent {{min}} simbolių",
+    "lowercase": "Slaptažodyje turi būti mažoji raidė",
+    "uppercase": "Slaptažodyje turi būti didžioji raidė",
+    "digit": "Slaptažodyje turi būti skaitmuo",
+    "symbol": "Slaptažodyje turi būti simbolis"
+  },
+  "invalid": "Neteisinga reikšmė"
+}

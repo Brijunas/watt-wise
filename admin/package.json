@@ -24,9 +24,11 @@
     "i18next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
     "react-i18next": "catalog:",
     "react-redux": "catalog:",
-    "react-router": "catalog:"
+    "react-router": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@testing-library/dom": "catalog:",

@@ -4,6 +4,8 @@ import enCommon from './locales/en/common.json'
 import ltCommon from './locales/lt/common.json'
 import enShell from './locales/en/shell.json'
 import ltShell from './locales/lt/shell.json'
+import enValidation from './locales/en/validation.json'
+import ltValidation from './locales/lt/validation.json'
 import { createI18n, languageNames, languageStorageKey } from './create-i18n'
 import flattenKeys from './testing'
 
@@ -130,8 +132,20 @@ describe('translations', () => {
     )
   })
 
-  it('rejects an app namespace that replaces a shared one', () => {
-    expect(() => createI18n({ namespaces: { en: { shell: {} }, lt: { shell: {} } } })).toThrow(
+  it('resolves the validation namespace in both languages', () => {
+    expect(createI18n().t('required', { ns: 'validation' })).toBe('This field is required')
+    expect(createI18n({ lng: 'lt' }).t('password.tooShort', { ns: 'validation', min: 14 })).toBe(
+      'Slaptažodį turi sudaryti bent 14 simbolių',
+    )
+  })
+
+  it('resolves the form texts of the common namespace', () => {
+    expect(createI18n().t('form.showPassword')).toBe('Show password')
+    expect(createI18n({ lng: 'lt' }).t('form.hidePassword')).toBe('Slėpti slaptažodį')
+  })
+
+  it.each(['shell', 'validation'])('rejects an app namespace that replaces %s', (name) => {
+    expect(() => createI18n({ namespaces: { en: { [name]: {} }, lt: { [name]: {} } } })).toThrow(
       'shared namespace',
     )
   })
@@ -160,6 +174,7 @@ describe('locale files', () => {
   it.each([
     ['common', enCommon, ltCommon],
     ['shell', enShell, ltShell],
+    ['validation', enValidation, ltValidation],
   ])('have the same %s keys in English and Lithuanian', (_name, en, lt) => {
     expect(flattenKeys(lt).sort()).toEqual(flattenKeys(en).sort())
   })

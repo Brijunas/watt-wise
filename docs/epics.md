@@ -8,7 +8,6 @@ Creates the `frontend/` and `admin/` Vite React TypeScript apps in the workspace
 
 ### Stories
 
-- **S3.7 Forms foundation.** react-hook-form with zod resolver, shared zod helpers in `@wattwise/core`, MUI-bound form fields in `@wattwise/ui` with error display and localized messages. One demo form under test. Done: validation errors show localized messages.
 - **S3.8 PWA.** `vite-plugin-pwa` in both apps with manifest, icons, app-shell precaching and a network-only rule for `/api`. Update prompt when a new service worker is available. Done: Lighthouse reports installable, API requests are never served from cache.
 - **S3.9 Vite env and config.** `.env.example` per app and env files for development/testing/staging/production with the API base URL, typed via `import.meta.env` declarations. E5 releases to Production by moving the images Staging runs there unchanged ([technical.md](technical.md#hosting-and-operations)), so a deployed frontend or admin image must reach the API of whichever environment runs it: either the URL is read when the container starts, or each environment gets its own image. Which one is investigated and decided when S3.9 is planned, recorded in technical.md, and this Done adjusted to it. Done: builds for each mode pick the correct API URL.
 - **S3.10 App commands in development.md.** Extend `docs/development.md` with app dev/build/test, single test and API client regeneration commands. Done: each command executed and works.
