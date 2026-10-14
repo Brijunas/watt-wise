@@ -94,7 +94,8 @@ const packageZones = Object.entries(forbiddenPackageImports).flatMap(([name, for
 ])
 
 export default defineConfig(
-  globalIgnores(['**/dist/', '**/dev-dist/', '**/coverage/']),
+  // backend/**/obj/ holds JS the .NET SDK generates (dotnet-watch browser tools since 11 rc.2).
+  globalIgnores(['**/dist/', '**/dev-dist/', '**/coverage/', 'backend/**/bin/', 'backend/**/obj/']),
   js.configs.recommended,
   {
     extends: [tseslint.configs.strictTypeChecked, tseslint.configs.stylisticTypeChecked],

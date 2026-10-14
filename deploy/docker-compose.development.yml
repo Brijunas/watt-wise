@@ -60,7 +60,7 @@ services:
         condition: service_healthy
 
   lgtm:
-    image: grafana/otel-lgtm:0.35.0
+    image: grafana/otel-lgtm:0.36.0
     restart: unless-stopped
     environment:
       # Grafana without a login (anonymous Admin), like pgAdmin's desktop mode; published on loopback only.

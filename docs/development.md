@@ -110,6 +110,8 @@ Only `WattWise.Cli migrate` changes the schema, in every environment; never use 
 
 The policy (minimum release age, how majors are taken, Renovate later) is in "Dependency updates" in [technical.md](technical.md). Check [known-issues.md](known-issues.md) before touching TypeScript or typescript-eslint.
 
+A full refresh (every source to latest, doc references, all checks) is the `update-deps` Claude skill; its read-only survey also runs on its own: `python3 .claude/skills/update-deps/scripts/outdated.py`.
+
 | Command                          | What it does                                                                  |
 | -------------------------------- | ----------------------------------------------------------------------------- |
 | `pnpm outdated -r`               | Lists outdated dependencies in every workspace package, including the root.   |
