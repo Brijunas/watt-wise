@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./vite": "./src/vite.ts"
   },
   "scripts": {
     "test": "vitest run",
@@ -11,11 +12,13 @@
   },
   "peerDependencies": {
     "@reduxjs/toolkit": "catalog:",
+    "vite": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@reduxjs/toolkit": "catalog:",
     "msw": "catalog:",
+    "vite": "catalog:",
     "zod": "catalog:"
   },
   "dependencies": {

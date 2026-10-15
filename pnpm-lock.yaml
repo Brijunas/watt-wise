@@ -372,6 +372,9 @@ importers:
       msw:
         specifier: 'catalog:'
         version: 3.0.3(@types/node@26.6.5)(typescript@6.0.3)(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.4(@types/node@26.6.5)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
       zod:
         specifier: 'catalog:'
         version: 4.6.7

@@ -8,8 +8,7 @@ export default mergeConfig(
     test: {
       name: 'frontend',
       environment: 'jsdom',
-      setupFiles: ['./src/testing/setup.ts'],
-      env: { VITE_API_BASE_URL: 'http://api.test' },
+      setupFiles: ['./src/testing/runtime-config.ts', './src/testing/setup.ts'],
     },
   }),
 )
