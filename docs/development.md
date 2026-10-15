@@ -1,6 +1,6 @@
 # Development
 
-Everyday commands and workflow. For first-time machine setup, see [setup.md](setup.md). Every command runs from the repo root. The apps' own commands (dev server, single test) are added in S3.10.
+Everyday commands and workflow. For first-time machine setup, see [setup.md](setup.md). Every command runs from the repo root.
 
 ## Checks
 
@@ -36,14 +36,26 @@ The rules behind these (lint rules, the shared Vitest and TypeScript configs, wh
 
 ### Running a single test
 
-Use `--filter` with the package name. Extra arguments go straight to Vitest.
+Use `--filter` with the package name (`frontend`, `admin` or `@wattwise/<name>`). Extra arguments go straight to Vitest.
 
-| Command                                                           | What it runs                                 |
-| ----------------------------------------------------------------- | -------------------------------------------- |
-| `pnpm --filter @wattwise/core test`                               | One package's tests                          |
-| `pnpm --filter @wattwise/core test src/index.test.ts`             | One test file (path relative to the package) |
-| `pnpm --filter @wattwise/core test -t "exports its package name"` | Tests whose name matches                     |
-| `pnpm --filter @wattwise/core exec vitest`                        | One package's tests in watch mode            |
+| Command                                                                            | What it runs                                                                              |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm --filter frontend test`                                                      | One app's or package's tests                                                              |
+| `pnpm --filter frontend test src/features/about/about-panel.test.tsx`              | One test file (path relative to the app or package)                                       |
+| `pnpm --filter frontend test -t "shows the error text"`                            | Tests whose name matches                                                                  |
+| `pnpm --filter @wattwise/core test src/runtime-config/read-runtime-config.test.ts` | The same in a package                                                                     |
+| `pnpm --filter frontend exec vitest`                                               | One app's or package's tests in watch mode (in a terminal; without one, Vitest runs once) |
+
+## Running the apps
+
+Each app's dev server and preview get their settings from 1Password through the app's own `.env.op.development`: the address to listen on (the `frontend` or `admin` item's `url`, the origin the Api's CORS allows) and the Api's URL, which they serve to the app as `/config.js` ([frontend/docs/architecture.md](../frontend/docs/architecture.md#runtime-config)). The app shows data only while the Api runs ([Running the hosts](#running-the-hosts)). Swap `frontend` for `admin` for the admin app. Vite's log shows the address as `<concealed by 1Password>`, like the hosts; the URLs are in the items.
+
+| Command                                                                            | What it does                                                                                    |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `op run --env-file frontend/.env.op.development -- pnpm --filter frontend dev`     | Starts the dev server with hot reload on the `frontend` item's `url`. No service worker in dev. |
+| `pnpm --filter frontend build`                                                     | Type-checks and builds `frontend/dist/`. Needs no settings: the API address is read at runtime. |
+| `op run --env-file frontend/.env.op.development -- pnpm --filter frontend preview` | Serves the last build on the same address, service worker included, to try the PWA.             |
+| `pnpm --filter frontend generate:icons`                                            | Regenerates the PWA icons and `favicon.ico` from `public/favicon.svg`; commit the results.      |
 
 ## Backend
 
@@ -135,11 +147,13 @@ The pre-commit hook (`.husky/pre-commit`) runs two checks on the staged changes.
 
 ## Troubleshooting
 
-| Problem                                                          | Fix                                                                                                                              |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Hook fails only in a GUI git client                              | The GUI doesn't load your shell config, so mise's tools aren't on its `PATH`. Commit from a terminal, or start the GUI from one. |
-| ESLint says a file "was not found by the project service"        | The `.ts`/`.tsx` file isn't included by any `tsconfig.json`. Add it to the nearest package's tsconfig `include`.                 |
-| Backend tests fail with `DockerUnavailableException`             | Docker isn't running. Start it and run the tests again.                                                                          |
-| A host stops with `Database configuration is missing or invalid` | It was started without `op run --env-file …/.env.development`.                                                                   |
+| Problem                                                          | Fix                                                                                                                                              |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Hook fails only in a GUI git client                              | The GUI doesn't load your shell config, so mise's tools aren't on its `PATH`. Commit from a terminal, or start the GUI from one.                 |
+| ESLint says a file "was not found by the project service"        | The `.ts`/`.tsx` file isn't included by any `tsconfig.json`. Add it to the nearest package's tsconfig `include`.                                 |
+| Backend tests fail with `DockerUnavailableException`             | Docker isn't running. Start it and run the tests again.                                                                                          |
+| A host stops with `Database configuration is missing or invalid` | It was started without `op run --env-file …/.env.development`.                                                                                   |
+| An app stops with an error about `/config.js` or `API_BASE_URL`  | Its dev server or preview was started without `op run --env-file <app>/.env.op.development`.                                                     |
+| An app's dev server exits with "Port … is already in use"        | Another process holds the app's port. Stop it; the server doesn't move to another port ([why](../frontend/docs/architecture.md#runtime-config)). |
 
 For tool, install and hook-setup problems, see "Troubleshooting" in [setup.md](setup.md).

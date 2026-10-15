@@ -2,14 +2,6 @@
 
 Epics are ordered by dependency. Each one is expected to be delivered end to end (backend, frontend, tests) before the next starts, except where noted. `docs/product.md`, `docs/technical.md` and each project's own docs (`backend/docs/`, `frontend/docs/`, `deploy/docs/`) remain the source of truth; an epic never overrides them. When an epic's last story ships, the epic moves to [implemented.md](implemented.md).
 
-## E3. Frontend foundation (frontend + admin + shared packages)
-
-Creates the `frontend/` and `admin/` Vite React TypeScript apps in the workspace. Both PWAs booting with the app shell cached. MUI CSS-variables theme with light/dark/auto, choice in `localStorage` and applied before first paint. React Router shell, RTK Query store. Packages `@wattwise/ui`, `@wattwise/core`, `@wattwise/i18n` (LT/EN) and `@wattwise/api-client` with the `@rtk-query/codegen-openapi` pipeline from the API's OpenAPI document. Vitest + React Testing Library set up in every app and package. Extends `docs/development.md` with the app commands. Runs after E2 because the API client is generated from the real OpenAPI document.
-
-### Stories
-
-- **S3.10 App commands in development.md.** Extend `docs/development.md` with app dev/build/test, single test and API client regeneration commands. Done: each command executed and works.
-
 ## E4. Accounts and authentication
 
 ASP.NET Core Identity with email and password: an account signs in only after confirming its email, and a forgotten password is reset through an emailed link. JWT access token plus a rotating refresh token in an httpOnly cookie; each sign-in is a session the user can see and end, one device at a time or everywhere at once ([security.md](security.md)). Transactional email over SMTP: Mailpit in Development and Testing, Brevo in Staging and Production ([technical.md](technical.md#cross-cutting)). `Admin` role guarding `/api/v1/admin`, granted with a `WattWise.Cli` command. Sign-up, sign-in, password and device pages with protected routes in the frontend; sign-in in the admin app. The account model leaves room for OAuth logins later without exposing them. Rate limiting on the auth endpoints and how the Hangfire dashboard is reached stay in E6. The backend stories (S4.1–S4.7) build on E2 and can start now; the app stories (S4.8–S4.10) need E3's routing, forms, i18n and generated API client.
