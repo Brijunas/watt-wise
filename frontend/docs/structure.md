@@ -27,7 +27,7 @@ How code is laid out inside `frontend/` and `admin/`, and how they and the share
 ├── stores/              root reducer, store function, hooks.ts with the typed hooks
 ├── lib/                 app-level setup of a library, e.g. lib/i18n.ts registers the app's namespaces
 ├── locales/             lt.json, en.json: app-wide text no feature owns (nav labels), the `app` namespace
-├── config/              env.ts (typed import.meta.env), routes.ts (route paths), other constants
+├── config/              env.ts (the runtime config from /config.js), routes.ts (route paths), other constants
 ├── types/               app-wide types not owned by one feature
 ├── utils/               app-wide pure helpers, e.g. utils/format-kwh.ts
 ├── assets/              app-wide static files
@@ -122,7 +122,7 @@ Tags live in the package because they are part of the API contract: both apps ne
 ## Store
 
 - `@wattwise/core` provides the store factory, the base query and the session slice; `@wattwise/api-client` provides the single API slice. Each app owns its `RootState` and typed hooks because the two apps' state differs.
-- **The store factory takes the API slice and the API base URL as parameters.** Each app reads the URL in `config/env.ts` and passes it in; the factory sets it as the thunk extra argument and the base query reads `api.extra.baseUrl`, so configuration stays out of the state. `core` never reads `import.meta.env`.
+- **The store factory takes the API slice and the API base URL as parameters.** Each app reads the URL in `config/env.ts` and passes it in; the factory sets it as the thunk extra argument and the base query reads `api.extra.baseUrl`, so configuration stays out of the state. `core` never reads `import.meta.env`; the URL comes from the runtime config ([architecture.md](architecture.md#runtime-config)).
 - **The session lives in the store.** The access token is kept in `core`'s session slice, never in a module variable, so a fresh store per test starts signed out. Redux DevTools would show the token, so the factory takes a `devTools` flag and each app passes `import.meta.env.DEV` ([security.md](../../docs/security.md#tokens)).
 - `stores/` holds:
   - the root reducer, `combineSlices(api, sessionSlice).withLazyLoadedSlices<LazyLoadedSlices>()`, with `RootState` derived from it;

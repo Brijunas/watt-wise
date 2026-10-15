@@ -19,6 +19,8 @@ coverage/
 !backend/src/*/.env.testing
 !backend/src/*/.env.staging
 !backend/src/*/.env.production
+!frontend/.env.op.development
+!admin/.env.op.development
 *.local
 
 # OS and editors

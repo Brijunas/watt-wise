@@ -26,6 +26,8 @@
       "Read(!backend/src/*/.env.testing)",
       "Read(!backend/src/*/.env.staging)",
       "Read(!backend/src/*/.env.production)",
+      "Read(!frontend/.env.op.development)",
+      "Read(!admin/.env.op.development)",
       "Read(**/*.pem)",
       "Read(**/*.key)",
       "Read(**/*.pfx)",
