@@ -13,8 +13,8 @@ using WattWise.Infrastructure.Persistence;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 [DbContext(typeof(AppDbContext))]
-[Migration("20261026152554_Accounts")]
-partial class _20261026152554_Accounts
+[Migration("20261026161112_Initial")]
+partial class _20261026161112_Initial
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)

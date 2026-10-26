@@ -22,15 +22,14 @@ public class DatabaseRoundTripTests(DatabaseFixture fixture) : IClassFixture<Dat
     }
 
     [Fact]
-    public async Task Cli_sees_the_initial_and_accounts_migrations_applied()
+    public async Task Cli_sees_every_migration_applied()
     {
         await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Cli);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         IEnumerable<string> applied = await db.Database.GetAppliedMigrationsAsync(Token);
-        Assert.Contains("20261005094112_Initial", applied);
-        Assert.Contains("20261026152554_Accounts", applied);
+        Assert.Equal(db.Database.GetMigrations(), applied);
         Assert.Empty(await db.Database.GetPendingMigrationsAsync(Token));
     }
 }

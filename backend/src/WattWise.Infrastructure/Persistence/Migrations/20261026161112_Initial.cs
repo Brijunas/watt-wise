@@ -7,7 +7,7 @@ using NodaTime;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 /// <inheritdoc />
-public partial class _20261026152554_Accounts : Migration
+public partial class _20261026161112_Initial : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
