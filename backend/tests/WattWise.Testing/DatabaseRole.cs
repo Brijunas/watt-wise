@@ -6,4 +6,5 @@ public enum DatabaseRole
     Cli,
     Api,
     Jobs,
+    Reader,
 }

@@ -92,13 +92,14 @@ One-time setup of the Development PostgreSQL. The roles and why they exist are i
    docker compose -f deploy/docker-compose.development.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
    ```
 
-   Then run these one at a time. For each one, paste the password from the matching 1Password item (`postgres-api`, `postgres-cli`, `postgres-jobs`, `postgres-backup`) twice. Quit with `\q`.
+   Then run these one at a time. For each one, paste the password from the matching 1Password item (`postgres-api`, `postgres-cli`, `postgres-jobs`, `postgres-backup`, `postgres-reader`) twice. Quit with `\q`.
 
    ```
    \password api
    \password cli
    \password jobs
    \password backup
+   \password reader
    ```
 
 5. Create the tables, both the app's and Hangfire's. On a machine set up before S2.9, run this again to add Hangfire's. The Cli takes every connection field (host, port, database, user, password, options) from the `postgres-cli` item:
@@ -130,6 +131,8 @@ Any editor works. For VS Code, install the ESLint and Prettier extensions and tu
 ## Claude Code
 
 Project settings for Claude Code ship with the repo (`.claude/` and `CLAUDE.md`), so there is nothing to install. What they enforce is described under "Code style / linting" and "Secrets and configuration" in [technical.md](technical.md). Personal overrides go in `.claude/settings.local.json`, which stays out of git.
+
+`.mcp.json` adds three MCP servers that run in Docker: `postgres` (read-only, as the `reader` role through the `postgres-reader` item), `grafana` (Grafana LGTM) and `github` (uses the `gh` sign-in). Claude Code asks to approve them on first use. `postgres` and `grafana` need the Development stack running and `op` signed in; `github` needs `gh auth login`.
 
 ## Troubleshooting
 

@@ -1,0 +1,68 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/bin/**)",
+      "Read(**/obj/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*.pfx)",
+      "Read(**/*.p12)",
+      "Read(**/secrets/**)",
+      "Read(**/appsettings.*.local.json)",
+      "Read(**/.env)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.key)",
+      "Edit(**/*.pfx)",
+      "Edit(**/*.p12)",
+      "Edit(**/secrets/**)",
+      "Edit(**/appsettings.*.local.json)",
+      "Edit(**/.env)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/backend-migration-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/prettier-write.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/backend-unused-usings.sh\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/backend-build-check.sh\"",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  },
+  "enabledMcpjsonServers": ["postgres", "grafana", "github"],
+  "enabledPlugins": {
+    "playwright@anthropic-plugin-directory": true,
+    "github@anthropic-plugin-directory": false
+  }
+}

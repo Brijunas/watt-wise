@@ -3,7 +3,7 @@
 # (IDE0005) back to Claude. Checks only; it changes nothing. Exit 2 shows stderr to Claude.
 set -euo pipefail
 
-project=$(realpath "${CLAUDE_PROJECT_DIR:-$PWD}")
+project=$(git -C "${CLAUDE_PROJECT_DIR:-$PWD}" rev-parse --show-toplevel)
 file=$(jq -r '.tool_input.file_path // empty')
 
 [[ -n "$file" && -f "$file" ]] || exit 0

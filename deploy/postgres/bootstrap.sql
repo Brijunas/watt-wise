@@ -11,7 +11,7 @@
 -- environment. Development: see "Development database" in docs/setup.md.
 --
 -- Roles: admin (superuser, created by the image), owner (NOLOGIN, owns the database
--- and schemas), cli (migrations, SET ROLE owner), api, jobs, backup.
+-- and schemas), cli (migrations, SET ROLE owner), api, jobs, backup, reader.
 
 \set ON_ERROR_STOP on
 
@@ -44,21 +44,31 @@ SELECT 'CREATE ROLE backup LOGIN'
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'backup')
 \gexec
 
+-- Read-only access for Claude Code's Postgres MCP. Development only: no other
+-- environment sets its password, so it can't log in there.
+SELECT 'CREATE ROLE reader LOGIN'
+WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'reader')
+\gexec
+
 -- No per-role connection limit (see deploy/docs/postgres.md); re-asserted so clusters
 -- that had one lose it.
 ALTER ROLE cli CONNECTION LIMIT -1;
 ALTER ROLE api CONNECTION LIMIT -1;
 ALTER ROLE jobs CONNECTION LIMIT -1;
 ALTER ROLE backup CONNECTION LIMIT -1;
+ALTER ROLE reader CONNECTION LIMIT -1;
 
 -- cli can SET ROLE owner but does not inherit its privileges implicitly.
 GRANT "owner" TO cli WITH INHERIT FALSE, SET TRUE;
 GRANT pg_read_all_data TO backup;
+GRANT pg_read_all_data TO reader;
 
 ALTER ROLE api SET statement_timeout = '30s';
 ALTER ROLE api SET idle_in_transaction_session_timeout = '60s';
 ALTER ROLE jobs SET statement_timeout = '5min';
 ALTER ROLE jobs SET idle_in_transaction_session_timeout = '60s';
+ALTER ROLE reader SET default_transaction_read_only = on;
+ALTER ROLE reader SET statement_timeout = '30s';
 -- search_path: api sees only app, jobs sees app and hangfire, so unqualified names work.
 ALTER ROLE api SET search_path = app;
 ALTER ROLE jobs SET search_path = app, hangfire;
@@ -74,7 +84,7 @@ ALTER DATABASE wattwise OWNER TO "owner";
 REVOKE ALL ON DATABASE wattwise FROM PUBLIC;
 REVOKE ALL ON DATABASE postgres FROM PUBLIC;
 REVOKE ALL ON DATABASE template1 FROM PUBLIC;
-GRANT CONNECT ON DATABASE wattwise TO cli, api, jobs, backup;
+GRANT CONNECT ON DATABASE wattwise TO cli, api, jobs, backup, reader;
 
 \connect wattwise
 

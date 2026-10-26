@@ -14,6 +14,7 @@ namespace WattWise.Infrastructure.IntegrationTests;
 public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
     private const string PermissionDenied = "42501";
+    private const string ReadOnlySqlTransaction = "25006";
     private static readonly string[] ProbeSchemas = [DatabaseSchemas.App, DatabaseSchemas.Hangfire, DatabaseSchemas.Migrations];
 
     // Tests in a class run one after another, so the probe tables are created idempotently for each and never raced.
@@ -59,6 +60,46 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
     }
 
     [Theory]
+    [InlineData(DatabaseSchemas.App)]
+    [InlineData(DatabaseSchemas.Hangfire)]
+    [InlineData(DatabaseSchemas.Migrations)]
+    public async Task Reader_reads_every_schema(string schema)
+    {
+        string note = "probe-" + Guid.NewGuid().ToString("N");
+        await using (ServiceProvider cliProvider = fixture.BuildServices(DatabaseRole.Cli))
+        await using (AsyncServiceScope cliScope = cliProvider.CreateAsyncScope())
+        {
+            AppDbContext cliDb = cliScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await cliDb.Database.ExecuteSqlRawAsync("INSERT INTO " + Table(schema) + " (note) VALUES ({0})", [note], Token);
+        }
+
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Reader);
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        string selected = await db.Database
+            .SqlQueryRaw<string>("SELECT note AS \"Value\" FROM " + Table(schema) + " WHERE note = {0}", note)
+            .SingleAsync(Token);
+
+        Assert.Equal(note, selected);
+    }
+
+    [Theory]
+    [InlineData(DatabaseSchemas.App)]
+    [InlineData(DatabaseSchemas.Hangfire)]
+    public async Task Reader_cannot_write(string schema)
+    {
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Reader);
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        PostgresException exception = await Assert.ThrowsAsync<PostgresException>(
+            () => db.Database.ExecuteSqlRawAsync("INSERT INTO " + Table(schema) + " (note) VALUES ({0})", ["blocked"], Token));
+
+        Assert.Equal(ReadOnlySqlTransaction, exception.SqlState);
+    }
+
+    [Theory]
     [InlineData(DatabaseRole.Api, DatabaseSchemas.Hangfire)]
     [InlineData(DatabaseRole.Api, DatabaseSchemas.Migrations)]
     [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Migrations)]
@@ -75,13 +116,17 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
     }
 
     [Theory]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.App)]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.Hangfire)]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.Migrations)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.App)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Hangfire)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Migrations)]
-    public async Task Role_cannot_create_tables(DatabaseRole role, string schema)
+    [InlineData(DatabaseRole.Api, DatabaseSchemas.App, PermissionDenied)]
+    [InlineData(DatabaseRole.Api, DatabaseSchemas.Hangfire, PermissionDenied)]
+    [InlineData(DatabaseRole.Api, DatabaseSchemas.Migrations, PermissionDenied)]
+    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.App, PermissionDenied)]
+    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Hangfire, PermissionDenied)]
+    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Migrations, PermissionDenied)]
+    // The reader's sessions are read-only transactions, which PostgreSQL checks before privileges.
+    [InlineData(DatabaseRole.Reader, DatabaseSchemas.App, ReadOnlySqlTransaction)]
+    [InlineData(DatabaseRole.Reader, DatabaseSchemas.Hangfire, ReadOnlySqlTransaction)]
+    [InlineData(DatabaseRole.Reader, DatabaseSchemas.Migrations, ReadOnlySqlTransaction)]
+    public async Task Role_cannot_create_tables(DatabaseRole role, string schema, string sqlState)
     {
         await using ServiceProvider provider = fixture.BuildServices(role);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
@@ -90,7 +135,7 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         PostgresException exception = await Assert.ThrowsAsync<PostgresException>(
             () => db.Database.ExecuteSqlRawAsync("CREATE TABLE " + schema + ".ddl_probe (id int)", Token));
 
-        Assert.Equal(PermissionDenied, exception.SqlState);
+        Assert.Equal(sqlState, exception.SqlState);
     }
 
     [Fact]
