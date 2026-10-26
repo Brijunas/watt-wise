@@ -1,6 +1,6 @@
 # CLAUDE.md (backend)
 
-Notes for Claude Code when working in `backend/`. The rules themselves live in [docs/](docs/): read [docs/architecture.md](docs/architecture.md) and [docs/conventions.md](docs/conventions.md) before writing C#, and [docs/testing.md](docs/testing.md) before writing tests. When a change touches errors, logging or jobs, read [docs/error-handling.md](docs/error-handling.md), [docs/observability.md](docs/observability.md) or [docs/jobs.md](docs/jobs.md) first.
+Notes for Claude Code when working in `backend/`. The rules themselves live in [docs/](docs/): read [docs/architecture.md](docs/architecture.md) and [docs/conventions.md](docs/conventions.md) before writing C#, [docs/domain-model.md](docs/domain-model.md) before writing Domain or Application code, and [docs/testing.md](docs/testing.md) before writing tests. When a change touches errors, logging or jobs, read [docs/error-handling.md](docs/error-handling.md), [docs/observability.md](docs/observability.md) or [docs/jobs.md](docs/jobs.md) first.
 
 ## C# files
 

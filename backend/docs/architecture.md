@@ -1,6 +1,6 @@
 # Backend architecture
 
-How the Watt-Wise backend is built inside. The system-level picture (applications, API contract, data model, hosting, secrets) is in the root [technical.md](../../docs/technical.md); this document covers only what happens inside `backend/`. Testing is in [testing.md](testing.md), build settings and code style in [conventions.md](conventions.md), failures and the error contract in [error-handling.md](error-handling.md), logs, traces and metrics in [observability.md](observability.md), the Jobs host and Hangfire in [jobs.md](jobs.md).
+How the Watt-Wise backend is built inside. The system-level picture (applications, API contract, data model, hosting, secrets) is in the root [technical.md](../../docs/technical.md); this document covers only what happens inside `backend/`. Testing is in [testing.md](testing.md), the domain model and use cases in [domain-model.md](domain-model.md), build settings and code style in [conventions.md](conventions.md), failures and the error contract in [error-handling.md](error-handling.md), logs, traces and metrics in [observability.md](observability.md), the Jobs host and Hangfire in [jobs.md](jobs.md).
 
 ## Stack
 
@@ -39,16 +39,18 @@ Clean Architecture with three layers and three hosts. References point inward on
 Domain ← Application ← Infrastructure ← Api, Jobs, Cli
 ```
 
-| Project        | Contains                                                                                                                                 | May reference                       |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| Domain         | Entities, value objects, domain services, including the tariff/cost calculation engine. No I/O.                                          | Nothing except NodaTime             |
-| Application    | Use cases (command and query handlers), ports (interfaces) for persistence and external data, validators, DTOs                           | Domain                              |
-| Infrastructure | EF Core persistence, external data adapters (ENTSO-E, Nord Pool, Litgrid, provider catalog fetchers and scrapers), ASP.NET Core Identity | Application (and Domain through it) |
-| Api            | Endpoints, HTTP pipeline, composition root                                                                                               | Application, Infrastructure         |
-| Jobs           | Hangfire server, recurring job registration, thin job classes, dashboard, composition root                                               | Application, Infrastructure         |
-| Cli            | Commands (System.CommandLine) for migrations, one-off scripts and maintenance, composition root                                          | Application, Infrastructure         |
+| Project        | Contains                                                                                                                                                                  | May reference                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Domain         | Entities, value objects, domain services, including the tariff/cost calculation engine. No I/O.                                                                           | Nothing except NodaTime             |
+| Application    | Use cases (command and query handlers), ports (repositories, `IUnitOfWork`, read ports, external data), validators, DTOs. No EF Core.                                     | Domain                              |
+| Infrastructure | EF Core persistence, the repositories and read ports, external data adapters (ENTSO-E, Nord Pool, Litgrid, provider catalog fetchers and scrapers), ASP.NET Core Identity | Application (and Domain through it) |
+| Api            | Endpoints, HTTP pipeline, composition root                                                                                                                                | Application, Infrastructure         |
+| Jobs           | Hangfire server, recurring job registration, thin job classes, dashboard, composition root                                                                                | Application, Infrastructure         |
+| Cli            | Commands (System.CommandLine) for migrations, one-off scripts and maintenance, composition root                                                                           | Application, Infrastructure         |
 
 No layer references a host; MSBuild already rejects that as a project cycle. Each layer exposes a marker type (`DomainAssembly`, `ApplicationAssembly`, `InfrastructureAssembly`) so tests can point at its assembly.
+
+How logic is split between Domain and Application, and how it reaches the database, is in [domain-model.md](domain-model.md).
 
 ## Hosts
 
@@ -141,6 +143,8 @@ ASP.NET Core Identity in Infrastructure, on `AppDbContext`, handles the email an
   - **Authorization:** `roles`, `account_roles`, `permissions`, `role_permissions` (Domain `Role`, `Permission`).
 
   `AppDbContext` derives from `IdentityUserContext`, so Identity's own role and claim tables are not in the model.
+
+  `account_roles` and `role_permissions` hold ids: `Account` references its roles and `Role` its permissions by id ([domain-model.md](domain-model.md#aggregates)).
 
 - **Registration.** `AddInfrastructure()` registers Identity (its private `AddIdentity()`), its options and the email-link token provider, so every host has it with the same rules; only the Api uses it today.
 - **Store options.** `IdentityOptions.Stores` stays at its defaults: Identity reads it from the app's services while building the model, and the design-time factory and the other hosts don't have them, so changing it would give them a different model.
