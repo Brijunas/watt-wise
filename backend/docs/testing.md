@@ -44,7 +44,8 @@ The integration and functional projects run against a real PostgreSQL started by
 Writing an integration test:
 
 - Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `jobs` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
-- Api tests start the host through `TestHostFactory<Program>` (`WattWise.Testing`, a `WebApplicationFactory` for any web host) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
+- Code that needs Identity or Data Protection gets them from `DatabaseFixture.BuildServices(role, extraSettings, configure)`: pass `["DataProtection:Certificate"] = TestCertificates.Pem` and `services => services.AddAccounts()`. `TestCertificates` (`WattWise.Testing`) makes a self-signed certificate with its key once per test run, so no 1Password is needed; `OtherPem` is a second one for wrong-certificate cases, `CertificateOnlyPem` the first without its key.
+- Api tests start the host through `TestHostFactory<Program>` (`WattWise.Testing`, a `WebApplicationFactory` for any web host) with `TestDatabase.ApiConfiguration()`: the clone's `api` settings plus the test certificate, everything the Api needs to start. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
 - Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `jobs` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
 

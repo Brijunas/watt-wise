@@ -64,6 +64,14 @@ The Development database settings, passwords and app URLs (the Api listen URL, t
 op item list --vault "Watt Wise Development"
 ```
 
+The Api also needs the certificate that encrypts its Data Protection keys ([security.md](security.md#accounts)), in the `certificate` field of the `data-protection-api` item. If the list doesn't show that item, create it once for the vault. The command generates a self-signed certificate and its private key and stores them as one PEM, without writing them to disk:
+
+```bash
+op item create --vault "Watt Wise Development" --category "Secure Note" --title data-protection-api "certificate[concealed]=$(openssl req -x509 -newkey rsa:3072 -nodes -days 3650 -subj "/CN=wattwise-data-protection-development" -keyout /dev/stdout -out /dev/stdout 2>/dev/null)"
+```
+
+Don't replace the certificate while the Development database holds keys encrypted with it: the Api could no longer read them, and every email link sent before would stop working.
+
 ## 5. Development database
 
 One-time setup of the Development PostgreSQL. The roles and why they exist are in [deploy/docs/postgres.md](../deploy/docs/postgres.md).

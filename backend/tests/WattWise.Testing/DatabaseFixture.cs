@@ -25,15 +25,25 @@ public sealed class DatabaseFixture(PostgresContainerFixture postgres) : IAsyncL
     }
 
     /// <summary>Services with <c>AddInfrastructure()</c> wired to this database as <paramref name="role"/>.</summary>
-    public ServiceProvider BuildServices(DatabaseRole role)
+    public ServiceProvider BuildServices(DatabaseRole role) =>
+        BuildServices(role, new Dictionary<string, string?>(), _ => { });
+
+    /// <summary>
+    /// Like <see cref="BuildServices(DatabaseRole)"/>, with <paramref name="extraSettings"/> added to the role's
+    /// settings and <paramref name="configure"/> run on the services before the provider is built.
+    /// </summary>
+    public ServiceProvider BuildServices(
+        DatabaseRole role, IReadOnlyDictionary<string, string?> extraSettings, Action<IServiceCollection> configure)
     {
         IConfiguration configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(Database.ConfigurationFor(role))
+            .AddInMemoryCollection(extraSettings)
             .Build();
         ServiceCollection services = new();
         services.AddSingleton(configuration);
         services.AddLogging();
         services.AddInfrastructure();
+        configure(services);
         return services.BuildServiceProvider();
     }
 }

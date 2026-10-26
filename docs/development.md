@@ -147,13 +147,14 @@ The pre-commit hook (`.husky/pre-commit`) runs two checks on the staged changes.
 
 ## Troubleshooting
 
-| Problem                                                          | Fix                                                                                                                                              |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Hook fails only in a GUI git client                              | The GUI doesn't load your shell config, so mise's tools aren't on its `PATH`. Commit from a terminal, or start the GUI from one.                 |
-| ESLint says a file "was not found by the project service"        | The `.ts`/`.tsx` file isn't included by any `tsconfig.json`. Add it to the nearest package's tsconfig `include`.                                 |
-| Backend tests fail with `DockerUnavailableException`             | Docker isn't running. Start it and run the tests again.                                                                                          |
-| A host stops with `Database configuration is missing or invalid` | It was started without `op run --env-file …/.env.development`.                                                                                   |
-| An app stops with an error about `/config.js` or `API_BASE_URL`  | Its dev server or preview was started without `op run --env-file <app>/.env.op.development`.                                                     |
-| An app's dev server exits with "Port … is already in use"        | Another process holds the app's port. Stop it; the server doesn't move to another port ([why](../frontend/docs/architecture.md#runtime-config)). |
+| Problem                                                          | Fix                                                                                                                                                             |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hook fails only in a GUI git client                              | The GUI doesn't load your shell config, so mise's tools aren't on its `PATH`. Commit from a terminal, or start the GUI from one.                                |
+| ESLint says a file "was not found by the project service"        | The `.ts`/`.tsx` file isn't included by any `tsconfig.json`. Add it to the nearest package's tsconfig `include`.                                                |
+| Backend tests fail with `DockerUnavailableException`             | Docker isn't running. Start it and run the tests again.                                                                                                         |
+| A host stops with `Database configuration is missing or invalid` | It was started without `op run --env-file …/.env.development`.                                                                                                  |
+| The Api stops with a `DataProtection` error at start             | The `data-protection-api` item is missing or its `certificate` isn't a PEM with a private key. Create it as [setup.md](setup.md#4-check-1password-access) says. |
+| An app stops with an error about `/config.js` or `API_BASE_URL`  | Its dev server or preview was started without `op run --env-file <app>/.env.op.development`.                                                                    |
+| An app's dev server exits with "Port … is already in use"        | Another process holds the app's port. Stop it; the server doesn't move to another port ([why](../frontend/docs/architecture.md#runtime-config)).                |
 
 For tool, install and hook-setup problems, see "Troubleshooting" in [setup.md](setup.md).

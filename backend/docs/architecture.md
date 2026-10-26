@@ -132,9 +132,20 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
 
 ## Authentication
 
-ASP.NET Core Identity in Infrastructure, on `AppDbContext`, for accounts, password hashing, lockout, email tokens and (later) external OAuth logins. The rules it enforces (passwords, lockout, tokens, sessions, admins) are in the root [security.md](../../docs/security.md); the token flow seen by clients is in the root [technical.md](../../docs/technical.md#backend).
+ASP.NET Core Identity in Infrastructure, on `AppDbContext`, handles the email and password identity: password hashing, lockout, email tokens and (later) external OAuth logins. The rules it enforces are in the root [security.md](../../docs/security.md); the token flow seen by clients is in the root [technical.md](../../docs/technical.md#backend).
 
-- **Data Protection keys** are stored in the database, so email links signed with them survive a restart.
+- **Three groups of tables** in the `app` schema:
+  - **Account:** `accounts` (Domain `Account`).
+  - **Authentication:** `identity_users` (one per account, `account_id` unique), `identity_user_logins` and `identity_user_tokens` (kept for OAuth, unused).
+  - **Authorization:** `roles`, `account_roles`, `permissions`, `role_permissions` (Domain `Role`, `Permission`).
+
+  `AppDbContext` derives from `IdentityUserContext`, so Identity's own role and claim tables are not in the model.
+
+- **`AddAccounts()`** registers Identity, its options and Data Protection. Only the Api calls it; the Jobs and Cli hosts don't need it.
+- **Store options.** `IdentityOptions.Stores` stays at its defaults: Identity reads it from the app's services while building the model, and the design-time factory and the other hosts don't have them, so changing it would give them a different model.
+- **Data Protection keys** are stored in the database, so email links signed with them survive a restart. They are encrypted with the certificate in the validated `DataProtection:Certificate` setting (PEM with its private key), which the Api reads from 1Password; the Api stops at start when it is missing or invalid.
+  - The certificate is only known once the host is built, and the framework's own decryptor takes certificates only from an internal options type. So `CertificateKeyEncryptor` wraps the framework's `CertificateXmlEncryptor` and names `CertificateKeyDecryptor` as the way back. Each stored key carries that type's assembly-qualified name, so never rename or move `WattWise.Infrastructure.Identity.CertificateKeyDecryptor`.
+  - The build-time OpenAPI generation has neither the certificate nor the database, so `Program.cs` drops Data Protection's hosted service when it runs.
 - **Email sending:** the Api sends directly over SMTP with MailKit, through an Application port ([technical.md](../../docs/technical.md#cross-cutting)). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
 
 ## Logging and observability

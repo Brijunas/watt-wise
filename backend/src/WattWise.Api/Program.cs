@@ -15,12 +15,14 @@ using WattWise.Api.OpenApi;
 using WattWise.Application;
 using WattWise.Application.Behaviors;
 using WattWise.Infrastructure;
+using WattWise.Infrastructure.Identity;
 using WattWise.Infrastructure.Observability;
 using WattWise.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddObservability("wattwise-api");
 builder.Services.AddInfrastructure();
+builder.Services.AddAccounts();
 builder.Services.AddApplication();
 // Keep the behavior list identical to PipelineHost in Application.Tests (the generator needs a literal list at each site).
 builder.Services.AddMediator((MediatorOptions options) =>
@@ -43,6 +45,14 @@ if (OpenApiBuildGeneration.IsRunning)
     builder.Services.RemoveAll<IStartupValidator>();
 #pragma warning restore SYSLIB0066
     builder.Services.RemoveAll<IAsyncStartupValidator>();
+
+    // Nor can the Data Protection key ring be built: it needs the certificate and the database.
+    foreach (ServiceDescriptor hosted in builder.Services
+        .Where(service => service.ServiceType == typeof(IHostedService) && service.ImplementationType?.Name == "DataProtectionHostedService")
+        .ToList())
+    {
+        builder.Services.Remove(hosted);
+    }
 }
 
 var app = builder.Build();

@@ -10,7 +10,7 @@ public class HealthEndpointTests(DatabaseFixture fixture) : IClassFixture<Databa
     [Fact]
     public async Task Health_is_healthy_with_valid_settings()
     {
-        await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Api));
+        await using TestHostFactory<Program> factory = new(fixture.Database.ApiConfiguration());
         using HttpClient client = factory.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync("/health", Token);
@@ -26,7 +26,7 @@ public class HealthEndpointTests(DatabaseFixture fixture) : IClassFixture<Databa
     [Fact]
     public async Task Health_is_unhealthy_with_a_wrong_password()
     {
-        Dictionary<string, string?> settings = new(fixture.Database.ConfigurationFor(DatabaseRole.Api))
+        Dictionary<string, string?> settings = new(fixture.Database.ApiConfiguration())
         {
             ["Database:Password"] = "wrong",
         };

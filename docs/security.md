@@ -4,13 +4,15 @@ The security decisions for the whole system: accounts, sign-in, sessions, author
 
 ## Accounts
 
-- **Identity.** ASP.NET Core Identity stores the accounts and hashes the passwords.
+- **Account and identities.** An account is the user: its id, preferred language and creation time, and everything the user owns hangs off it. The ways to prove who the user is are identities linked to the account. In MVP an account has exactly one, its email and password, kept by ASP.NET Core Identity; OAuth identities can be added later without touching the account. An email is a credential that can change, never the account's key.
 - **Sign-in name.** The email address, unique regardless of case.
+- **Email normalization.** An email is trimmed, NFKC-normalized and lowercased before it is stored or looked up, and the database keeps it unique.
 - **Email confirmation.** A new account can't sign in until its email is confirmed through the emailed link.
-- **Passwords.** At least 14 characters, with at least one lowercase letter, one uppercase letter, one digit and one symbol.
+- **Passwords.** At least 14 characters, with at least one lowercase letter, one uppercase letter, one digit and one symbol; at most 256 characters. A password is NFKC-normalized before it is hashed, so the same password typed on another keyboard still matches. Hashing is Identity's default (PBKDF2-HMAC-SHA512, 100,000 iterations). There is no breached-password list.
 - **Lockout.** 5 failed sign-ins in a row lock the account for 15 minutes.
 - **No account discovery.** Registering, resending the confirmation and asking for a password reset give the same response whether or not the email has an account. When someone registers with an email that already has one, its owner gets an email saying so instead of a confirmation link. Sign-in returns the "email not confirmed" error only after the password has been checked.
 - **Email links.** Confirmation and password-reset links are single-use, and a reset link expires after 1 hour. A link stays valid across a restart of the API.
+- **Email-link keys.** The Data Protection keys that sign email links are stored in the database, encrypted with a per-environment X.509 certificate from 1Password. The Api doesn't start without a valid one.
 - **OAuth.** Identity's external-login model stays in place for OAuth sign-in later; nothing uses it in MVP ([product.md](product.md#accounts-and-data)).
 
 ## Tokens
@@ -31,7 +33,9 @@ A session is one sign-in on one device: the chain of refresh tokens that starts 
 ## Authorization
 
 - Every account's data is reachable only by that account: consumption objects, their rows, current plans and sessions.
-- **Admins.** Admin endpoints live under `/api/v1/admin` and need the Identity `Admin` role. The role is given to and taken from an existing confirmed account with a `WattWise.Cli` command; no endpoint grants it.
+- **Roles and permissions.** Authorization sits on the account, never on an identity, so it is the same however the user signed in. An account has roles; a role grants permissions; the account may do what any of its roles grants. Roles and permissions are rows in the database: a new permission or a change to what a role grants needs no code change, although an endpoint can only check a permission name its code knows.
+- **Checks.** Endpoints require a permission, never a role name. Sign-in and every refresh put the account's permissions into the access token, so a check reads the token and doesn't query the database. A change to an account's roles or to a role's permissions therefore takes effect within one access-token lifetime (15 minutes); revoking a role also ends the account's sessions.
+- **Admins.** Admin endpoints live under `/api/v1/admin` and need the `admin.access` permission, which the `Admin` role grants. The role is given to and taken from an existing confirmed account with a `WattWise.Cli` command; no endpoint grants it.
 - **Hangfire dashboard.** Never reachable from the internet. It accepts only requests from the machine it runs on, no tunnel route leads to the Jobs host, and from E6 it is an internal UI on saturn's loopback address like Grafana ([Deployment](#deployment), [jobs.md](../backend/docs/jobs.md#dashboard)). It has no sign-in of its own, so the `Admin` role doesn't apply to it. Browser access for admins is reconsidered if the system ever gets its own OpenID Connect sign-in.
 
 ## Transport and limits

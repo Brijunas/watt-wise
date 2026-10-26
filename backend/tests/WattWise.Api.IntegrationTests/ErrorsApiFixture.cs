@@ -33,7 +33,7 @@ public sealed class ErrorsApiFixture(PostgresContainerFixture postgres) : IAsync
     public async ValueTask InitializeAsync()
     {
         await databaseFixture.InitializeAsync();
-        Dictionary<string, string?> settings = new(databaseFixture.Database.ConfigurationFor(DatabaseRole.Api))
+        Dictionary<string, string?> settings = new(databaseFixture.Database.ApiConfiguration())
         {
             ["Cors:AllowedOrigins:0"] = AllowedOrigin,
         };

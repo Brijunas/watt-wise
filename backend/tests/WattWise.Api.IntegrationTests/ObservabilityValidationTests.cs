@@ -12,7 +12,7 @@ public class ObservabilityValidationTests(DatabaseFixture fixture) : IClassFixtu
     [InlineData("http://user@collector:4317")]
     public async Task Malformed_otlp_endpoint_fails_host_start(string endpoint)
     {
-        Dictionary<string, string?> settings = new(fixture.Database.ConfigurationFor(DatabaseRole.Api))
+        Dictionary<string, string?> settings = new(fixture.Database.ApiConfiguration())
         {
             ["Observability:OtlpEndpoint"] = endpoint,
         };
