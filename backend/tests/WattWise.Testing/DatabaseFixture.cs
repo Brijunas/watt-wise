@@ -25,7 +25,10 @@ public sealed class DatabaseFixture(PostgresContainerFixture postgres) : IAsyncL
     }
 
     /// <summary>Services with <c>AddInfrastructure()</c> wired to this database as <paramref name="role"/>.</summary>
-    public ServiceProvider BuildServices(DatabaseRole role)
+    public ServiceProvider BuildServices(DatabaseRole role) => BuildServices(role, _ => { });
+
+    /// <summary>Like <see cref="BuildServices(DatabaseRole)"/>, with <paramref name="configure"/> run on the services before the provider is built.</summary>
+    public ServiceProvider BuildServices(DatabaseRole role, Action<IServiceCollection> configure)
     {
         IConfiguration configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(Database.ConfigurationFor(role))
@@ -34,6 +37,7 @@ public sealed class DatabaseFixture(PostgresContainerFixture postgres) : IAsyncL
         services.AddSingleton(configuration);
         services.AddLogging();
         services.AddInfrastructure();
+        configure(services);
         return services.BuildServiceProvider();
     }
 }

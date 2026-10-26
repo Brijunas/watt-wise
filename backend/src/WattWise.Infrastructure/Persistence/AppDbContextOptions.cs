@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using WattWise.Infrastructure.Persistence.Schema;
 
@@ -15,6 +16,8 @@ public static class AppDbContextOptions
                 npgsql => npgsql
                     .UseNodaTime()
                     .MigrationsHistoryTable("__ef_migrations_history", DatabaseSchemas.Migrations))
-            .UseSnakeCaseNamingConvention();
+            .UseSnakeCaseNamingConvention()
+            // AppDbContext ignores Identity's user-claims entity on purpose (authorization lives on the account).
+            .ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.MappedEntityTypeIgnoredWarning));
     }
 }
