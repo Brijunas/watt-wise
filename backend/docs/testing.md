@@ -55,6 +55,34 @@ Writing an integration test:
 - **Error mapping (Api.IntegrationTests).** `TestHostFactory` takes an optional `Action<IServiceCollection>`, applied through `ConfigureTestServices`. `ErrorMappingTests` shares one host per class through `ErrorsApiFixture`, which uses that hook to register a test-only `IEndpointModule` (endpoints that return each kind of `Error` or throw), a `LogEventCollector` (a Serilog sink, picked up through `ReadFrom.Services`) and a `SpanCollector` (an OpenTelemetry processor). The tests assert the ProblemDetails body: status, `type`, `code`, `traceId` and, for validation, `errors`. A new error category adds a case there ([error-handling.md](error-handling.md#how-to-add-)).
 - **Logs and traces (Api.IntegrationTests).** `ObservabilityTests` use the same fixture to check that a request writes one log line and one trace, correlated by trace id ([observability.md](observability.md)). Activity listeners are process-wide, so the `SpanCollector` also sees spans of other test hosts running in parallel: always filter collected spans and log events by trace id, never assert on the whole list. The server span ends after the response is sent, so wait for it with `Poll.UntilAsync`. `ObservabilityValidationTests` check that a malformed OTLP endpoint stops the host. `OtlpExportTests` check that a valid one turns export on: the host still serves requests, and a flush connects to a local TCP listener that stands in for the collector.
 
+## Writing tests that catch bugs
+
+A test earns its place by failing for a realistic bug. The `backend-test-writer` and `backend-test-reviewer` Claude Code agents apply these rules.
+
+Assertions:
+
+- Expected values are literals from the spec or worked out by hand (with the arithmetic in a comment when it isn't obvious), never computed by production code or a copy of its logic.
+- `NotNull`, `NotEmpty`, a count or "doesn't throw" is never the only check. Assert exact values, exact error codes (`Error.Code`, the ProblemDetails `code`) and exact stored state.
+- Never fake the class under test. Fake only boundaries: `IClock` with NodaTime's `FakeClock`, external HTTP sources, SMTP and the ports in Application tests (hand-written fakes, no mocking library). Integration tests never fake `AppDbContext`, repositories or Identity.
+- One behavior per test, arranged, acted and asserted in separate blocks. Names are sentences (`A_reset_link_sets_the_new_password_and_a_second_use_fails`). Plain xUnit `Assert`; every async call gets `TestContext.Current.CancellationToken`.
+
+PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-postgresql-fixture)):
+
+- Never use EF Core InMemory, SQLite, `EnsureCreated` or a hand-built container or `DbContext`; they differ from PostgreSQL in constraints, transactions, collation and types.
+- Tests in a class share one clone, so each makes unique data (`AccountsTestSupport.UniqueEmail()`, fresh `Guid`s) and asserts on its own rows, never on whole-table counts.
+- Run each step in its own scope, as requests do, and read stored state back through a new scope or provider, never the context that wrote it. Api tests assert both the HTTP response and the rows.
+- Cover the PostgreSQL behavior the change touches:
+  - unique and foreign-key violations map to the right error and status (409, 404, 422), not 500;
+  - optimistic concurrency: two scopes load and both save (`SaveChangesBarrier`, `CommandBarrier`), exactly one wins;
+  - a failure mid-use-case persists nothing;
+  - `timestamptz` and NodaTime: `Instant` round trips at microsecond precision (PostgreSQL's limit), Europe/Vilnius local time on 23- and 25-hour DST days, zone boundaries at the exact minute;
+  - case-sensitive text and collation in lookups and filters, Identity's normalized fields included;
+  - `numeric` precision and rounding for money and energy amounts; `jsonb` mapping and queries, if used;
+  - stable pagination (`ORDER BY` with a unique tie-breaker);
+  - null, empty and missing values in requests and columns.
+
+Mutation testing (Stryker.NET) and property-based tests (CsCheck) aren't set up yet.
+
 ## Framework
 
 xUnit v3 running on Microsoft.Testing.Platform (MTP). The root `global.json` sets MTP as the test runner, so `dotnet test` uses it. Each test project is an executable (`OutputType Exe`) referencing `xunit.v3.mtp-v2`.

@@ -13,3 +13,19 @@ Notes for Claude Code when working in `backend/`. The rules themselves live in [
 ## Before committing
 
 Run the backend [checks](../docs/development.md#checks) (`dotnet build`, `dotnet format --verify-no-changes`, `dotnet test`); all must pass with 0 warnings. `dotnet format` also reports unused usings across the whole solution.
+
+## Testing rules
+
+The rules are in "Writing tests that catch bugs" in [docs/testing.md](docs/testing.md#writing-tests-that-catch-bugs). In short:
+
+- Expected values are literals from the spec or by hand, never computed by production code. Assert exact values and exact stored state, never only `NotNull` or a count.
+- Fake only boundaries (`IClock` → `FakeClock`, external HTTP, SMTP, ports in Application tests). Integration tests use the real PostgreSQL fixture: `IClassFixture<DatabaseFixture>`, the role the code uses, unique data per test, state read back in a new scope. Never InMemory or SQLite.
+- Sentence-style names, one behavior per test, plain xUnit `Assert`.
+- The `backend-test-writer` agent writes tests (plan first); `backend-test-reviewer` reviews them.
+
+| Run                                | Command                                                                                                               |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Unit tests                         | `dotnet test --project backend/tests/WattWise.Domain.Tests` and `--project backend/tests/WattWise.Application.Tests`  |
+| Integration tests (Docker running) | `dotnet test --project backend/tests/WattWise.Infrastructure.IntegrationTests` (also `Api.`, `Jobs.IntegrationTests`) |
+| One class                          | `dotnet test --project <project> --filter-class "*.<Class>"`                                                          |
+| Mutation testing                   | Not set up yet (Stryker.NET proposed).                                                                                |

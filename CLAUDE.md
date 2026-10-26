@@ -32,6 +32,16 @@ Each doc has one job. Read or update the one that matches the task:
 - Keep every doc at 200 lines or fewer. Split a doc before it goes over.
 - When an epic's last story ships, move the epic from `docs/epics.md` to `docs/implemented.md` in the same change.
 
+## Claude Code setup
+
+Sessions may start at the repo root or inside a project (`backend/`), and both must work.
+
+- Agents and skills live in the root `.claude/agents/` and `.claude/skills/`, named `<project>-…` when they belong to one project. Claude Code finds them from a subfolder by walking up.
+- Path-scoped rules and notes for one project go in `<project>/.claude/rules/` and `<project>/CLAUDE.md`.
+- `settings.json` is not inherited from the root. A project Claude may be started in has its own `.claude/settings.json`, registering the same hooks, MCP servers and deny rules; change both together. Hook scripts live once, in the root `.claude/hooks/`.
+- Hook and MCP scripts find the repo with `git rev-parse --show-toplevel`, never with `$CLAUDE_PROJECT_DIR` alone, which is the folder the session started in.
+- MCP servers are in the root `.mcp.json`: `postgres` (read-only `reader` role), `grafana` (logs, traces and metrics in Grafana LGTM) and `github` (token from `gh auth token` at start; the GitHub plugin stays off because its server needs a token in the environment). When a new observability or external tool is added, add or update its MCP server in the same change.
+
 ## Commands
 
 @docs/development.md

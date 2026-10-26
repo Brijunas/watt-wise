@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "bash",
+      "args": ["-c", "exec \"$(git rev-parse --show-toplevel)/.claude/mcp/postgres.sh\""]
+    },
+    "grafana": {
+      "command": "bash",
+      "args": ["-c", "exec \"$(git rev-parse --show-toplevel)/.claude/mcp/grafana.sh\""]
+    },
+    "github": {
+      "command": "bash",
+      "args": ["-c", "exec \"$(git rev-parse --show-toplevel)/.claude/mcp/github.sh\""]
+    }
+  }
+}
