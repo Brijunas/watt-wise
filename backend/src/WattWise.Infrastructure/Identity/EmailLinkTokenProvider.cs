@@ -1,7 +1,12 @@
 using System.Buffers.Text;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using NodaTime;
 
@@ -12,7 +17,7 @@ namespace WattWise.Infrastructure.Identity;
 /// <summary>
 /// Identity's token provider for the email confirmation and password reset links. A token is 32
 /// random bytes, Base64Url-encoded; only its SHA-256 hash is stored, one row per identity and
-/// purpose, so a new link replaces the old one. Checking a token marks its row deleted without
+/// purpose, so a new link replaces the old one in a single upsert. Checking a token marks its row deleted without
 /// saving: Identity saves that in the same <c>SaveChanges</c> as the confirmation or the new
 /// password, so a link works once. Anything else saving in the same scope after Identity reports a
 /// failure would also save the deletion and use up the link.
@@ -35,27 +40,12 @@ public sealed class EmailLinkTokenProvider(AppDbContext context, IClock clock) :
         byte[] hash = SHA256.HashData(raw);
         Instant now = clock.GetCurrentInstant();
 
-        EmailLinkToken? row = await context.EmailLinkTokens.FindAsync([user.Id, purpose], NoCancellation);
-        if (row is null)
-        {
-            context.EmailLinkTokens.Add(new EmailLinkToken
-            {
-                IdentityId = user.Id,
-                Purpose = purpose,
-                TokenHash = hash,
-                ExpiresAt = now + lifetime,
-                CreatedAt = now,
-            });
-        }
-        else
-        {
-            row.TokenHash = hash;
-            row.ExpiresAt = now + lifetime;
-            row.CreatedAt = now;
-        }
-
-        // Saved now, not with Identity's next update: the link goes out by email.
-        await context.SaveChangesAsync(NoCancellation);
+        // One statement, so two requests for the same identity and purpose (a double-clicked "resend")
+        // cannot both insert and fail on the primary key: the later one replaces the earlier link.
+        // Written at once, not with Identity's next update: the link goes out by email. It bypasses the
+        // change tracker, which only matters if this scope already loaded the row by checking a link; no
+        // flow generates a link after checking one in the same scope.
+        await context.Database.ExecuteSqlAsync(UpsertSql(hash, user.Id, purpose, now, now + lifetime), NoCancellation);
 
         return Base64Url.EncodeToString(raw);
     }
@@ -90,6 +80,40 @@ public sealed class EmailLinkTokenProvider(AppDbContext context, IClock clock) :
     public Task<bool> CanGenerateTwoFactorTokenAsync(UserManager<AccountIdentity> manager, AccountIdentity user)
     {
         return Task.FromResult(false);
+    }
+
+    /// <summary>
+    /// The upsert, with the table and column names read from the EF model (so they stay what
+    /// <c>EmailLinkTokenConfiguration</c> and the naming convention say) and every value a parameter.
+    /// </summary>
+    private FormattableString UpsertSql(byte[] hash, Guid identityId, string purpose, Instant createdAt, Instant expiresAt)
+    {
+        IEntityType entity = context.Model.FindEntityType(typeof(EmailLinkToken))
+            ?? throw new InvalidOperationException("EmailLinkToken is not in the model.");
+        StoreObjectIdentifier table = StoreObjectIdentifier.Create(entity, StoreObjectType.Table)
+            ?? throw new InvalidOperationException("EmailLinkToken is not mapped to a table.");
+        ISqlGenerationHelper sql = context.GetService<ISqlGenerationHelper>();
+
+        string Column(string property) => sql.DelimitIdentifier(
+            entity.FindProperty(property)?.GetColumnName(table) ?? throw new InvalidOperationException($"{property} is not mapped."));
+
+        string identity = Column(nameof(EmailLinkToken.IdentityId));
+        string purposeColumn = Column(nameof(EmailLinkToken.Purpose));
+        string hashColumn = Column(nameof(EmailLinkToken.TokenHash));
+        string expiresColumn = Column(nameof(EmailLinkToken.ExpiresAt));
+        string createdColumn = Column(nameof(EmailLinkToken.CreatedAt));
+
+        // The names above come from the model, never from a request; the values go in as parameters.
+        return FormattableStringFactory.Create(
+            $$"""
+            INSERT INTO {{sql.DelimitIdentifier(table.Name, table.Schema)}} ({{identity}}, {{purposeColumn}}, {{hashColumn}}, {{expiresColumn}}, {{createdColumn}})
+            VALUES ({0}, {1}, {2}, {3}, {4})
+            ON CONFLICT ({{identity}}, {{purposeColumn}}) DO UPDATE SET
+                {{hashColumn}} = EXCLUDED.{{hashColumn}},
+                {{expiresColumn}} = EXCLUDED.{{expiresColumn}},
+                {{createdColumn}} = EXCLUDED.{{createdColumn}}
+            """,
+            identityId, purpose, hash, expiresAt, createdAt);
     }
 
     private static Duration LifetimeOf(string purpose)

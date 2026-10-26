@@ -286,6 +286,32 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
         Assert.Equal(0, await RowCountAsync(provider, id, Reset));
     }
 
+    // Both calls reach the INSERT before either runs it: the barrier holds each until both are there.
+    // With a read-then-insert, both would see no row and the second insert would fail on the primary
+    // key. The upsert runs both, the later one replacing the earlier, so one row is left and only the
+    // link it holds works.
+    [Fact]
+    public async Task Two_links_requested_at_once_for_a_new_identity_leave_one_working_link()
+    {
+        FakeClock clock = NewClock();
+        CommandBarrier barrier = new();
+        await using ServiceProvider provider = fixture.BuildAccountServices(
+            clock, services => services.AddDbContext<AppDbContext>(options => options.AddInterceptors(barrier)));
+        (Guid id, _) = await CreateIdentityAsync(provider);
+        barrier.Arm("email_link_tokens", 2);
+
+        string[] tokens = await Task.WhenAll(ResetTokenAsync(provider, id), ResetTokenAsync(provider, id));
+
+        Assert.Equal(2, barrier.Arrived);
+        Assert.NotEqual(tokens[0], tokens[1]);
+        Assert.Equal(1, await RowCountAsync(provider, id, Reset));
+        IdentityResult first = await ResetPasswordAsync(provider, id, tokens[0], AccountsTestSupport.ValidPassword());
+        IdentityResult second = await ResetPasswordAsync(provider, id, tokens[1], AccountsTestSupport.ValidPassword());
+        Assert.Single(new[] { first, second }, result => result.Succeeded);
+        IdentityResult failed = first.Succeeded ? second : first;
+        Assert.Contains("InvalidToken", Codes(failed));
+    }
+
     [Fact]
     public async Task The_stored_row_holds_a_32_byte_hash_and_never_the_token()
     {

@@ -10,28 +10,28 @@ internal sealed class SaveChangesBarrier : SaveChangesInterceptor
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
-    private TaskCompletionSource? gate;
-    private int participants;
-    private int arrived;
+    private TaskCompletionSource? _gate;
+    private int _participants;
+    private int _arrived;
 
     /// <summary>How many saves have reached the barrier since it was armed.</summary>
-    public int Arrived => Volatile.Read(ref arrived);
+    public int Arrived => Volatile.Read(ref _arrived);
 
     /// <summary>From now on, saves wait until <paramref name="count"/> of them have arrived.</summary>
     public void Arm(int count)
     {
-        participants = count;
-        arrived = 0;
-        gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _participants = count;
+        _arrived = 0;
+        _gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        TaskCompletionSource? current = gate;
+        TaskCompletionSource? current = _gate;
         if (current is not null)
         {
-            if (Interlocked.Increment(ref arrived) == participants)
+            if (Interlocked.Increment(ref _arrived) == _participants)
             {
                 current.SetResult();
             }
