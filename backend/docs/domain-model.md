@@ -14,6 +14,10 @@ How business logic is split between Domain and Application, and how it reaches t
 
 Rule of thumb: tell, don't ask. A handler calls `account.AddRole(roleId)`; it never reads `account.RoleIds` to decide on the account's behalf. A service whose methods all take one entity as the first parameter is an entity method in disguise. An entity that needs a repository, logger or `IClock` injected has taken on a handler's job.
 
+## Folders
+
+Domain folders are named for an area in the plural (`Identities`), each holding the aggregates, child entities and value objects of that area; the namespace follows the folder. A type no area owns gets a folder named for its concept (`Localization/Language`), never `Common` or `Shared`.
+
 ## Entities
 
 - **Sealed**, like every class ([conventions.md](conventions.md#code-style)).

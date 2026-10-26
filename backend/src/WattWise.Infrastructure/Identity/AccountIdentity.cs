@@ -12,7 +12,7 @@ public sealed class AccountIdentity : IdentityUser<Guid>
     private string? _userName;
 
     /// <summary>The account this identity signs in to; unique, so an account has one identity in MVP.</summary>
-    public Guid AccountId { get; set; }
+    public Guid AccountId { get; init; }
 
     /// <summary>Trimmed, NFKC-normalized and lowercase, however it is assigned.</summary>
     public override string? Email

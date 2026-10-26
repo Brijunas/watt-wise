@@ -13,8 +13,8 @@ using WattWise.Infrastructure.Persistence;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 [DbContext(typeof(AppDbContext))]
-[Migration("20261026161112_Initial")]
-partial class _20261026161112_Initial
+[Migration("20261026220130_Initial")]
+partial class _20261026220130_Initial
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -78,7 +78,7 @@ partial class _20261026161112_Initial
                 b.ToTable("identity_user_tokens", "app");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Accounts.Account", b =>
+        modelBuilder.Entity("WattWise.Domain.Identities.Account", b =>
             {
                 b.Property<Guid>("Id")
                     .HasColumnType("uuid")
@@ -99,7 +99,26 @@ partial class _20261026161112_Initial
                 b.ToTable("accounts", "app");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Accounts.Permission", b =>
+        modelBuilder.Entity("WattWise.Domain.Identities.AccountRole", b =>
+            {
+                b.Property<Guid>("AccountId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("account_id");
+
+                b.Property<Guid>("RoleId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("role_id");
+
+                b.HasKey("AccountId", "RoleId")
+                    .HasName("pk_account_roles");
+
+                b.HasIndex("RoleId")
+                    .HasDatabaseName("ix_account_roles_role_id");
+
+                b.ToTable("account_roles", "app");
+            });
+
+        modelBuilder.Entity("WattWise.Domain.Identities.Permission", b =>
             {
                 b.Property<Guid>("Id")
                     .HasColumnType("uuid")
@@ -125,7 +144,7 @@ partial class _20261026161112_Initial
                 b.ToTable("permissions", "app");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Accounts.Role", b =>
+        modelBuilder.Entity("WattWise.Domain.Identities.Role", b =>
             {
                 b.Property<Guid>("Id")
                     .HasColumnType("uuid")
@@ -144,6 +163,25 @@ partial class _20261026161112_Initial
                     .HasDatabaseName("ix_roles_name");
 
                 b.ToTable("roles", "app");
+            });
+
+        modelBuilder.Entity("WattWise.Domain.Identities.RolePermission", b =>
+            {
+                b.Property<Guid>("RoleId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("role_id");
+
+                b.Property<Guid>("PermissionId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("permission_id");
+
+                b.HasKey("RoleId", "PermissionId")
+                    .HasName("pk_role_permissions");
+
+                b.HasIndex("PermissionId")
+                    .HasDatabaseName("ix_role_permissions_permission_id");
+
+                b.ToTable("role_permissions", "app");
             });
 
         modelBuilder.Entity("WattWise.Infrastructure.Identity.AccountIdentity", b =>
@@ -265,44 +303,6 @@ partial class _20261026161112_Initial
                 b.ToTable("email_link_tokens", "app");
             });
 
-        modelBuilder.Entity("account_roles", b =>
-            {
-                b.Property<Guid>("account_id")
-                    .HasColumnType("uuid")
-                    .HasColumnName("account_id");
-
-                b.Property<Guid>("role_id")
-                    .HasColumnType("uuid")
-                    .HasColumnName("role_id");
-
-                b.HasKey("account_id", "role_id")
-                    .HasName("pk_account_roles");
-
-                b.HasIndex("role_id")
-                    .HasDatabaseName("ix_account_roles_role_id");
-
-                b.ToTable("account_roles", "app");
-            });
-
-        modelBuilder.Entity("role_permissions", b =>
-            {
-                b.Property<Guid>("role_id")
-                    .HasColumnType("uuid")
-                    .HasColumnName("role_id");
-
-                b.Property<Guid>("permission_id")
-                    .HasColumnType("uuid")
-                    .HasColumnName("permission_id");
-
-                b.HasKey("role_id", "permission_id")
-                    .HasName("pk_role_permissions");
-
-                b.HasIndex("permission_id")
-                    .HasDatabaseName("ix_role_permissions_permission_id");
-
-                b.ToTable("role_permissions", "app");
-            });
-
         modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
             {
                 b.HasOne("WattWise.Infrastructure.Identity.AccountIdentity", null)
@@ -323,9 +323,43 @@ partial class _20261026161112_Initial
                     .HasConstraintName("fk_identity_user_tokens_identity_users_user_id");
             });
 
+        modelBuilder.Entity("WattWise.Domain.Identities.AccountRole", b =>
+            {
+                b.HasOne("WattWise.Domain.Identities.Account", null)
+                    .WithMany("_roles")
+                    .HasForeignKey("AccountId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired()
+                    .HasConstraintName("fk_account_roles_accounts_account_id");
+
+                b.HasOne("WattWise.Domain.Identities.Role", null)
+                    .WithMany()
+                    .HasForeignKey("RoleId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired()
+                    .HasConstraintName("fk_account_roles_roles_role_id");
+            });
+
+        modelBuilder.Entity("WattWise.Domain.Identities.RolePermission", b =>
+            {
+                b.HasOne("WattWise.Domain.Identities.Permission", null)
+                    .WithMany()
+                    .HasForeignKey("PermissionId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired()
+                    .HasConstraintName("fk_role_permissions_permissions_permission_id");
+
+                b.HasOne("WattWise.Domain.Identities.Role", null)
+                    .WithMany("_permissions")
+                    .HasForeignKey("RoleId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired()
+                    .HasConstraintName("fk_role_permissions_roles_role_id");
+            });
+
         modelBuilder.Entity("WattWise.Infrastructure.Identity.AccountIdentity", b =>
             {
-                b.HasOne("WattWise.Domain.Accounts.Account", null)
+                b.HasOne("WattWise.Domain.Identities.Account", null)
                     .WithOne()
                     .HasForeignKey("WattWise.Infrastructure.Identity.AccountIdentity", "AccountId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -343,38 +377,14 @@ partial class _20261026161112_Initial
                     .HasConstraintName("fk_email_link_tokens_identity_users_identity_id");
             });
 
-        modelBuilder.Entity("account_roles", b =>
+        modelBuilder.Entity("WattWise.Domain.Identities.Account", b =>
             {
-                b.HasOne("WattWise.Domain.Accounts.Account", null)
-                    .WithMany()
-                    .HasForeignKey("account_id")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired()
-                    .HasConstraintName("fk_account_roles_accounts_account_id");
-
-                b.HasOne("WattWise.Domain.Accounts.Role", null)
-                    .WithMany()
-                    .HasForeignKey("role_id")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired()
-                    .HasConstraintName("fk_account_roles_roles_role_id");
+                b.Navigation("_roles");
             });
 
-        modelBuilder.Entity("role_permissions", b =>
+        modelBuilder.Entity("WattWise.Domain.Identities.Role", b =>
             {
-                b.HasOne("WattWise.Domain.Accounts.Permission", null)
-                    .WithMany()
-                    .HasForeignKey("permission_id")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired()
-                    .HasConstraintName("fk_role_permissions_permissions_permission_id");
-
-                b.HasOne("WattWise.Domain.Accounts.Role", null)
-                    .WithMany()
-                    .HasForeignKey("role_id")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired()
-                    .HasConstraintName("fk_role_permissions_roles_role_id");
+                b.Navigation("_permissions");
             });
 #pragma warning restore 612, 618
     }

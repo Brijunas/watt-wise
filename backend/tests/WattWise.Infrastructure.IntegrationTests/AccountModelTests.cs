@@ -3,7 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
-using WattWise.Domain.Accounts;
+using WattWise.Domain.Identities;
+using WattWise.Domain.Localization;
 using WattWise.Infrastructure.Identity;
 using WattWise.Infrastructure.Persistence;
 
@@ -88,10 +89,11 @@ public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<Database
     {
         Account account = AccountsTestSupport.NewAccount();
         Role role = Role.Create(AccountsTestSupport.UniqueName("role"));
-        account.AddRole(role);
+        account.AddRole(role.Id);
         await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Api);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Roles.Add(role);
         db.Accounts.Add(account);
         db.Users.Add(AccountIdentity.Create(account.Id, AccountsTestSupport.UniqueEmail()));
         await db.SaveChangesAsync(Token);

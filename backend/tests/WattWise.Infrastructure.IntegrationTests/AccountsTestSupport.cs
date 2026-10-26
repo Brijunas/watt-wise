@@ -4,7 +4,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using NodaTime;
 
-using WattWise.Domain.Accounts;
+using WattWise.Domain.Identities;
+using WattWise.Domain.Localization;
 using WattWise.Infrastructure.Identity;
 using WattWise.Infrastructure.Persistence;
 

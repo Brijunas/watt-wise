@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
-using WattWise.Domain.Accounts;
+using WattWise.Domain.Identities;
 using WattWise.Infrastructure.Identity;
 using WattWise.Infrastructure.Persistence;
 

@@ -102,7 +102,7 @@ public class PasswordRuleTests(DatabaseFixture fixture) : IClassFixture<Database
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         // The account is saved first so an accepted password can be stored.
         var db = scope.ServiceProvider.GetRequiredService<WattWise.Infrastructure.Persistence.AppDbContext>();
-        WattWise.Domain.Accounts.Account account = AccountsTestSupport.NewAccount();
+        WattWise.Domain.Identities.Account account = AccountsTestSupport.NewAccount();
         db.Accounts.Add(account);
         await db.SaveChangesAsync(Token);
 

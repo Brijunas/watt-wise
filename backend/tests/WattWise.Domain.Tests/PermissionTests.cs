@@ -1,4 +1,4 @@
-using WattWise.Domain.Accounts;
+using WattWise.Domain.Identities;
 
 namespace WattWise.Domain.Tests;
 

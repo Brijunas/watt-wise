@@ -138,13 +138,13 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
 ASP.NET Core Identity in Infrastructure, on `AppDbContext`, handles the email and password identity: password hashing, lockout, email tokens and (later) external OAuth logins. The rules it enforces are in the root [security.md](../../docs/security.md); the token flow seen by clients is in the root [technical.md](../../docs/technical.md#backend).
 
 - **Three groups of tables** in the `app` schema:
-  - **Account:** `accounts` (Domain `Account`).
+  - **Account:** `accounts` (Domain `Identities/Account`).
   - **Authentication:** `identity_users` (one per account, `account_id` unique), `identity_user_logins` and `identity_user_tokens` (kept for OAuth, unused), `email_link_tokens` (one per identity and purpose).
-  - **Authorization:** `roles`, `account_roles`, `permissions`, `role_permissions` (Domain `Role`, `Permission`).
+  - **Authorization:** `roles`, `account_roles`, `permissions`, `role_permissions` (Domain `Identities/Role`, `Permission`, and the link entities `AccountRole`, `RolePermission`).
 
   `AppDbContext` derives from `IdentityUserContext`, so Identity's own role and claim tables are not in the model.
 
-  `account_roles` and `role_permissions` hold ids: `Account` references its roles and `Role` its permissions by id ([domain-model.md](domain-model.md#aggregates)).
+  `account_roles` and `role_permissions` hold ids: `Account` keeps its roles as `AccountRole` links and exposes `RoleIds`, `Role` keeps `RolePermission` links and exposes `PermissionIds`; neither has a navigation to the other aggregate ([domain-model.md](domain-model.md#aggregates)). What an account's roles grant is read by a query (S4.4), never by loading roles.
 
 - **Registration.** `AddInfrastructure()` registers Identity (its private `AddIdentity()`), its options and the email-link token provider, so every host has it with the same rules; only the Api uses it today.
 - **Store options.** `IdentityOptions.Stores` stays at its defaults: Identity reads it from the app's services while building the model, and the design-time factory and the other hosts don't have them, so changing it would give them a different model.

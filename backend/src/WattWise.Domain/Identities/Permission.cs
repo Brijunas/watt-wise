@@ -1,4 +1,4 @@
-namespace WattWise.Domain.Accounts;
+namespace WattWise.Domain.Identities;
 
 /// <summary>
 /// One thing an account may be allowed to do, such as <c>admin.access</c>. Endpoints check
@@ -6,7 +6,7 @@ namespace WattWise.Domain.Accounts;
 /// </summary>
 public sealed class Permission
 {
-    // For EF Core.
+    // Used by EF Core.
     private Permission()
     {
     }
