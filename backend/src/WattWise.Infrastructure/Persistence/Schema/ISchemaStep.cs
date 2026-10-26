@@ -4,7 +4,7 @@ namespace WattWise.Infrastructure.Persistence.Schema;
 /// Brings one part of the database schema up to date. Each step owns one schema (or one tool's objects)
 /// and must be idempotent: <see cref="DatabaseMigrator"/> runs every step on every migrate, whether or
 /// not anything changed. To add a schema, add a step and register it in
-/// <see cref="SchemaServiceCollectionExtensions.AddSchemaSteps"/>; nothing else changes.
+/// <c>AddSchemaSteps()</c> in <see cref="DependencyInjection"/>; nothing else changes.
 /// </summary>
 public interface ISchemaStep
 {

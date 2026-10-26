@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using NodaTime;
 
@@ -16,7 +17,7 @@ internal static class AccountsTestSupport
     public static string ValidPassword() => $"Aa1!{Guid.NewGuid():N}";
 
     /// <summary>
-    /// Services for the <c>api</c> role with <c>AddAccounts()</c>. Pass <paramref name="clock"/> (a <c>FakeClock</c>)
+    /// Services for the <c>api</c> role, Identity included. Pass <paramref name="clock"/> (a <c>FakeClock</c>)
     /// to control the time email links expire by, and <paramref name="configure"/> to add or replace services.
     /// </summary>
     public static ServiceProvider BuildAccountServices(
@@ -27,10 +28,9 @@ internal static class AccountsTestSupport
             {
                 if (clock is not null)
                 {
-                    services.AddSingleton(clock); // Before AddAccounts(), which only adds the system clock when there is none.
+                    services.Replace(ServiceDescriptor.Singleton(clock));
                 }
 
-                services.AddAccounts();
                 configure?.Invoke(services);
             });
 

@@ -44,7 +44,7 @@ The integration and functional projects run against a real PostgreSQL started by
 Writing an integration test:
 
 - Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `jobs` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
-- Code that needs Identity gets it from `DatabaseFixture.BuildServices(role, configure)`, e.g. `services => services.AddAccounts()`. Swap the clock there with `services.AddSingleton<IClock>(fakeClock)` to test expiry.
+- Identity comes with `AddInfrastructure()`, so `BuildServices(role)` already has `UserManager`. To test expiry, swap the clock with `BuildServices(role, services => services.Replace(ServiceDescriptor.Singleton<IClock>(fakeClock)))`.
 - Api tests start the host through `TestHostFactory<Program>` (`WattWise.Testing`, a `WebApplicationFactory` for any web host) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
 - Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `jobs` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
