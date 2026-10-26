@@ -116,7 +116,7 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
 - `DatabaseMigrator` (in `Persistence/Schema/`) is the one migrate code path: `WattWise.Cli migrate` runs it, and so does the integration-test fixture ([testing.md](testing.md#shared-postgresql-fixture)), so tests migrate exactly like a deployment. It only runs the registered schema steps in order; each step owns one schema:
   - `ISchemaStep` has a `Name` and an idempotent `ApplyAsync`. Every step runs on every migrate.
   - `EfCoreMigrationsStep` applies pending EF Core migrations (the `app` schema), then `HangfireStorageStep` installs or upgrades Hangfire's tables (the `hangfire` schema). Both use the migrating connection, so everything they create belongs to `owner`.
-  - `SchemaServiceCollectionExtensions.AddSchemaSteps()` registers them; the registration order is the run order.
+  - `AddSchemaSteps()` in Infrastructure's `DependencyInjection` registers them; the registration order is the run order.
   - `DatabaseSchemas` holds every schema name (`App`, `Hangfire`, `Migrations`); code never spells one out.
   - To add or change a schema, add or change its step and register it. `DatabaseMigrator`, the Cli and the fixture stay as they are.
 - Migrations are applied only by `WattWise.Cli migrate`, in every environment, before Api and Jobs start. Its connection switches to the `owner` role (`Database:Options` = `-c role=owner`, from the `postgres-cli` item), so the objects it creates belong to `owner`. It runs migrations with no command timeout, since index builds and table rewrites can take long. Api and Jobs never migrate, and their roles have no DDL rights.
@@ -142,10 +142,10 @@ ASP.NET Core Identity in Infrastructure, on `AppDbContext`, handles the email an
 
   `AppDbContext` derives from `IdentityUserContext`, so Identity's own role and claim tables are not in the model.
 
-- **`AddAccounts()`** registers Identity, its options and the email-link token provider. Only the Api calls it; the Jobs and Cli hosts don't need it.
+- **Registration.** `AddInfrastructure()` registers Identity (its private `AddIdentity()`), its options and the email-link token provider, so every host has it with the same rules; only the Api uses it today.
 - **Store options.** `IdentityOptions.Stores` stays at its defaults: Identity reads it from the app's services while building the model, and the design-time factory and the other hosts don't have them, so changing it would give them a different model.
 - **Email links:** `EmailLinkTokenProvider` is Identity's token provider for email confirmation and password reset (`AddDefaultTokenProviders` isn't used, so Data Protection doesn't make these tokens). It stores a SHA-256 hash per identity and purpose in `email_link_tokens`; the lifetimes are in [security.md](../../docs/security.md#accounts). Checking a link marks its row deleted, and Identity saves that in the same `SaveChanges` as the confirmation or the new password. So a handler must not save anything else in the same scope after an Identity call fails; otherwise a rejected password would use up the link.
-- **Clock:** code that needs the current time takes NodaTime's `IClock` (`SystemClock.Instance` in the hosts, `FakeClock` in tests).
+- **Clock:** code that needs the current time takes NodaTime's `IClock` (`SystemClock.Instance`, registered by `AddInfrastructure()`; `FakeClock` in tests).
 - **No Data Protection key ring.** Nothing in the Api protects a payload with Data Protection. If a later feature needs it (cookies, antiforgery), it has to bring a persisted, encrypted key ring with it, decided in security.md first.
 - **Email sending:** the Api sends directly over SMTP with MailKit, through an Application port ([technical.md](../../docs/technical.md#cross-cutting)). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
 
