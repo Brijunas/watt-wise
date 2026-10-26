@@ -8,7 +8,17 @@ Notes for Claude Code when working in `backend/`. The rules themselves live in [
 - Handlers return expected failures as `Result<T>` errors; Domain throws and Application converts ("Failure model" in [docs/error-handling.md](docs/error-handling.md#failure-model)). Add a new error or category as "How to add …" there says.
 - One type per file: each class, record, struct, interface or enum goes in its own file named after it. Only nested private types may share their parent's file. Don't add a helper type (validator, options, extension class) to an existing file; create a new one next to it.
 - No unused `using` directives. Implicit usings are on, and a namespace nested inside another (e.g. `WattWise.Application.Tests` inside `WattWise.Application`) needs no `using` for the outer one. After a refactor, check that the usings it made unnecessary are gone.
-- The `backend-unused-usings` hook (`.claude/hooks/`) runs after every edit of a `backend/**/*.cs` file and reports unused usings (IDE0005). When it reports one, remove it before moving on.
+
+## Claude Code tooling
+
+Hook scripts are in the root `.claude/hooks/`, registered in both `.claude/settings.json` files.
+
+- `backend-unused-usings` runs after every edit of a `backend/**/*.cs` file and reports unused usings (IDE0005). Remove them before moving on.
+- `backend-migration-guard` blocks `dotnet ef database update` and edits to a migration's `*.Designer.cs` or `AppDbContextModelSnapshot.cs`. Change the model instead; only a migration's `Up`/`Down` take hand edits.
+- `backend-build-check` builds the solution when a session stops with changed C# or project files, and blocks the stop once on any warning or error. Fix them before stopping.
+- `/ef-migration` turns a model change into a migration. Only the user can start it, so ask them to run it rather than running `dotnet ef migrations add` yourself.
+- Run the `backend-reviewer` agent before opening a PR that touches `backend/`. The test agents are under "Testing rules".
+- To inspect the Development stack, use the `postgres` MCP (read-only `reader` role; writes fail with SQLSTATE 25006) and the `grafana` MCP (Loki logs, Tempo traces, Mimir metrics). Both need the stack running and `op` signed in.
 
 ## Before committing
 
