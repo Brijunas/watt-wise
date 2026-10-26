@@ -11,8 +11,7 @@ The security decisions for the whole system: accounts, sign-in, sessions, author
 - **Passwords.** At least 14 characters, with at least one lowercase letter, one uppercase letter, one digit and one symbol; at most 256 characters. A password is NFKC-normalized before it is hashed, so the same password typed on another keyboard still matches. Hashing is Identity's default (PBKDF2-HMAC-SHA512, 100,000 iterations). There is no breached-password list.
 - **Lockout.** 5 failed sign-ins in a row lock the account for 15 minutes.
 - **No account discovery.** Registering, resending the confirmation and asking for a password reset give the same response whether or not the email has an account. When someone registers with an email that already has one, its owner gets an email saying so instead of a confirmation link. Sign-in returns the "email not confirmed" error only after the password has been checked.
-- **Email links.** Confirmation and password-reset links are single-use, and a reset link expires after 1 hour. A link stays valid across a restart of the API.
-- **Email-link keys.** The Data Protection keys that sign email links are stored in the database, encrypted with a per-environment X.509 certificate from 1Password. The Api doesn't start without a valid one.
+- **Email links.** A confirmation or password-reset link carries a random 256-bit token. Only its SHA-256 hash is stored, so a database dump or backup yields no usable link. An account has at most one live link per kind: sending a new one replaces the old one, and using a link deletes it, so each link works once. A confirmation link expires after 24 hours and a reset link after 1 hour. Links live in the database, so they survive a restart of the API.
 - **OAuth.** Identity's external-login model stays in place for OAuth sign-in later; nothing uses it in MVP ([product.md](product.md#accounts-and-data)).
 
 ## Tokens
@@ -27,7 +26,7 @@ A session is one sign-in on one device: the chain of refresh tokens that starts 
 
 - **What is kept.** A device label taken from the User-Agent (browser and operating system), the sign-in time and the time of last use. No IP address is stored.
 - **What the user can do.** See their sessions, with the current one marked; end any one of them; sign out everywhere, which ends every session including the current one. Sign-out ends the current session.
-- **What ends sessions automatically.** A password change or reset ends every session of the account. Losing the `Admin` role ends every session of that account. Deleting the account deletes its sessions ([technical.md](technical.md#cross-cutting), GDPR).
+- **What ends sessions automatically.** A password change or reset ends every session of the account and deletes its outstanding reset link. Losing the `Admin` role ends every session of that account. Deleting the account deletes its sessions ([technical.md](technical.md#cross-cutting), GDPR).
 - **When it takes effect.** Ending a session stops its refresh token at once. An access token already issued stays valid until it expires, at most 15 minutes. Making this immediate needs a check on every request, e.g. a cache of ended sessions; it is to be considered later.
 
 ## Authorization

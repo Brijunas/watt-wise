@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +13,7 @@ namespace WattWise.Infrastructure.Persistence;
 /// role and claim tables are not in the model: authorization sits on the account (roles, permissions).
 /// </summary>
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
-    : IdentityUserContext<AccountIdentity, Guid>(options), IDataProtectionKeyContext
+    : IdentityUserContext<AccountIdentity, Guid>(options)
 {
     public DbSet<Account> Accounts => Set<Account>();
 
@@ -22,7 +21,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Permission> Permissions => Set<Permission>();
 
-    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+    public DbSet<EmailLinkToken> EmailLinkTokens => Set<EmailLinkToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

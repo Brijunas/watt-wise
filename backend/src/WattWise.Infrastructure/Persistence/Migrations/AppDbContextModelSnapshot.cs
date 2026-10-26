@@ -17,40 +17,17 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261026143619_Accounts";
+    public override string LastMigrationId => "20261026152554_Accounts";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
         modelBuilder
             .HasDefaultSchema("app")
-            .HasAnnotation("ProductVersion", "11.0.0-rc.1.26425.128")
+            .HasAnnotation("ProductVersion", "11.0.0-rc.2.26504.105")
             .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
         NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-        modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
-            {
-                var id = b.Property<int>("Id")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("integer")
-                    .HasColumnName("id");
-
-                NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(id);
-
-                b.Property<string>("FriendlyName")
-                    .HasColumnType("text")
-                    .HasColumnName("friendly_name");
-
-                b.Property<string>("Xml")
-                    .HasColumnType("text")
-                    .HasColumnName("xml");
-
-                b.HasKey("Id")
-                    .HasName("pk_data_protection_keys");
-
-                b.ToTable("data_protection_keys", "app");
-            });
 
         modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
             {
@@ -261,6 +238,35 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("identity_users", "app");
             });
 
+        modelBuilder.Entity("WattWise.Infrastructure.Identity.EmailLinkToken", b =>
+            {
+                b.Property<Guid>("IdentityId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("identity_id");
+
+                b.Property<string>("Purpose")
+                    .HasColumnType("text")
+                    .HasColumnName("purpose");
+
+                b.Property<Instant>("CreatedAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("created_at");
+
+                b.Property<Instant>("ExpiresAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("expires_at");
+
+                b.Property<byte[]>("TokenHash")
+                    .IsRequired()
+                    .HasColumnType("bytea")
+                    .HasColumnName("token_hash");
+
+                b.HasKey("IdentityId", "Purpose")
+                    .HasName("pk_email_link_tokens");
+
+                b.ToTable("email_link_tokens", "app");
+            });
+
         modelBuilder.Entity("account_roles", b =>
             {
                 b.Property<Guid>("account_id")
@@ -327,6 +333,16 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired()
                     .HasConstraintName("fk_identity_users_accounts_account_id");
+            });
+
+        modelBuilder.Entity("WattWise.Infrastructure.Identity.EmailLinkToken", b =>
+            {
+                b.HasOne("WattWise.Infrastructure.Identity.AccountIdentity", null)
+                    .WithMany()
+                    .HasForeignKey("IdentityId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired()
+                    .HasConstraintName("fk_email_link_tokens_identity_users_identity_id");
             });
 
         modelBuilder.Entity("account_roles", b =>

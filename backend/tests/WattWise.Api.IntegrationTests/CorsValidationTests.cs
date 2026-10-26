@@ -12,7 +12,7 @@ public class CorsValidationTests(DatabaseFixture fixture) : IClassFixture<Databa
     [InlineData(" ")]
     public async Task Malformed_origin_fails_host_start(string origin)
     {
-        Dictionary<string, string?> settings = new(fixture.Database.ApiConfiguration())
+        Dictionary<string, string?> settings = new(fixture.Database.ConfigurationFor(DatabaseRole.Api))
         {
             ["Cors:AllowedOrigins:0"] = origin,
         };

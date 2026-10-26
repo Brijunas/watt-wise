@@ -13,7 +13,7 @@ public class OpenApiProductionTests(DatabaseFixture fixture) : IClassFixture<Dat
     public async Task Documentation_is_not_served_in_production(string path)
     {
         await using TestHostFactory<Program> factory = new(
-            fixture.Database.ApiConfiguration(), environment: "Production");
+            fixture.Database.ConfigurationFor(DatabaseRole.Api), environment: "Production");
         using HttpClient client = factory.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync(path, Token);

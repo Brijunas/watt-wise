@@ -35,7 +35,7 @@ public sealed class Role
     {
         ArgumentNullException.ThrowIfNull(permission);
 
-        if (!_permissions.Contains(permission))
+        if (!_permissions.Any(existing => existing.Id == permission.Id))
         {
             _permissions.Add(permission);
         }

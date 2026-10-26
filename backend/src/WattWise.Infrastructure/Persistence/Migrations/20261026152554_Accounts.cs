@@ -1,14 +1,13 @@
 using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using NodaTime;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 /// <inheritdoc />
-public partial class _20261026143619_Accounts : Migration
+public partial class _20261026152554_Accounts : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -28,21 +27,6 @@ public partial class _20261026143619_Accounts : Migration
             constraints: table =>
             {
                 table.PrimaryKey("pk_accounts", x => x.id);
-            });
-
-        migrationBuilder.CreateTable(
-            name: "data_protection_keys",
-            schema: "app",
-            columns: table => new
-            {
-                id = table.Column<int>(type: "integer", nullable: false)
-                    .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                friendly_name = table.Column<string>(type: "text", nullable: true),
-                xml = table.Column<string>(type: "text", nullable: true)
-            },
-            constraints: table =>
-            {
-                table.PrimaryKey("pk_data_protection_keys", x => x.id);
             });
 
         migrationBuilder.CreateTable(
@@ -161,6 +145,29 @@ public partial class _20261026143619_Accounts : Migration
             });
 
         migrationBuilder.CreateTable(
+            name: "email_link_tokens",
+            schema: "app",
+            columns: table => new
+            {
+                identity_id = table.Column<Guid>(type: "uuid", nullable: false),
+                purpose = table.Column<string>(type: "text", nullable: false),
+                token_hash = table.Column<byte[]>(type: "bytea", nullable: false),
+                expires_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
+                created_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("pk_email_link_tokens", x => new { x.identity_id, x.purpose });
+                table.ForeignKey(
+                    name: "fk_email_link_tokens_identity_users_identity_id",
+                    column: x => x.identity_id,
+                    principalSchema: "app",
+                    principalTable: "identity_users",
+                    principalColumn: "id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
             name: "identity_user_logins",
             schema: "app",
             columns: table => new
@@ -266,7 +273,7 @@ public partial class _20261026143619_Accounts : Migration
             schema: "app");
 
         migrationBuilder.DropTable(
-            name: "data_protection_keys",
+            name: "email_link_tokens",
             schema: "app");
 
         migrationBuilder.DropTable(

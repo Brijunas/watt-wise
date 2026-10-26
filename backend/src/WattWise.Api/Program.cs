@@ -45,14 +45,6 @@ if (OpenApiBuildGeneration.IsRunning)
     builder.Services.RemoveAll<IStartupValidator>();
 #pragma warning restore SYSLIB0066
     builder.Services.RemoveAll<IAsyncStartupValidator>();
-
-    // Nor can the Data Protection key ring be built: it needs the certificate and the database.
-    foreach (ServiceDescriptor hosted in builder.Services
-        .Where(service => service.ServiceType == typeof(IHostedService) && service.ImplementationType?.Name == "DataProtectionHostedService")
-        .ToList())
-    {
-        builder.Services.Remove(hosted);
-    }
 }
 
 var app = builder.Build();

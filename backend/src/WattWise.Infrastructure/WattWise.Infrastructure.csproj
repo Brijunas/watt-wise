@@ -3,9 +3,9 @@
   <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" NoWarn="NU1608" />
     <PackageReference Include="Hangfire.PostgreSql" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <!-- Direct reference lifts the vulnerable 11.0.1 that Hangfire.Core pulls in transitively (NU1903). -->
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
@@ -18,11 +18,6 @@
     <PackageReference Include="Serilog.Settings.Configuration" />
     <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="Serilog.Sinks.OpenTelemetry" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- DataProtectorTokenProvider and the other Identity token providers are in the shared framework. -->
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>

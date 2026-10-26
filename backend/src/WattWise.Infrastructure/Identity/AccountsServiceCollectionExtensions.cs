@@ -1,10 +1,8 @@
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
+
+using NodaTime;
 
 using WattWise.Infrastructure.Persistence;
 
@@ -14,19 +12,12 @@ public static class AccountsServiceCollectionExtensions
 {
     /// <summary>
     /// Registers ASP.NET Core Identity for <see cref="AccountIdentity"/> on <see cref="AppDbContext"/>
-    /// with the account rules from security.md, and Data Protection with its keys in the database,
-    /// encrypted with the certificate in <c>DataProtection:Certificate</c>. Needs
-    /// <c>AddInfrastructure()</c>. Only the Api calls it.
+    /// with the account rules from security.md and <see cref="EmailLinkTokenProvider"/> for email
+    /// confirmation and password reset links. Needs <c>AddInfrastructure()</c>. Only the Api calls it.
     /// </summary>
     public static IServiceCollection AddAccounts(this IServiceCollection services)
     {
-        // Read from the built configuration, like DatabaseSettings, so sources added after
-        // registration (test overrides) are seen; ValidateOnStart stops the host when it is unusable.
-        services.AddOptions<DataProtectionSettings>()
-            .Configure<IConfiguration>((settings, configuration) => settings.ReadFrom(configuration))
-            .ValidateOnStart();
-        services.AddSingleton<IValidateOptions<DataProtectionSettings>, DataProtectionSettingsValidator>();
-        services.AddSingleton<DataProtectionCertificate>();
+        services.TryAddSingleton<IClock>(SystemClock.Instance);
 
         services.AddIdentityCore<AccountIdentity>(options =>
             {
@@ -44,19 +35,22 @@ public static class AccountsServiceCollectionExtensions
                 options.User.AllowedUserNameCharacters = string.Empty; // The user name is the email.
 
                 options.SignIn.RequireConfirmedEmail = true;
+
+                options.Tokens.EmailConfirmationTokenProvider = EmailLinkTokenProvider.ProviderName;
+                options.Tokens.PasswordResetTokenProvider = EmailLinkTokenProvider.ProviderName;
             })
             .AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders()
-            .AddPasswordValidator<PasswordMaxLengthValidator>();
+            .AddTokenProvider<EmailLinkTokenProvider>(EmailLinkTokenProvider.ProviderName);
+
+        // Both rules see the NFKC form, the one that is hashed. AddIdentityCore registered Identity's
+        // own PasswordValidator for the raw form; drop it so the raw form isn't checked as well.
+        services.RemoveAll<IPasswordValidator<AccountIdentity>>();
+        services.AddScoped<IPasswordValidator<AccountIdentity>, NormalizingPasswordValidator>();
+        services.AddScoped<IPasswordValidator<AccountIdentity>, PasswordMaxLengthValidator>();
 
         // AddIdentityCore registers its own with TryAdd, so these replace them.
         services.Replace(ServiceDescriptor.Singleton<ILookupNormalizer, EmailLookupNormalizer>());
         services.Replace(ServiceDescriptor.Scoped<IPasswordHasher<AccountIdentity>, NormalizingPasswordHasher>());
-
-        services.AddDataProtection()
-            .SetApplicationName("wattwise")
-            .PersistKeysToDbContext<AppDbContext>();
-        services.AddSingleton<IConfigureOptions<KeyManagementOptions>, DataProtectionKeyManagementConfiguration>();
 
         return services;
     }

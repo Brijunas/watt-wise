@@ -24,13 +24,6 @@ public sealed class TestDatabase(
             ["Database:Options"] = role == DatabaseRole.Cli ? "-c role=owner" : string.Empty,
         };
 
-    /// <summary>Everything the Api needs to start: the <c>api</c> role's database settings and the key ring certificate.</summary>
-    public IReadOnlyDictionary<string, string?> ApiConfiguration() =>
-        new Dictionary<string, string?>(ConfigurationFor(DatabaseRole.Api))
-        {
-            ["DataProtection:Certificate"] = TestCertificates.Pem,
-        };
-
     public async Task DropAsync()
     {
         // FORCE drops the database even if a pooled connection is still open.

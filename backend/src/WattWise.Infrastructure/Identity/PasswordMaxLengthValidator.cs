@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace WattWise.Infrastructure.Identity;
 
-/// <summary>Rejects passwords longer than <see cref="MaxLength"/> characters, so hashing one can't be used to burn CPU.</summary>
+/// <summary>Rejects passwords longer than <see cref="MaxLength"/> characters once NFKC-normalized (the form that is hashed), so hashing one can't be used to burn CPU.</summary>
 internal sealed class PasswordMaxLengthValidator : IPasswordValidator<AccountIdentity>
 {
     public const int MaxLength = 256;
@@ -11,7 +11,7 @@ internal sealed class PasswordMaxLengthValidator : IPasswordValidator<AccountIde
     {
         ArgumentNullException.ThrowIfNull(password);
 
-        IdentityResult result = password.Length > MaxLength
+        IdentityResult result = TextNormalization.Nfkc(password).Length > MaxLength
             ? IdentityResult.Failed(new IdentityError
             {
                 Code = "PasswordTooLong",

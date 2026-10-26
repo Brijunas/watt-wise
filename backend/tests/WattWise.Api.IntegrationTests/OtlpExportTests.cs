@@ -18,7 +18,7 @@ public class OtlpExportTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
         int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        Dictionary<string, string?> settings = new(fixture.Database.ApiConfiguration())
+        Dictionary<string, string?> settings = new(fixture.Database.ConfigurationFor(DatabaseRole.Api))
         {
             ["Observability:OtlpEndpoint"] = $"http://127.0.0.1:{port}",
         };

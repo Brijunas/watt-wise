@@ -41,13 +41,17 @@ public sealed class Account
     {
         ArgumentNullException.ThrowIfNull(role);
 
-        if (!_roles.Contains(role))
+        if (!_roles.Any(existing => existing.Id == role.Id))
         {
             _roles.Add(role);
         }
     }
 
-    /// <summary>The names of the permissions the account's roles grant, each once.</summary>
+    /// <summary>
+    /// The names of the permissions the account's roles grant, each once. Needs <see cref="Roles"/> and
+    /// their permissions loaded (<c>Include(a =&gt; a.Roles).ThenInclude(r =&gt; r.Permissions)</c>);
+    /// otherwise it returns an empty list.
+    /// </summary>
     public IReadOnlyCollection<string> Permissions()
     {
         return [.. _roles.SelectMany(role => role.Permissions).Select(permission => permission.Name).Distinct(StringComparer.Ordinal)];

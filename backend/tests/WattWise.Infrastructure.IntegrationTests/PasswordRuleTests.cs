@@ -9,6 +9,8 @@ namespace WattWise.Infrastructure.IntegrationTests;
 
 public class PasswordRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
+    private const char Ligature = '\uFB03';
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Theory]
@@ -42,6 +44,31 @@ public class PasswordRuleTests(DatabaseFixture fixture) : IClassFixture<Database
         IdentityResult result = await CreateAsync("Aa1-" + new string('x', 252));
 
         Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task A_password_under_14_characters_that_is_14_once_normalized_is_accepted()
+    {
+        // 12 characters; the ligature (U+FB03) expands to "ffi", so 14 normalized.
+        string password = "Aa1-" + Ligature + new string('x', 7);
+        Assert.Equal(12, password.Length);
+        Assert.Equal(14, password.Normalize(NormalizationForm.FormKC).Length);
+
+        IdentityResult result = await CreateAsync(password);
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task A_password_of_256_characters_that_exceeds_256_once_normalized_is_rejected()
+    {
+        string password = "Aa1-" + Ligature + new string('x', 251); // 256 characters, 258 normalized
+        Assert.Equal(256, password.Length);
+
+        IdentityResult result = await CreateAsync(password);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal("PasswordTooLong", Assert.Single(result.Errors).Code);
     }
 
     [Fact]

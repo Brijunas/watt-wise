@@ -30,7 +30,7 @@ public class DatabaseRoundTripTests(DatabaseFixture fixture) : IClassFixture<Dat
 
         IEnumerable<string> applied = await db.Database.GetAppliedMigrationsAsync(Token);
         Assert.Contains("20261005094112_Initial", applied);
-        Assert.Contains("20261026143619_Accounts", applied);
+        Assert.Contains("20261026152554_Accounts", applied);
         Assert.Empty(await db.Database.GetPendingMigrationsAsync(Token));
     }
 }

@@ -49,6 +49,36 @@ public class RolesAndPermissionsTests(DatabaseFixture fixture) : IClassFixture<D
     }
 
     [Fact]
+    public async Task Adding_a_role_the_account_already_has_through_another_context_keeps_one_link()
+    {
+        Role role = Role.Create(AccountsTestSupport.UniqueName("role"));
+        Account account = AccountsTestSupport.NewAccount();
+        account.AddRole(role);
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Api);
+        await using (AsyncServiceScope seedScope = provider.CreateAsyncScope())
+        {
+            AppDbContext seedDb = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            seedDb.Accounts.Add(account);
+            await seedDb.SaveChangesAsync(Token);
+        }
+
+        await using AsyncServiceScope accountScope = provider.CreateAsyncScope();
+        AppDbContext accountDb = accountScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Account loaded = await accountDb.Accounts
+            .Include(a => a.Roles)
+            .SingleAsync(a => a.Id == account.Id, Token);
+        await using AsyncServiceScope roleScope = provider.CreateAsyncScope();
+        AppDbContext roleDb = roleScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Role sameRole = await roleDb.Roles.SingleAsync(r => r.Id == role.Id, Token);
+        Assert.NotSame(loaded.Roles.Single(), sameRole);
+
+        loaded.AddRole(sameRole);
+        await accountDb.SaveChangesAsync(Token);
+
+        Assert.Equal(1, await CountAsync(accountDb, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE account_id = {account.Id}"));
+    }
+
+    [Fact]
     public async Task A_duplicate_permission_name_is_rejected()
     {
         Permission first = NewPermission();

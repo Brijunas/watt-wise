@@ -9,18 +9,30 @@ using WattWise.Infrastructure.Persistence;
 
 namespace WattWise.Infrastructure.IntegrationTests;
 
-/// <summary>What the account tests share: services with Identity and Data Protection as the Api has them, and a way to make an account with its identity.</summary>
+/// <summary>What the account tests share: services with Identity as the Api has them, and a way to make an account with its identity.</summary>
 internal static class AccountsTestSupport
 {
     /// <summary>A new password that follows every rule: one character of each class, then a random tail.</summary>
     public static string ValidPassword() => $"Aa1!{Guid.NewGuid():N}";
 
-    /// <summary>Services for the <c>api</c> role with <c>AddAccounts()</c>, its keys encrypted with <paramref name="certificatePem"/> (the test certificate by default).</summary>
-    public static ServiceProvider BuildAccountServices(this DatabaseFixture fixture, string? certificatePem = null) =>
+    /// <summary>
+    /// Services for the <c>api</c> role with <c>AddAccounts()</c>. Pass <paramref name="clock"/> (a <c>FakeClock</c>)
+    /// to control the time email links expire by, and <paramref name="configure"/> to add or replace services.
+    /// </summary>
+    public static ServiceProvider BuildAccountServices(
+        this DatabaseFixture fixture, IClock? clock = null, Action<IServiceCollection>? configure = null) =>
         fixture.BuildServices(
             DatabaseRole.Api,
-            new Dictionary<string, string?> { ["DataProtection:Certificate"] = certificatePem ?? TestCertificates.Pem },
-            services => services.AddAccounts());
+            services =>
+            {
+                if (clock is not null)
+                {
+                    services.AddSingleton(clock); // Before AddAccounts(), which only adds the system clock when there is none.
+                }
+
+                services.AddAccounts();
+                configure?.Invoke(services);
+            });
 
     public static string UniqueEmail() => $"user-{Guid.NewGuid():N}@example.com";
 

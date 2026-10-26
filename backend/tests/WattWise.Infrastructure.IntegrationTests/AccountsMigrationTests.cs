@@ -11,12 +11,12 @@ namespace WattWise.Infrastructure.IntegrationTests;
 public class AccountsMigrationTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
     private const string Initial = "20261005094112_Initial";
-    private const string Accounts = "20261026143619_Accounts";
+    private const string Accounts = "20261026152554_Accounts";
 
     private static readonly string[] AccountTables =
     [
         "accounts", "identity_users", "identity_user_logins", "identity_user_tokens",
-        "roles", "permissions", "account_roles", "role_permissions", "data_protection_keys",
+        "roles", "permissions", "account_roles", "role_permissions", "email_link_tokens",
     ];
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
