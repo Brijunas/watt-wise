@@ -2,7 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-using WattWise.Domain.Accounts;
+using WattWise.Domain.Identities;
+using WattWise.Domain.Localization;
 
 namespace WattWise.Infrastructure.Persistence.Configurations;
 
@@ -20,13 +21,12 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .IsRequired();
         builder.Property(account => account.CreatedAt).IsRequired();
 
-        builder.HasMany(account => account.Roles)
-            .WithMany()
-            .UsingEntity<Dictionary<string, object>>(
-                "account_roles",
-                right => right.HasOne<Role>().WithMany().HasForeignKey("role_id").OnDelete(DeleteBehavior.Cascade),
-                left => left.HasOne<Account>().WithMany().HasForeignKey("account_id").OnDelete(DeleteBehavior.Cascade),
-                join => join.HasKey("account_id", "role_id"));
+        builder.HasMany<AccountRole>("_roles")
+            .WithOne()
+            .HasForeignKey(link => link.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation("_roles").AutoInclude();
+        builder.Ignore(account => account.RoleIds);
     }
 
     private static string ToText(Language language)

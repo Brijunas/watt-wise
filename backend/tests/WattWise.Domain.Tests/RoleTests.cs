@@ -1,4 +1,4 @@
-using WattWise.Domain.Accounts;
+using WattWise.Domain.Identities;
 
 namespace WattWise.Domain.Tests;
 
@@ -11,7 +11,7 @@ public class RoleTests
 
         Assert.Equal(7, role.Id.Version);
         Assert.Equal("Admin", role.Name);
-        Assert.Empty(role.Permissions);
+        Assert.Empty(role.PermissionIds);
     }
 
     [Fact]
@@ -35,17 +35,10 @@ public class RoleTests
         Role role = Role.Create("Admin");
         Permission permission = Permission.Create("admin.access", "Opens the admin app.");
 
-        role.Grant(permission);
-        role.Grant(permission);
+        role.Grant(permission.Id);
+        role.Grant(permission.Id);
 
-        Assert.Same(permission, Assert.Single(role.Permissions));
+        Assert.Equal(permission.Id, Assert.Single(role.PermissionIds));
     }
 
-    [Fact]
-    public void Grant_rejects_null()
-    {
-        Role role = Role.Create("Admin");
-
-        Assert.Throws<ArgumentNullException>(() => role.Grant(null!));
-    }
 }

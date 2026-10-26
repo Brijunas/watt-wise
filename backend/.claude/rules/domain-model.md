@@ -5,6 +5,7 @@ paths:
 
 # Domain code
 
+- Folders: one per area, plural (`Identities/`); a type no area owns goes in a folder named for its concept (`Localization/`), never `Common`/`Shared`.
 - Entities: sealed, `private set` only, state changed through named methods, `static Create` that validates and makes the `Guid.CreateVersion7()` id, one private constructor commented `// Used by EF Core.`, collections as `private readonly List<T>` exposed as `IReadOnlyCollection<T>`.
 - Check everything before changing anything; a broken invariant throws a `DomainException` subclass.
 - Other aggregates by id only: no navigation property to another aggregate root.

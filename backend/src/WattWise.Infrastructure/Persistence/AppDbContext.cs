@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-using WattWise.Domain.Accounts;
+using WattWise.Domain.Identities;
 using WattWise.Infrastructure.Identity;
 using WattWise.Infrastructure.Persistence.Schema;
 
