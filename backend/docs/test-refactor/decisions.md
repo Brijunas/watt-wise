@@ -18,7 +18,7 @@ Answers to the open questions in the [inventory](inventory.md), from the Phase 2
 - **D9 (Q10, password length).** Not a bug: a "character" is a UTF-16 code unit of the NFKC form, so one emoji counts as 2. Tests pin today's behavior.
 - **D10 (Q10, lone surrogates).** A bug: a password that isn't valid Unicode should be rejected (today `TextNormalization.cs:14-17` hashes it unnormalized). It needs a production change, outside this refactor; no test for it until then.
 - **D11 (Q10, `reader` and `migrations`).** Investigated: not a bug in the SQL. `backup` (S2.3, for `pg_dump`) and `reader` (#48, "read every table") both get `pg_read_all_data` on purpose (`deploy/postgres/bootstrap.sql:63-64`, postgres.md's role table). The schema table's "Nobody: only `owner`" (`deploy/docs/postgres.md:37`, from S2.12) describes explicit grants and is wrong about who can read. Tests follow the SQL.
-- **D12 (out-of-scope fixes).** Noted only, no story yet: security.md should define "characters" as D9 does; postgres.md:37 should say `backup` and `reader` read the schema through `pg_read_all_data`; the lone-surrogate rejection (D10).
+- **D12 (out-of-scope fixes).** Noted only, no story yet: security.md should define "characters" as D9 does; postgres.md:37 should say `backup` and `reader` read the schema through `pg_read_all_data`; the lone-surrogate rejection (D10); observability.md "OTLP endpoint" says "no path" but `http://host:4317/` is accepted (`ObservabilitySettings.cs:24`, pinned as characterization in batch 3), so either the doc says "no path other than `/`" or the code rejects it.
 
 ## Rules for the rewrite
 
