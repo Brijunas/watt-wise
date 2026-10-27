@@ -6,46 +6,39 @@ namespace WattWise.Application.Tests.Results;
 public class ErrorTests
 {
     [Fact]
-    public void From_copies_the_code_and_message_of_a_domain_exception()
-    {
-        TestDomainException exception = new("Test.Broken", "The invariant is broken.");
-
-        Error error = Error.From(exception, ErrorType.NotFound);
-
-        Assert.Equal("Test.Broken", error.Code);
-        Assert.Equal("The invariant is broken.", error.Description);
-        Assert.Equal(ErrorType.NotFound, error.Type);
-        Assert.Null(error.FieldErrors);
-    }
-
-    [Fact]
-    public void Validation_sets_the_code_type_and_field_errors()
+    public void Validation_sets_the_code_the_type_and_the_field_errors()
     {
         Dictionary<string, string[]> fieldErrors = new() { ["name"] = ["Required."] };
 
         Error error = Error.Validation(fieldErrors);
 
-        Assert.Equal("Validation.Failed", error.Code);
-        Assert.Equal(ErrorType.Validation, error.Type);
-        Assert.Same(fieldErrors, error.FieldErrors);
+        Assert.Equal(("Validation.Failed", ErrorType.Validation, fieldErrors), (error.Code, error.Type, error.FieldErrors));
     }
 
-    [Fact]
-    public void NotFound_sets_the_type()
+    public static TheoryData<Func<string, string, Error>, ErrorType> CategoryFactories => new()
     {
-        Error error = Error.NotFound("Test.Missing", "Missing.");
+        { Error.NotFound, ErrorType.NotFound },
+        { Error.Unauthorized, ErrorType.Unauthorized },
+    };
 
-        Assert.Equal(ErrorType.NotFound, error.Type);
-        Assert.Equal("Test.Missing", error.Code);
-        Assert.Equal("Missing.", error.Description);
+    [Theory]
+    [MemberData(nameof(CategoryFactories))]
+    public void A_category_factory_sets_its_type_and_keeps_the_code_and_description(Func<string, string, Error> factory, ErrorType type)
+    {
+        Error error = factory("Test.Code", "Description.");
+
+        Assert.Equal(new Error("Test.Code", "Description.", type), error);
     }
 
-    [Fact]
-    public void Unauthorized_sets_the_type()
+    [Theory]
+    [InlineData(ErrorType.NotFound)]
+    [InlineData(ErrorType.Unauthorized)]
+    public void From_copies_the_code_and_message_of_a_domain_exception_and_uses_the_given_type(ErrorType type)
     {
-        Error error = Error.Unauthorized("Test.Denied", "Denied.");
+        TestDomainException exception = new("Test.Broken", "The invariant is broken.");
 
-        Assert.Equal(ErrorType.Unauthorized, error.Type);
-        Assert.Equal("Test.Denied", error.Code);
+        Error error = Error.From(exception, type);
+
+        Assert.Equal(new Error("Test.Broken", "The invariant is broken.", type), error);
     }
 }
