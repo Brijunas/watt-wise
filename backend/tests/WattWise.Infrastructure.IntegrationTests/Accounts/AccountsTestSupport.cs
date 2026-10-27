@@ -11,14 +11,14 @@ using WattWise.Infrastructure.Persistence;
 
 namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
-/// <summary>What the account tests share: services with Identity as the Api has them, and a way to make an account with its identity.</summary>
+/// <summary>What the account tests share: services with ASP.NET Core Identity as the Api has them, and a way to make an account with its AccountIdentity.</summary>
 internal static class AccountsTestSupport
 {
     /// <summary>A new password that follows every rule: one character of each class, then a random tail.</summary>
     public static string ValidPassword() => $"Aa1!{Guid.NewGuid():N}";
 
     /// <summary>
-    /// Services for the <c>api</c> role, Identity included. Pass <paramref name="clock"/> (a <c>FakeClock</c>)
+    /// Services for the <c>api</c> role, ASP.NET Core Identity included. Pass <paramref name="clock"/> (a <c>FakeClock</c>)
     /// to control the time email links expire by, and <paramref name="configure"/> to add or replace services.
     /// </summary>
     public static ServiceProvider BuildAccountServices(
@@ -42,7 +42,7 @@ internal static class AccountsTestSupport
     public static Account NewAccount(Language language = Language.Lt) =>
         Account.Create(language, SystemClock.Instance.GetCurrentInstant());
 
-    /// <summary>Saves a new account and creates its identity through <see cref="UserManager{TUser}"/>.</summary>
+    /// <summary>Saves a new account and creates its AccountIdentity through <see cref="UserManager{TUser}"/>.</summary>
     public static async Task<AccountIdentity> CreateIdentityAsync(
         IServiceProvider services, string email, string password, CancellationToken cancellationToken)
     {

@@ -77,8 +77,8 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<AppDbContext>()
             .AddTokenProvider<EmailLinkTokenProvider>(EmailLinkTokenProvider.ProviderName);
 
-        // Both rules see the NFKC form, the one that is hashed. AddIdentityCore registered Identity's
-        // own PasswordValidator for the raw form; drop it so the raw form isn't checked as well.
+        // Both rules see the NFKC form, the one that is hashed. AddIdentityCore registered ASP.NET Core
+        // Identity's own PasswordValidator for the raw form; drop it so the raw form isn't checked as well.
         services.RemoveAll<IPasswordValidator<AccountIdentity>>();
         services.AddScoped<IPasswordValidator<AccountIdentity>, NormalizingPasswordValidator>();
         services.AddScoped<IPasswordValidator<AccountIdentity>, PasswordMaxLengthValidator>();

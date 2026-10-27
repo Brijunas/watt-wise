@@ -9,7 +9,7 @@ public class LockoutTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    // Identity takes the time from DateTimeOffset.UtcNow, not from TimeProvider, so the lockout end
+    // ASP.NET Core Identity takes the time from DateTimeOffset.UtcNow, not from TimeProvider, so the lockout end
     // can only be checked as a window around now (and there is no way to test it expiring).
     [Fact]
     public async Task The_fifth_failed_attempt_locks_the_identity_for_15_minutes()

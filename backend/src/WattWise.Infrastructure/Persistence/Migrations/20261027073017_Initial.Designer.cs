@@ -13,8 +13,8 @@ using WattWise.Infrastructure.Persistence;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 [DbContext(typeof(AppDbContext))]
-[Migration("20261027072158_Initial")]
-partial class _20261027072158_Initial
+[Migration("20261027073017_Initial")]
+partial class _20261027073017_Initial
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -276,7 +276,7 @@ partial class _20261027072158_Initial
 
         modelBuilder.Entity("WattWise.Infrastructure.Accounts.EmailLinkToken", b =>
             {
-                b.Property<Guid>("IdentityId")
+                b.Property<Guid>("AccountIdentityId")
                     .HasColumnType("uuid")
                     .HasColumnName("identity_id");
 
@@ -297,7 +297,7 @@ partial class _20261027072158_Initial
                     .HasColumnType("bytea")
                     .HasColumnName("token_hash");
 
-                b.HasKey("IdentityId", "Purpose")
+                b.HasKey("AccountIdentityId", "Purpose")
                     .HasName("pk_email_link_tokens");
 
                 b.ToTable("email_link_tokens", "app");
@@ -371,7 +371,7 @@ partial class _20261027072158_Initial
             {
                 b.HasOne("WattWise.Infrastructure.Accounts.AccountIdentity", null)
                     .WithMany()
-                    .HasForeignKey("IdentityId")
+                    .HasForeignKey("AccountIdentityId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired()
                     .HasConstraintName("fk_email_link_tokens_identity_users_identity_id");

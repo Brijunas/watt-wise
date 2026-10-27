@@ -258,7 +258,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
 
     // Both scopes check the link (loading its row) before either saves: the barrier holds each
     // SaveChanges until both have arrived. The first save then deletes the row and the second finds
-    // nothing left to change, which Identity reports as ConcurrencyFailure.
+    // nothing left to change, which ASP.NET Core Identity reports as ConcurrencyFailure.
     [Fact]
     public async Task Two_uses_of_the_same_reset_link_at_once_let_exactly_one_succeed()
     {

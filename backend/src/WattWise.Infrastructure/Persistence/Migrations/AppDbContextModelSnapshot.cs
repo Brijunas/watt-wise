@@ -17,7 +17,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261027072158_Initial";
+    public override string LastMigrationId => "20261027073017_Initial";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -278,7 +278,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("WattWise.Infrastructure.Accounts.EmailLinkToken", b =>
             {
-                b.Property<Guid>("IdentityId")
+                b.Property<Guid>("AccountIdentityId")
                     .HasColumnType("uuid")
                     .HasColumnName("identity_id");
 
@@ -299,7 +299,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasColumnType("bytea")
                     .HasColumnName("token_hash");
 
-                b.HasKey("IdentityId", "Purpose")
+                b.HasKey("AccountIdentityId", "Purpose")
                     .HasName("pk_email_link_tokens");
 
                 b.ToTable("email_link_tokens", "app");
@@ -373,7 +373,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
             {
                 b.HasOne("WattWise.Infrastructure.Accounts.AccountIdentity", null)
                     .WithMany()
-                    .HasForeignKey("IdentityId")
+                    .HasForeignKey("AccountIdentityId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired()
                     .HasConstraintName("fk_email_link_tokens_identity_users_identity_id");

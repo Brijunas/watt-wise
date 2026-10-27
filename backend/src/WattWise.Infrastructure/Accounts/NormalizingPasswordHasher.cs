@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
-/// NFKC-normalizes a password before Identity's default hasher (PBKDF2-HMAC-SHA512, 100,000
+/// NFKC-normalizes a password before ASP.NET Core Identity's default hasher (PBKDF2-HMAC-SHA512, 100,000
 /// iterations) sees it, so the same password typed on another keyboard still matches.
 /// </summary>
 internal sealed class NormalizingPasswordHasher(IOptions<PasswordHasherOptions> options) : IPasswordHasher<AccountIdentity>

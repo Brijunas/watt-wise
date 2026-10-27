@@ -11,13 +11,15 @@ internal sealed class EmailLinkTokenConfiguration : IEntityTypeConfiguration<Ema
     {
         builder.ToTable("email_link_tokens");
 
-        // One live link per identity and kind.
-        builder.HasKey(token => new { token.IdentityId, token.Purpose });
+        // One live link per AccountIdentity and kind.
+        builder.HasKey(token => new { token.AccountIdentityId, token.Purpose });
+        builder.Property(token => token.AccountIdentityId).HasColumnName("identity_id");
         builder.Property(token => token.TokenHash).HasColumnType("bytea").IsRequired();
 
         builder.HasOne<AccountIdentity>()
             .WithMany()
-            .HasForeignKey(token => token.IdentityId)
+            .HasForeignKey(token => token.AccountIdentityId)
+            .HasConstraintName("fk_email_link_tokens_identity_users_identity_id")
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

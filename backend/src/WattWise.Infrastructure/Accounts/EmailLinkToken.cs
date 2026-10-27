@@ -3,12 +3,13 @@ using NodaTime;
 namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
-/// The live email link of one kind (Identity's purpose string) for one identity. Only the SHA-256
+/// The live email link of one kind (ASP.NET Core Identity's purpose string) for one
+/// <see cref="AccountIdentity"/>. Only the SHA-256
 /// hash of the token is stored. Sending a new link replaces the row, using a link deletes it.
 /// </summary>
 public sealed class EmailLinkToken
 {
-    public required Guid IdentityId { get; init; }
+    public required Guid AccountIdentityId { get; init; }
 
     public required string Purpose { get; init; }
 

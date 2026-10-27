@@ -72,7 +72,7 @@ public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<Database
         db.Users.Add(AccountIdentity.Create(account.Id, AccountsTestSupport.UniqueEmail()));
         await db.SaveChangesAsync(Token);
 
-        // A second context: within one, EF treats the account's identity as one-to-one and replaces the first.
+        // A second context: within one, EF treats the account's AccountIdentity as one-to-one and replaces the first.
         await using AsyncServiceScope secondScope = provider.CreateAsyncScope();
         AppDbContext secondDb = secondScope.ServiceProvider.GetRequiredService<AppDbContext>();
         secondDb.Users.Add(AccountIdentity.Create(account.Id, AccountsTestSupport.UniqueEmail()));

@@ -9,7 +9,7 @@ using WattWise.Infrastructure.Persistence.Schema;
 namespace WattWise.Infrastructure.Persistence;
 
 /// <summary>
-/// The app schema. Derives from <see cref="IdentityUserContext{TUser, TKey}"/>, so Identity's own
+/// The app schema. Derives from <see cref="IdentityUserContext{TUser, TKey}"/>, so ASP.NET Core Identity's own
 /// role and claim tables are not in the model: authorization sits on the account (roles, permissions).
 /// </summary>
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
@@ -27,7 +27,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Claims are not used: permissions come from the account's roles, not from Identity.
+        // Claims are not used: permissions come from the account's roles, not from ASP.NET Core Identity.
         modelBuilder.Ignore<IdentityUserClaim<Guid>>();
         modelBuilder.HasDefaultSchema(DatabaseSchemas.App);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);

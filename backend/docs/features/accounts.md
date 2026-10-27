@@ -4,15 +4,15 @@ The account is the user: its id, preferred language and creation time, and every
 
 ## Vocabulary
 
-| Write                                                   | Meaning                                                                                                                               | Don't write                                                          |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| account; `Accounts` for folders, namespaces and the doc | the user's record and the feature                                                                                                     | "identity", "Identities", or "user" for the record                   |
-| `AccountIdentity`                                       | the account's email-and-password sign-in record (ASP.NET Core Identity's user type), one per account; OAuth logins attach to it later | "identity" on its own                                                |
-| ASP.NET Core Identity                                   | the library                                                                                                                           | "Identity" on its own                                                |
-| sign up, sign in, sign out                              | what the user does                                                                                                                    | "log in", "login" (except ASP.NET Core Identity's "external logins") |
-| `/api/v1/auth` endpoints                                | the route group                                                                                                                       | "auth endpoints", "auth" on its own                                  |
-| role, permission                                        | what an account may do                                                                                                                |                                                                      |
-| session                                                 | one sign-in on one device, ended by sign-out                                                                                          |                                                                      |
+| Write                                                   | Meaning                                                                                                                               | Don't write                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| account; `Accounts` for folders, namespaces and the doc | the user's record and the feature                                                                                                     | "identity", "Identities", or "user" for the record                     |
+| `AccountIdentity`                                       | the account's email-and-password sign-in record (ASP.NET Core Identity's user type), one per account; OAuth logins attach to it later | "identity" on its own; the id that points at it is `AccountIdentityId` |
+| ASP.NET Core Identity                                   | the library                                                                                                                           | "Identity" on its own                                                  |
+| sign up, sign in, sign out                              | what the user does                                                                                                                    | "log in", "login" (except ASP.NET Core Identity's "external logins")   |
+| `/api/v1/auth` endpoints                                | the route group                                                                                                                       | "auth endpoints", "auth" on its own                                    |
+| role, permission                                        | what an account may do                                                                                                                |                                                                        |
+| session                                                 | one sign-in on one device, ended by sign-out                                                                                          |                                                                        |
 
 ## Where the code lives
 

@@ -63,7 +63,7 @@ Assertions:
 
 - Expected values are literals from the spec or worked out by hand (with the arithmetic in a comment when it isn't obvious), never computed by production code or a copy of its logic.
 - `NotNull`, `NotEmpty`, a count or "doesn't throw" is never the only check. Assert exact values, exact error codes (`Error.Code`, the ProblemDetails `code`) and exact stored state.
-- Never fake the class under test. Fake only boundaries: `IClock` with NodaTime's `FakeClock`, external HTTP sources, SMTP and the ports in Application tests (hand-written fakes, no mocking library). Integration tests never fake `AppDbContext`, repositories or Identity.
+- Never fake the class under test. Fake only boundaries: `IClock` with NodaTime's `FakeClock`, external HTTP sources, SMTP and the ports in Application tests (hand-written fakes, no mocking library). Integration tests never fake `AppDbContext`, repositories or ASP.NET Core Identity.
 - One behavior per test, arranged, acted and asserted in separate blocks. Names are sentences (`A_reset_link_sets_the_new_password_and_a_second_use_fails`). Plain xUnit `Assert`; every async call gets `TestContext.Current.CancellationToken`.
 
 PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-postgresql-fixture)):
