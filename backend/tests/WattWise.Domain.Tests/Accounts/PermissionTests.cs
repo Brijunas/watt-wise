@@ -5,19 +5,25 @@ namespace WattWise.Domain.Tests.Accounts;
 public class PermissionTests
 {
     [Fact]
-    public void Create_sets_a_version_7_id_the_name_and_the_description()
+    public void Create_makes_a_version_7_id()
     {
         Permission permission = Permission.Create("admin.access", "Opens the admin app.");
 
         Assert.Equal(7, permission.Id.Version);
-        Assert.Equal("admin.access", permission.Name);
-        Assert.Equal("Opens the admin app.", permission.Description);
+    }
+
+    [Fact]
+    public void Create_keeps_the_name_and_the_description()
+    {
+        Permission permission = Permission.Create("admin.access", "Opens the admin app.");
+
+        Assert.Equal(("admin.access", "Opens the admin app."), (permission.Name, permission.Description));
     }
 
     [Fact]
     public void Create_rejects_a_null_name()
     {
-        Assert.Throws<ArgumentNullException>(() => Permission.Create(null!, "Description."));
+        Assert.Throws<ArgumentNullException>("name", () => Permission.Create(null!, "Description."));
     }
 
     [Theory]
@@ -26,6 +32,12 @@ public class PermissionTests
     [InlineData("\t\n")]
     public void Create_rejects_an_empty_or_whitespace_name(string name)
     {
-        Assert.Throws<ArgumentException>(() => Permission.Create(name, "Description."));
+        Assert.Throws<ArgumentException>("name", () => Permission.Create(name, "Description."));
+    }
+
+    [Fact]
+    public void Create_rejects_a_null_description()
+    {
+        Assert.Throws<ArgumentNullException>("description", () => Permission.Create("admin.access", null!));
     }
 }
