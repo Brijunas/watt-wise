@@ -12,8 +12,6 @@ namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
-    private const string UniqueViolation = "23505";
-
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -22,7 +20,7 @@ public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
         string email = AccountsTestSupport.UniqueEmail();
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        await AccountsTestSupport.CreateAccountIdentityAsync(scope.ServiceProvider, email, AccountsTestSupport.ValidPassword(), Token);
+        await AccountsTestSupport.CreateAccountIdentityAsync(provider, email, AccountsTestSupport.ValidPassword(), Token);
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         Account second = AccountsTestSupport.NewAccount();
         db.Accounts.Add(second);
@@ -42,15 +40,15 @@ public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
         string email = AccountsTestSupport.UniqueEmail();
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
-            scope.ServiceProvider, "  " + email.ToUpperInvariant() + " ", AccountsTestSupport.ValidPassword(), Token);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, "  " + email.ToUpperInvariant() + " ", AccountsTestSupport.ValidPassword(), Token);
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         string stored = await db.Database
-            .SqlQuery<string>($"SELECT email AS \"Value\" FROM app.identity_users WHERE id = {accountIdentity.Id}")
+            .SqlQuery<string>($"SELECT email AS \"Value\" FROM app.identity_users WHERE id = {ids.IdentityId}")
             .SingleAsync(Token);
         string storedNormalized = await db.Database
-            .SqlQuery<string>($"SELECT normalized_email AS \"Value\" FROM app.identity_users WHERE id = {accountIdentity.Id}")
+            .SqlQuery<string>($"SELECT normalized_email AS \"Value\" FROM app.identity_users WHERE id = {ids.IdentityId}")
             .SingleAsync(Token);
 
         Assert.Equal(email, stored);
@@ -63,7 +61,7 @@ public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
         string email = AccountsTestSupport.UniqueEmail();
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        await AccountsTestSupport.CreateAccountIdentityAsync(scope.ServiceProvider, email, AccountsTestSupport.ValidPassword(), Token);
+        await AccountsTestSupport.CreateAccountIdentityAsync(provider, email, AccountsTestSupport.ValidPassword(), Token);
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         Account other = AccountsTestSupport.NewAccount();
         db.Accounts.Add(other);
@@ -76,7 +74,7 @@ public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
         DbUpdateException exception = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(Token));
 
         PostgresException postgres = Assert.IsType<PostgresException>(exception.InnerException);
-        Assert.Equal(UniqueViolation, postgres.SqlState);
+        Assert.Equal(AccountsTestSupport.UniqueViolation, postgres.SqlState);
         Assert.Equal("ix_identity_users_normalized_email", postgres.ConstraintName);
     }
 }

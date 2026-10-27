@@ -10,8 +10,6 @@ namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class RolesAndPermissionsTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
-    private const string UniqueViolation = "23505";
-
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -40,7 +38,7 @@ public class RolesAndPermissionsTests(DatabaseFixture fixture) : IClassFixture<D
         loaded.AddRole(sameRole.Id);
         await accountDb.SaveChangesAsync(Token);
 
-        Assert.Equal(1, await CountAsync(accountDb, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE account_id = {account.Id}"));
+        Assert.Equal(1, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE account_id = {account.Id}", Token));
     }
 
     [Fact]
@@ -57,7 +55,7 @@ public class RolesAndPermissionsTests(DatabaseFixture fixture) : IClassFixture<D
         DbUpdateException exception = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(Token));
 
         PostgresException postgres = Assert.IsType<PostgresException>(exception.InnerException);
-        Assert.Equal(UniqueViolation, postgres.SqlState);
+        Assert.Equal(AccountsTestSupport.UniqueViolation, postgres.SqlState);
         Assert.Equal("ix_permissions_name", postgres.ConstraintName);
     }
 
@@ -75,7 +73,7 @@ public class RolesAndPermissionsTests(DatabaseFixture fixture) : IClassFixture<D
         DbUpdateException exception = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync(Token));
 
         PostgresException postgres = Assert.IsType<PostgresException>(exception.InnerException);
-        Assert.Equal(UniqueViolation, postgres.SqlState);
+        Assert.Equal(AccountsTestSupport.UniqueViolation, postgres.SqlState);
         Assert.Equal("ix_roles_name", postgres.ConstraintName);
     }
 
@@ -97,10 +95,10 @@ public class RolesAndPermissionsTests(DatabaseFixture fixture) : IClassFixture<D
 
         await db.Roles.Where(r => r.Id == role.Id).ExecuteDeleteAsync(Token);
 
-        Assert.Equal(0, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE role_id = {role.Id}"));
-        Assert.Equal(0, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.role_permissions WHERE role_id = {role.Id}"));
-        Assert.Equal(1, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.permissions WHERE id = {permission.Id}"));
-        Assert.Equal(1, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.accounts WHERE id = {account.Id}"));
+        Assert.Equal(0, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE role_id = {role.Id}", Token));
+        Assert.Equal(0, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.role_permissions WHERE role_id = {role.Id}", Token));
+        Assert.Equal(1, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.permissions WHERE id = {permission.Id}", Token));
+        Assert.Equal(1, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.accounts WHERE id = {account.Id}", Token));
     }
 
     [Fact]
@@ -117,17 +115,14 @@ public class RolesAndPermissionsTests(DatabaseFixture fixture) : IClassFixture<D
         db.Permissions.Add(permission);
         db.Roles.AddRange(first, second);
         await db.SaveChangesAsync(Token);
-        Assert.Equal(2, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.role_permissions WHERE permission_id = {permission.Id}"));
+        Assert.Equal(2, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.role_permissions WHERE permission_id = {permission.Id}", Token));
 
         await db.Permissions.Where(p => p.Id == permission.Id).ExecuteDeleteAsync(Token);
 
-        Assert.Equal(0, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.role_permissions WHERE permission_id = {permission.Id}"));
-        Assert.Equal(2, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.roles WHERE id IN ({first.Id}, {second.Id})"));
+        Assert.Equal(0, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.role_permissions WHERE permission_id = {permission.Id}", Token));
+        Assert.Equal(2, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.roles WHERE id IN ({first.Id}, {second.Id})", Token));
     }
 
     private static Permission NewPermission() =>
         Permission.Create(AccountsTestSupport.UniqueName("permission"), "A permission for a test.");
-
-    private static Task<long> CountAsync(AppDbContext db, FormattableString sql) =>
-        db.Database.SqlQuery<long>(sql).SingleAsync(Token);
 }

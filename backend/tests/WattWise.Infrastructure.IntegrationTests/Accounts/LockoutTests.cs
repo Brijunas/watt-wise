@@ -15,10 +15,12 @@ public class LockoutTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
     public async Task The_fifth_failed_attempt_locks_the_identity_for_15_minutes()
     {
         await using ServiceProvider provider = fixture.BuildAccountServices();
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
-            scope.ServiceProvider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
         UserManager<AccountIdentity> users = scope.ServiceProvider.GetRequiredService<UserManager<AccountIdentity>>();
+        AccountIdentity accountIdentity = await users.FindByIdAsync(ids.IdentityId.ToString())
+            ?? throw new InvalidOperationException("The AccountIdentity does not exist.");
 
         for (int attempt = 1; attempt <= 4; attempt++)
         {
