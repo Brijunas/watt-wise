@@ -9,8 +9,8 @@ The batches that rewrite the backend tests to [testing.md](../testing.md), follo
 | 0     | Support code, Infrastructure Stryker baseline | [x]  | 157 → 157              | 19.3 s → 34.2 s (machine busier: unchanged Domain 0.41 → 1.33 s)             | Infrastructure: 37.42 % (taken here) |
 | 1     | Domain.Tests                                  | [x]  | 14 → 27                | 0.41 s → 0.98 s (on battery, powersave: unchanged Application 0.50 → 0.69 s) | Domain 69.23 % → 88.46 %             |
 | 2     | Application.Tests                             | [x]  | 23 → 26                | 0.50 s → 0.55 s (on battery, balanced: unchanged Domain 0.98 → 0.45 s)       | Application 65.62 % → 78.12 %        |
-| 3     | Infrastructure.Tests (new, unit)              | [ ]  | 0 →                    | →                                                                            | Infrastructure ≥ baseline            |
-| 4     | Infrastructure.IntegrationTests: Accounts     | [ ]  | 72 →                   | 6.71 s →                                                                     | Infrastructure ≥ baseline            |
+| 3     | Infrastructure.Tests (new, unit)              | [x]  | 0 → 59                 | — → 0.48 s (on battery, balanced: unchanged Application 0.55 → 0.38 s)       | Infrastructure 37.42 % → 51.94 %     |
+| 4     | Infrastructure.IntegrationTests: Accounts     | [ ]  | 71 →                   | 6.71 s →                                                                     | Infrastructure ≥ baseline            |
 | 5     | Infrastructure.IntegrationTests: platform     | [ ]  | →                      | →                                                                            | Infrastructure ≥ baseline            |
 | 6     | Api.Tests (new, unit)                         | [ ]  | 0 →                    | →                                                                            | Api: taken here                      |
 | 7     | Api.IntegrationTests                          | [ ]  | 41 →                   | 6.08 s →                                                                     | Api ≥ batch 6                        |
@@ -69,8 +69,9 @@ Old: `GetAboutQueryHandlerTests.cs`, `Pipeline/MediatorPipelineTests.cs`, `Pipel
 
 ## Batch 3: Infrastructure.Tests (new unit project)
 
-- Create the project like `WattWise.Domain.Tests` (MTP, `xunit.v3.mtp-v2`), add it to `WattWise.slnx`, add `InternalsVisibleTo` for it to `src/WattWise.Infrastructure/WattWise.Infrastructure.csproj` (D16, the one production change), add its row to testing.md's "Test projects" table and `-tp` to the Infrastructure Stryker command.
-- Tests: B5 email normalization (trim, NFKC with full-width and ligature input, lowercase) through `TextNormalization` and `EmailLookupNormalizer`; B8 password rules as one rejecting Theory (exactly one error code each) and one accepting Theory (14 and 256); B9 NFKC counting (characterization); D9 code units (one emoji counts 2, characterization); B10 the hasher verifies NFD against an NFC hash; the database and observability settings validators; `ParentlessDatabaseSpanFilter` (moved from the integration project).
+- Create the project like `WattWise.Domain.Tests` (MTP, `xunit.v3.mtp-v2`), add it to `WattWise.slnx`, add `InternalsVisibleTo` for it to `src/WattWise.Infrastructure/WattWise.Infrastructure.csproj` (D16, the one production change), add its row to testing.md's "Test projects" table. The Infrastructure Stryker run now takes both test projects (testing.md gets all four runs in batch 9):
+  `dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Infrastructure -p WattWise.Infrastructure.csproj -tp backend/tests/WattWise.Infrastructure.Tests/WattWise.Infrastructure.Tests.csproj -tp backend/tests/WattWise.Infrastructure.IntegrationTests/WattWise.Infrastructure.IntegrationTests.csproj`
+- Tests: B5 email normalization (trim, NFKC with full-width and ligature input, lowercase) through `TextNormalization` and `EmailLookupNormalizer`; B8 password rules as one rejecting Theory (exactly one error code each) and one accepting Theory (14 and 256); B9 NFKC counting (characterization); D9 code units was left out by the user (no test this batch); B10 the hasher verifies NFD against an NFC hash; the database and observability settings validators; `ParentlessDatabaseSpanFilter` (moved from the integration project, whose old test file is deleted in this batch).
 
 ## Batch 4: Infrastructure.IntegrationTests, Accounts
 
@@ -83,7 +84,7 @@ Old: everything under `Accounts/` rewritten. Only what needs PostgreSQL or the r
 
 ## Batch 5: Infrastructure.IntegrationTests, platform
 
-Old: `RoleAccessTests.cs`, `DatabaseMigratorTests.cs` rewritten, `HangfireSchemaTests.cs` merged into an ownership Theory, `InitialMigrationTests.cs` kept, `DatabaseRoundTripTests.cs` and `InfrastructureAssemblyTests.cs` dropped, `ParentlessDatabaseSpanFilterTests.cs` dropped (moved in batch 3).
+Old: `RoleAccessTests.cs`, `DatabaseMigratorTests.cs` rewritten, `HangfireSchemaTests.cs` merged into an ownership Theory, `InitialMigrationTests.cs` kept, `DatabaseRoundTripTests.cs` and `InfrastructureAssemblyTests.cs` dropped (`ParentlessDatabaseSpanFilterTests.cs` moved and deleted in batch 3).
 
 - Role matrix from deploy/docs/postgres.md with literals only (no `DatabaseSchemas` constant); `reader` reads `migrations` per the SQL (D11); one ownership Theory for `__ef_migrations_history` and the Hangfire tables.
 - Migrator: steps run EF Core first; a rerun leaves the migration history unchanged; one span per step.

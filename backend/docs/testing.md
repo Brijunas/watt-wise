@@ -25,6 +25,7 @@ Rules of thumb:
 | ------------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `WattWise.Domain.Tests`                    | Unit        | Domain, including golden-case tests for the calculation engine.                                                                                             |
 | `WattWise.Application.Tests`               | Unit        | Application handlers, validators and pipeline behaviors.                                                                                                    |
+| `WattWise.Infrastructure.Tests`            | Unit        | Infrastructure code that needs no database: normalization, password rules and hashing, settings validators, the span filter.                                |
 | `WattWise.Infrastructure.IntegrationTests` | Integration | Persistence, migrations and external adapters against PostgreSQL.                                                                                           |
 | `WattWise.Api.IntegrationTests`            | Functional  | Endpoints, sign-in and permission checks through `WebApplicationFactory`, ProblemDetails mapping.                                                           |
 | `WattWise.Jobs.IntegrationTests`           | Functional  | Each Hangfire job end to end against PostgreSQL with stubbed external sources: expected rows written, draft plans produced, retries and idempotent re-runs. |
