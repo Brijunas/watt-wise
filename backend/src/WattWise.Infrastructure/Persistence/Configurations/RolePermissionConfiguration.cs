@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using WattWise.Domain.Identities;
+using WattWise.Domain.Accounts;
 
 namespace WattWise.Infrastructure.Persistence.Configurations;
 

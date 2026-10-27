@@ -12,14 +12,14 @@ using NodaTime;
 
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
-/// Identity's token provider for the email confirmation and password reset links. A token is 32
-/// random bytes, Base64Url-encoded; only its SHA-256 hash is stored, one row per identity and
+/// ASP.NET Core Identity's token provider for the email confirmation and password reset links. A token is 32
+/// random bytes, Base64Url-encoded; only its SHA-256 hash is stored, one row per <see cref="AccountIdentity"/> and
 /// purpose, so a new link replaces the old one in a single upsert. Checking a token marks its row deleted without
-/// saving: Identity saves that in the same <c>SaveChanges</c> as the confirmation or the new
-/// password, so a link works once. Anything else saving in the same scope after Identity reports a
+/// saving: ASP.NET Core Identity saves that in the same <c>SaveChanges</c> as the confirmation or the new
+/// password, so a link works once. Anything else saving in the same scope after ASP.NET Core Identity reports a
 /// failure would also save the deletion and use up the link.
 /// </summary>
 public sealed class EmailLinkTokenProvider(AppDbContext context, IClock clock) : IUserTwoFactorTokenProvider<AccountIdentity>
@@ -28,8 +28,8 @@ public sealed class EmailLinkTokenProvider(AppDbContext context, IClock clock) :
 
     private const int TokenByteCount = 32;
 
-    // Identity's interface carries no CancellationToken, and UserManager's own is protected and
-    // always CancellationToken.None, so there is nothing to forward: Identity itself calls its store with None.
+    // ASP.NET Core Identity's interface carries no CancellationToken, and UserManager's own is protected and
+    // always CancellationToken.None, so there is nothing to forward: ASP.NET Core Identity itself calls its store with None.
     private static readonly CancellationToken NoCancellation = CancellationToken.None;
 
     public async Task<string> GenerateAsync(string purpose, UserManager<AccountIdentity> manager, AccountIdentity user)
@@ -40,9 +40,9 @@ public sealed class EmailLinkTokenProvider(AppDbContext context, IClock clock) :
         byte[] hash = SHA256.HashData(raw);
         Instant now = clock.GetCurrentInstant();
 
-        // One statement, so two requests for the same identity and purpose (a double-clicked "resend")
+        // One statement, so two requests for the same AccountIdentity and purpose (a double-clicked "resend")
         // cannot both insert and fail on the primary key: the later one replaces the earlier link.
-        // Written at once, not with Identity's next update: the link goes out by email. It bypasses the
+        // Written at once, not with ASP.NET Core Identity's next update: the link goes out by email. It bypasses the
         // change tracker, which only matters if this scope already loaded the row by checking a link; no
         // flow generates a link after checking one in the same scope.
         await context.Database.ExecuteSqlAsync(UpsertSql(hash, user.Id, purpose, now, now + lifetime), NoCancellation);
@@ -97,7 +97,7 @@ public sealed class EmailLinkTokenProvider(AppDbContext context, IClock clock) :
         string Column(string property) => sql.DelimitIdentifier(
             entity.FindProperty(property)?.GetColumnName(table) ?? throw new InvalidOperationException($"{property} is not mapped."));
 
-        string identity = Column(nameof(EmailLinkToken.IdentityId));
+        string accountIdentity = Column(nameof(EmailLinkToken.AccountIdentityId));
         string purposeColumn = Column(nameof(EmailLinkToken.Purpose));
         string hashColumn = Column(nameof(EmailLinkToken.TokenHash));
         string expiresColumn = Column(nameof(EmailLinkToken.ExpiresAt));
@@ -106,9 +106,9 @@ public sealed class EmailLinkTokenProvider(AppDbContext context, IClock clock) :
         // The names above come from the model, never from a request; the values go in as parameters.
         return FormattableStringFactory.Create(
             $$"""
-            INSERT INTO {{sql.DelimitIdentifier(table.Name, table.Schema)}} ({{identity}}, {{purposeColumn}}, {{hashColumn}}, {{expiresColumn}}, {{createdColumn}})
+            INSERT INTO {{sql.DelimitIdentifier(table.Name, table.Schema)}} ({{accountIdentity}}, {{purposeColumn}}, {{hashColumn}}, {{expiresColumn}}, {{createdColumn}})
             VALUES ({0}, {1}, {2}, {3}, {4})
-            ON CONFLICT ({{identity}}, {{purposeColumn}}) DO UPDATE SET
+            ON CONFLICT ({{accountIdentity}}, {{purposeColumn}}) DO UPDATE SET
                 {{hashColumn}} = EXCLUDED.{{hashColumn}},
                 {{expiresColumn}} = EXCLUDED.{{expiresColumn}},
                 {{createdColumn}} = EXCLUDED.{{createdColumn}}

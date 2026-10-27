@@ -38,7 +38,7 @@ and the docs it names for the code under test.
 - Never fake the class under test. Fake only true boundaries: `IClock` with NodaTime's `FakeClock`,
   external HTTP sources, SMTP and other ports in Application tests. Application tests use hand-written
   fakes of the ports; don't add a mocking library. Integration tests never fake `AppDbContext`,
-  repositories or Identity.
+  repositories or ASP.NET Core Identity.
 - One behavior per test, Arrange / Act / Assert separated by blank lines. Names are sentences in the
   existing style: `A_reset_link_sets_the_new_password_and_a_second_use_fails`.
 - Plain xUnit `Assert`; no assertion libraries. Pass `TestContext.Current.CancellationToken` to every
@@ -71,7 +71,7 @@ and the docs it names for the code under test.
   - rollback: a failure mid-use-case leaves nothing persisted
   - `timestamptz` and NodaTime: `Instant` round trips at microsecond precision, Europe/Vilnius local
     time on 23- and 25-hour DST days, zone boundaries at the exact minute
-  - case-sensitive text and collation in lookups and filters (Identity's normalized fields included)
+  - case-sensitive text and collation in lookups and filters (ASP.NET Core Identity's normalized fields included)
   - `numeric` precision and rounding for money and energy amounts
   - `jsonb` mapping and queries, if used
   - stable pagination ordering (ORDER BY with a unique tie-breaker)

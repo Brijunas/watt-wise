@@ -18,7 +18,7 @@ backend/
 ├── src/
 │   ├── WattWise.Domain/          entities, value objects, domain services
 │   ├── WattWise.Application/     use cases, ports, validation, DTOs
-│   ├── WattWise.Infrastructure/  EF Core, external adapters, identity
+│   ├── WattWise.Infrastructure/  EF Core, external adapters, ASP.NET Core Identity
 │   ├── WattWise.Api/             Minimal API host
 │   ├── WattWise.Jobs/            Hangfire server host
 │   └── WattWise.Cli/             maintenance command line: migrations, scripts
@@ -51,6 +51,13 @@ Domain ← Application ← Infrastructure ← Api, Jobs, Cli
 No layer references a host; MSBuild already rejects that as a project cycle. Each layer exposes a marker type (`DomainAssembly`, `ApplicationAssembly`, `InfrastructureAssembly`) so tests can point at its assembly.
 
 How logic is split between Domain and Application, and how it reaches the database, is in [domain-model.md](domain-model.md).
+
+### Folders
+
+- **A feature's folder has the feature's name in every project.** A folder that holds one feature's code is named for the feature, in the plural, with the same word in Domain, Application, Infrastructure and the test projects that mirror them: `Accounts/`. The namespace follows the folder.
+- **Shared technology keeps its own name.** A folder that holds a technology several features use is named for the technology (`Persistence/`, `Observability/`, `Endpoints/`); a feature's file in it carries the feature's word (`AccountConfiguration`, `AccountsEndpointModule`).
+- **Edge names may differ.** A public name outside the code, such as an HTTP route or an i18n namespace, may be shorter; the feature's doc names it (`/api/v1/auth` in [features/accounts.md](features/accounts.md#where-the-code-lives)).
+- **One doc per feature.** A feature with a design of its own gets one doc in `docs/features/`, named with the same word (`accounts.md`), with a Vocabulary section that every other doc follows.
 
 ## Hosts
 
@@ -133,24 +140,13 @@ What the Api host serves besides the endpoints, all wired in `Program.cs`:
 - The dashboard is served by the Jobs host at `/hangfire`, for local requests only; it is never put on the internet ([security.md](../../docs/security.md#authorization)).
 - Storage options, the job-class template and how to add a job are in [jobs.md](jobs.md).
 
-## Authentication
+## Accounts
 
-ASP.NET Core Identity in Infrastructure, on `AppDbContext`, handles the email and password identity: password hashing, lockout, email tokens and (later) external OAuth logins. The rules it enforces are in the root [security.md](../../docs/security.md); the token flow seen by clients is in the root [technical.md](../../docs/technical.md#backend).
+The account model, ASP.NET Core Identity and the sign-in flows are in [features/accounts.md](features/accounts.md); the rules they enforce are in the root [security.md](../../docs/security.md).
 
-- **Three groups of tables** in the `app` schema:
-  - **Account:** `accounts` (Domain `Identities/Account`).
-  - **Authentication:** `identity_users` (one per account, `account_id` unique), `identity_user_logins` and `identity_user_tokens` (kept for OAuth, unused), `email_link_tokens` (one per identity and purpose).
-  - **Authorization:** `roles`, `account_roles`, `permissions`, `role_permissions` (Domain `Identities/Role`, `Permission`, and the link entities `AccountRole`, `RolePermission`).
+## Shared services
 
-  `AppDbContext` derives from `IdentityUserContext`, so Identity's own role and claim tables are not in the model.
-
-  `account_roles` and `role_permissions` hold ids: `Account` keeps its roles as `AccountRole` links and exposes `RoleIds`, `Role` keeps `RolePermission` links and exposes `PermissionIds`; neither has a navigation to the other aggregate ([domain-model.md](domain-model.md#aggregates)). What an account's roles grant is read by a query (S4.4), never by loading roles.
-
-- **Registration.** `AddInfrastructure()` registers Identity (its private `AddIdentity()`), its options and the email-link token provider, so every host has it with the same rules; only the Api uses it today.
-- **Store options.** `IdentityOptions.Stores` stays at its defaults: Identity reads it from the app's services while building the model, and the design-time factory and the other hosts don't have them, so changing it would give them a different model.
-- **Email links:** `EmailLinkTokenProvider` is Identity's token provider for email confirmation and password reset (`AddDefaultTokenProviders` isn't used, so Data Protection doesn't make these tokens). It stores a SHA-256 hash per identity and purpose in `email_link_tokens`; the lifetimes are in [security.md](../../docs/security.md#accounts). Checking a link marks its row deleted, and Identity saves that in the same `SaveChanges` as the confirmation or the new password. So a handler must not save anything else in the same scope after an Identity call fails; otherwise a rejected password would use up the link.
 - **Clock:** code that needs the current time takes NodaTime's `IClock` (`SystemClock.Instance`, registered by `AddInfrastructure()`; `FakeClock` in tests).
-- **No Data Protection key ring.** Nothing in the Api protects a payload with Data Protection. If a later feature needs it (cookies, antiforgery), it has to bring a persisted, encrypted key ring with it, decided in security.md first.
 - **Email sending:** the Api sends directly over SMTP with MailKit, through an Application port ([technical.md](../../docs/technical.md#cross-cutting)). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
 
 ## Logging and observability

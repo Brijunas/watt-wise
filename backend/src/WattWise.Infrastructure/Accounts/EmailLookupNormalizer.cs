@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>Normalizes names and emails the same way: trimmed, NFKC-normalized, lowercase.</summary>
 internal sealed class EmailLookupNormalizer : ILookupNormalizer

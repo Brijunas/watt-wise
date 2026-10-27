@@ -1,4 +1,4 @@
-namespace WattWise.Domain.Identities;
+namespace WattWise.Domain.Accounts;
 
 /// <summary>The link that makes a role grant one permission.</summary>
 public sealed class RolePermission

@@ -4,11 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
-using WattWise.Domain.Identities;
-using WattWise.Infrastructure.Identity;
+using WattWise.Domain.Accounts;
+using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
@@ -22,7 +22,7 @@ public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
         string email = AccountsTestSupport.UniqueEmail();
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        await AccountsTestSupport.CreateIdentityAsync(scope.ServiceProvider, email, AccountsTestSupport.ValidPassword(), Token);
+        await AccountsTestSupport.CreateAccountIdentityAsync(scope.ServiceProvider, email, AccountsTestSupport.ValidPassword(), Token);
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         Account second = AccountsTestSupport.NewAccount();
         db.Accounts.Add(second);
@@ -42,15 +42,15 @@ public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
         string email = AccountsTestSupport.UniqueEmail();
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AccountIdentity identity = await AccountsTestSupport.CreateIdentityAsync(
+        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
             scope.ServiceProvider, "  " + email.ToUpperInvariant() + " ", AccountsTestSupport.ValidPassword(), Token);
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         string stored = await db.Database
-            .SqlQuery<string>($"SELECT email AS \"Value\" FROM app.identity_users WHERE id = {identity.Id}")
+            .SqlQuery<string>($"SELECT email AS \"Value\" FROM app.identity_users WHERE id = {accountIdentity.Id}")
             .SingleAsync(Token);
         string storedNormalized = await db.Database
-            .SqlQuery<string>($"SELECT normalized_email AS \"Value\" FROM app.identity_users WHERE id = {identity.Id}")
+            .SqlQuery<string>($"SELECT normalized_email AS \"Value\" FROM app.identity_users WHERE id = {accountIdentity.Id}")
             .SingleAsync(Token);
 
         Assert.Equal(email, stored);
@@ -63,7 +63,7 @@ public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
         string email = AccountsTestSupport.UniqueEmail();
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        await AccountsTestSupport.CreateIdentityAsync(scope.ServiceProvider, email, AccountsTestSupport.ValidPassword(), Token);
+        await AccountsTestSupport.CreateAccountIdentityAsync(scope.ServiceProvider, email, AccountsTestSupport.ValidPassword(), Token);
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         Account other = AccountsTestSupport.NewAccount();
         db.Accounts.Add(other);

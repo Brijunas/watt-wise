@@ -3,9 +3,10 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
-using WattWise.Infrastructure.Identity;
+using WattWise.Domain.Accounts;
+using WattWise.Infrastructure.Accounts;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class PasswordRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
@@ -87,13 +88,13 @@ public class PasswordRuleTests(DatabaseFixture fixture) : IClassFixture<Database
         Assert.NotEqual(nfc, nfd);
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AccountIdentity identity = await AccountsTestSupport.CreateIdentityAsync(
+        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
             scope.ServiceProvider, AccountsTestSupport.UniqueEmail(), nfc, Token);
         UserManager<AccountIdentity> users = scope.ServiceProvider.GetRequiredService<UserManager<AccountIdentity>>();
 
-        Assert.True(await users.CheckPasswordAsync(identity, nfd));
-        Assert.True(await users.CheckPasswordAsync(identity, nfc));
-        Assert.False(await users.CheckPasswordAsync(identity, nfc + "x"));
+        Assert.True(await users.CheckPasswordAsync(accountIdentity, nfd));
+        Assert.True(await users.CheckPasswordAsync(accountIdentity, nfc));
+        Assert.False(await users.CheckPasswordAsync(accountIdentity, nfc + "x"));
     }
 
     private async Task<IdentityResult> CreateAsync(string password)
@@ -102,7 +103,7 @@ public class PasswordRuleTests(DatabaseFixture fixture) : IClassFixture<Database
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         // The account is saved first so an accepted password can be stored.
         var db = scope.ServiceProvider.GetRequiredService<WattWise.Infrastructure.Persistence.AppDbContext>();
-        WattWise.Domain.Identities.Account account = AccountsTestSupport.NewAccount();
+        Account account = AccountsTestSupport.NewAccount();
         db.Accounts.Add(account);
         await db.SaveChangesAsync(Token);
 

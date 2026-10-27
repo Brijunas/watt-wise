@@ -3,12 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
-using WattWise.Domain.Identities;
+using WattWise.Domain.Accounts;
 using WattWise.Domain.Localization;
-using WattWise.Infrastructure.Identity;
+using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
@@ -34,12 +34,12 @@ public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<Database
         await using AsyncServiceScope readScope = reader.CreateAsyncScope();
         AppDbContext readDb = readScope.ServiceProvider.GetRequiredService<AppDbContext>();
         Account loaded = await readDb.Accounts.SingleAsync(a => a.Id == account.Id, Token);
-        AccountIdentity identity = await readDb.Users.SingleAsync(i => i.AccountId == account.Id, Token);
+        AccountIdentity accountIdentity = await readDb.Users.SingleAsync(i => i.AccountId == account.Id, Token);
 
         Assert.Equal(Language.En, loaded.PreferredLanguage);
         // PostgreSQL keeps microseconds, NodaTime ticks.
         Assert.True(Math.Abs((account.CreatedAt - loaded.CreatedAt).TotalNanoseconds) < 1000);
-        Assert.Equal(email, identity.Email);
+        Assert.Equal(email, accountIdentity.Email);
     }
 
     [Theory]
@@ -72,7 +72,7 @@ public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<Database
         db.Users.Add(AccountIdentity.Create(account.Id, AccountsTestSupport.UniqueEmail()));
         await db.SaveChangesAsync(Token);
 
-        // A second context: within one, EF treats the account's identity as one-to-one and replaces the first.
+        // A second context: within one, EF treats the account's AccountIdentity as one-to-one and replaces the first.
         await using AsyncServiceScope secondScope = provider.CreateAsyncScope();
         AppDbContext secondDb = secondScope.ServiceProvider.GetRequiredService<AppDbContext>();
         secondDb.Users.Add(AccountIdentity.Create(account.Id, AccountsTestSupport.UniqueEmail()));

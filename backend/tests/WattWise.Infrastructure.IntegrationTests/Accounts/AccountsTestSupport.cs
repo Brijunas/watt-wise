@@ -4,21 +4,21 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using NodaTime;
 
-using WattWise.Domain.Identities;
+using WattWise.Domain.Accounts;
 using WattWise.Domain.Localization;
-using WattWise.Infrastructure.Identity;
+using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
-/// <summary>What the account tests share: services with Identity as the Api has them, and a way to make an account with its identity.</summary>
+/// <summary>What the account tests share: services with ASP.NET Core Identity as the Api has them, and a way to make an account with its AccountIdentity.</summary>
 internal static class AccountsTestSupport
 {
     /// <summary>A new password that follows every rule: one character of each class, then a random tail.</summary>
     public static string ValidPassword() => $"Aa1!{Guid.NewGuid():N}";
 
     /// <summary>
-    /// Services for the <c>api</c> role, Identity included. Pass <paramref name="clock"/> (a <c>FakeClock</c>)
+    /// Services for the <c>api</c> role, ASP.NET Core Identity included. Pass <paramref name="clock"/> (a <c>FakeClock</c>)
     /// to control the time email links expire by, and <paramref name="configure"/> to add or replace services.
     /// </summary>
     public static ServiceProvider BuildAccountServices(
@@ -42,8 +42,8 @@ internal static class AccountsTestSupport
     public static Account NewAccount(Language language = Language.Lt) =>
         Account.Create(language, SystemClock.Instance.GetCurrentInstant());
 
-    /// <summary>Saves a new account and creates its identity through <see cref="UserManager{TUser}"/>.</summary>
-    public static async Task<AccountIdentity> CreateIdentityAsync(
+    /// <summary>Saves a new account and creates its AccountIdentity through <see cref="UserManager{TUser}"/>.</summary>
+    public static async Task<AccountIdentity> CreateAccountIdentityAsync(
         IServiceProvider services, string email, string password, CancellationToken cancellationToken)
     {
         AppDbContext db = services.GetRequiredService<AppDbContext>();
@@ -52,9 +52,9 @@ internal static class AccountsTestSupport
         await db.SaveChangesAsync(cancellationToken);
 
         UserManager<AccountIdentity> users = services.GetRequiredService<UserManager<AccountIdentity>>();
-        AccountIdentity identity = AccountIdentity.Create(account.Id, email);
-        IdentityResult result = await users.CreateAsync(identity, password);
+        AccountIdentity accountIdentity = AccountIdentity.Create(account.Id, email);
+        IdentityResult result = await users.CreateAsync(accountIdentity, password);
         Assert.True(result.Succeeded, string.Join(", ", result.Errors.Select(error => error.Code)));
-        return identity;
+        return accountIdentity;
     }
 }

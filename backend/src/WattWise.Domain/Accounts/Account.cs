@@ -2,7 +2,7 @@ using NodaTime;
 
 using WattWise.Domain.Localization;
 
-namespace WattWise.Domain.Identities;
+namespace WattWise.Domain.Accounts;
 
 /// <summary>
 /// The user: what everything the user owns hangs off. How the user proves who they are (email and

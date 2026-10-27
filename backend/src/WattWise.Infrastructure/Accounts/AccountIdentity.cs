@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
 /// The email and password way of proving who an account's user is. The email is a credential that
@@ -11,7 +11,7 @@ public sealed class AccountIdentity : IdentityUser<Guid>
     private string? _email;
     private string? _userName;
 
-    /// <summary>The account this identity signs in to; unique, so an account has one identity in MVP.</summary>
+    /// <summary>The account this <see cref="AccountIdentity"/> signs in to; unique, so an account has one in MVP.</summary>
     public Guid AccountId { get; init; }
 
     /// <summary>Trimmed, NFKC-normalized and lowercase, however it is assigned.</summary>

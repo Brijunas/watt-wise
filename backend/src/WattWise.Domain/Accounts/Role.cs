@@ -1,4 +1,4 @@
-namespace WattWise.Domain.Identities;
+namespace WattWise.Domain.Accounts;
 
 /// <summary>A named set of permissions that can be given to accounts.</summary>
 public sealed class Role

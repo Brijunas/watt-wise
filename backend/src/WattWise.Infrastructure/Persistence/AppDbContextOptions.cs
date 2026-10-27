@@ -17,7 +17,7 @@ public static class AppDbContextOptions
                     .UseNodaTime()
                     .MigrationsHistoryTable("__ef_migrations_history", DatabaseSchemas.Migrations))
             .UseSnakeCaseNamingConvention()
-            // AppDbContext ignores Identity's user-claims entity on purpose (authorization lives on the account).
+            // AppDbContext ignores ASP.NET Core Identity's user-claims entity on purpose (authorization lives on the account).
             .ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.MappedEntityTypeIgnoredWarning));
     }
 }

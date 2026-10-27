@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 internal static class TextNormalization
 {
