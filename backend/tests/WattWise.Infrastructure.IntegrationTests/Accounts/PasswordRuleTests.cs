@@ -87,10 +87,12 @@ public class PasswordRuleTests(DatabaseFixture fixture) : IClassFixture<Database
         string nfd = nfc.Normalize(NormalizationForm.FormD);
         Assert.NotEqual(nfc, nfd);
         await using ServiceProvider provider = fixture.BuildAccountServices();
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), nfc, Token);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
-            scope.ServiceProvider, AccountsTestSupport.UniqueEmail(), nfc, Token);
         UserManager<AccountIdentity> users = scope.ServiceProvider.GetRequiredService<UserManager<AccountIdentity>>();
+        AccountIdentity accountIdentity = await users.FindByIdAsync(ids.IdentityId.ToString())
+            ?? throw new InvalidOperationException("The AccountIdentity does not exist.");
 
         Assert.True(await users.CheckPasswordAsync(accountIdentity, nfd));
         Assert.True(await users.CheckPasswordAsync(accountIdentity, nfc));

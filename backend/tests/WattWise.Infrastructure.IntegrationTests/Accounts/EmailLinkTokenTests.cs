@@ -27,7 +27,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         string token = await ConfirmationTokenAsync(provider, id);
 
         IdentityResult first = await ConfirmEmailAsync(provider, id, token);
@@ -44,7 +46,10 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, string oldPassword) = await CreateAccountIdentityAsync(provider);
+        string oldPassword = AccountsTestSupport.ValidPassword();
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), oldPassword, Token);
+        Guid id = ids.IdentityId;
         string token = await ResetTokenAsync(provider, id);
         string newPassword = AccountsTestSupport.ValidPassword();
         string otherPassword = AccountsTestSupport.ValidPassword();
@@ -69,7 +74,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
         string resetToken;
         await using (ServiceProvider issuing = fixture.BuildAccountServices(clock))
         {
-            (id, _) = await CreateAccountIdentityAsync(issuing);
+            AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+                issuing, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+            id = ids.IdentityId;
             confirmationToken = await ConfirmationTokenAsync(issuing, id);
             resetToken = await ResetTokenAsync(issuing, id);
         }
@@ -91,7 +98,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         string token = await ResetTokenAsync(provider, id);
         clock.Advance(Duration.FromSeconds(secondsAfterIssue));
 
@@ -111,7 +120,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         string token = await ConfirmationTokenAsync(provider, id);
         clock.Advance(Duration.FromSeconds(secondsAfterIssue));
 
@@ -129,7 +140,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         string older = await ResetTokenAsync(provider, id);
         clock.Advance(Duration.FromMinutes(1));
         string newer = await ResetTokenAsync(provider, id);
@@ -147,7 +160,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         string confirmationToken = await ConfirmationTokenAsync(provider, id);
         _ = await ResetTokenAsync(provider, id);
 
@@ -162,7 +177,10 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, string oldPassword) = await CreateAccountIdentityAsync(provider);
+        string oldPassword = AccountsTestSupport.ValidPassword();
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), oldPassword, Token);
+        Guid id = ids.IdentityId;
         string token = await ResetTokenAsync(provider, id);
 
         IdentityResult rejected = await ResetPasswordAsync(provider, id, token, "short");
@@ -185,7 +203,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         string token = await ResetTokenAsync(provider, id);
         string[] altered =
         [
@@ -225,8 +245,12 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
-        (Guid otherId, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
+        AccountIdentityIds otherIds = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid otherId = otherIds.IdentityId;
         _ = await ResetTokenAsync(provider, id);
         string othersToken = await ResetTokenAsync(provider, otherId);
 
@@ -242,7 +266,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         string confirmationToken = await ConfirmationTokenAsync(provider, id);
         string resetToken = await ResetTokenAsync(provider, id);
 
@@ -266,7 +292,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
         SaveChangesBarrier barrier = new();
         await using ServiceProvider provider = fixture.BuildAccountServices(
             clock, services => services.AddDbContext<AppDbContext>(options => options.AddInterceptors(barrier)));
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         string token = await ResetTokenAsync(provider, id);
         string firstPassword = AccountsTestSupport.ValidPassword();
         string secondPassword = AccountsTestSupport.ValidPassword();
@@ -297,7 +325,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
         CommandBarrier barrier = new();
         await using ServiceProvider provider = fixture.BuildAccountServices(
             clock, services => services.AddDbContext<AppDbContext>(options => options.AddInterceptors(barrier)));
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
         barrier.Arm("email_link_tokens", 2);
 
         string[] tokens = await Task.WhenAll(ResetTokenAsync(provider, id), ResetTokenAsync(provider, id));
@@ -317,7 +347,9 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
 
         string token = await ResetTokenAsync(provider, id);
 
@@ -336,8 +368,12 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateAccountIdentityAsync(provider);
-        (Guid otherId, _) = await CreateAccountIdentityAsync(provider);
+        AccountIdentityIds ids = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid id = ids.IdentityId;
+        AccountIdentityIds otherIds = await AccountsTestSupport.CreateAccountIdentityAsync(
+            provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
+        Guid otherId = otherIds.IdentityId;
         _ = await ConfirmationTokenAsync(provider, id);
         _ = await ResetTokenAsync(provider, id);
         _ = await ResetTokenAsync(provider, otherId);
@@ -362,15 +398,6 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     private static string[] Codes(IdentityResult result) => [.. result.Errors.Select(error => error.Code)];
 
     private static string Describe(IdentityResult result) => string.Join(", ", Codes(result));
-
-    private static async Task<(Guid Id, string Password)> CreateAccountIdentityAsync(ServiceProvider provider)
-    {
-        await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        string password = AccountsTestSupport.ValidPassword();
-        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
-            scope.ServiceProvider, AccountsTestSupport.UniqueEmail(), password, Token);
-        return (accountIdentity.Id, password);
-    }
 
     private static async Task<T> InScopeAsync<T>(
         ServiceProvider provider, Guid id, Func<UserManager<AccountIdentity>, AccountIdentity, Task<T>> action)

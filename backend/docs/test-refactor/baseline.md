@@ -34,33 +34,36 @@ Total / passed / failed / skipped are identical in both runs. No test failed. MT
 
 Test counts from `--list-tests` match the run totals (Domain 14, Application 23, Infrastructure 72, Api 41, Jobs 7). Parameterised cases (`[Theory]` rows) count individually (e.g. the three `name: ""/" "/"\t\n"` rows in Domain).
 
-## Stryker (full project, both exit code 0; config backend/stryker-config.json, thresholds high 80 / low 60 / break 60)
+## Stryker (full project; Domain and Application exit code 0, Infrastructure 2 because its score is under `break`; config backend/stryker-config.json, thresholds high 80 / low 60 / break 60)
 
 Score = (killed + timeout) / (killed + timeout + survived + no coverage); "covered" score = (killed + timeout) / (killed + timeout + survived). Ignored and compile errors are excluded from both.
 
-|                                                     | Domain  | Application |
-| --------------------------------------------------- | ------- | ----------- |
-| Mutants created                                     | 32      | 42          |
-| Tested                                              | 24      | 32          |
-| Killed                                              | 18      | 21          |
-| Timeout                                             | 0       | 0           |
-| Survived                                            | 6       | 11          |
-| No coverage                                         | 2       | 0           |
-| Ignored ("Removed by block already covered filter") | 6       | 8           |
-| Compile errors                                      | 0       | 2           |
-| Mutation score (overall)                            | 69.23 % | 65.62 %     |
-| Covered score                                       | 75.00 % | 65.62 %     |
-| Stryker "Time Elapsed"                              | 6.56 s  | 7.27 s      |
-| Wall clock (incl. dotnet stryker start-up)          | 6.9 s   | 7.6 s       |
-| Tests found                                         | 14      | 23          |
-| Exit code                                           | 0       | 0           |
+|                                                     | Domain  | Application | Infrastructure             |
+| --------------------------------------------------- | ------- | ----------- | -------------------------- |
+| Mutants created                                     | 32      | 42          | 397                        |
+| Tested                                              | 24      | 32          | 226                        |
+| Killed                                              | 18      | 21          | 116                        |
+| Timeout                                             | 0       | 0           | 0                          |
+| Survived                                            | 6       | 11          | 110                        |
+| No coverage                                         | 2       | 0           | 84                         |
+| Ignored ("Removed by block already covered filter") | 6       | 8           | 70                         |
+| Compile errors                                      | 0       | 2           | 17                         |
+| Mutation score (overall)                            | 69.23 % | 65.62 %     | 37.42 %                    |
+| Covered score                                       | 75.00 % | 65.62 %     | 51.33 %                    |
+| Stryker "Time Elapsed"                              | 6.56 s  | 7.27 s      | 173.8 s                    |
+| Wall clock (incl. dotnet stryker start-up)          | 6.9 s   | 7.6 s       | 175 s                      |
+| Tests found                                         | 14      | 23          | 72                         |
+| Exit code                                           | 0       | 0           | 2 (score below `break` 60) |
 
 Reports (git-ignored copies taken right after the baseline runs, so later runs don't overwrite them):
 
 - Domain: `backend/StrykerOutput/Baseline/Domain/reports/mutation-report.html` and `.json`
 - Application: `backend/StrykerOutput/Baseline/Application/reports/mutation-report.html` and `.json`
+- Infrastructure: `backend/StrykerOutput/Baseline/Infrastructure/reports/mutation-report.html` and `.json` (run with the Infrastructure integration tests on a clean tree; a further 252 mutants in generated migrations are excluded by the mutate filter)
 
 ### Per-file score
+
+Infrastructure (194 survived or uncovered mutants in 32 files) has its own table and survivor lists in [baseline-infrastructure.md](baseline-infrastructure.md) and [baseline-infrastructure-model.md](baseline-infrastructure-model.md).
 
 Domain (all under backend/src/WattWise.Domain/):
 

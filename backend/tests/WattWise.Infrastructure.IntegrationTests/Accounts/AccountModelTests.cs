@@ -12,8 +12,6 @@ namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
-    private const string UniqueViolation = "23505";
-
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -80,7 +78,7 @@ public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<Database
         DbUpdateException exception = await Assert.ThrowsAsync<DbUpdateException>(() => secondDb.SaveChangesAsync(Token));
 
         PostgresException postgres = Assert.IsType<PostgresException>(exception.InnerException);
-        Assert.Equal(UniqueViolation, postgres.SqlState);
+        Assert.Equal(AccountsTestSupport.UniqueViolation, postgres.SqlState);
         Assert.Contains("account_id", postgres.ConstraintName);
     }
 
@@ -97,15 +95,12 @@ public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<Database
         db.Accounts.Add(account);
         db.Users.Add(AccountIdentity.Create(account.Id, AccountsTestSupport.UniqueEmail()));
         await db.SaveChangesAsync(Token);
-        Assert.Equal(1, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE account_id = {account.Id}"));
+        Assert.Equal(1, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE account_id = {account.Id}", Token));
 
         await db.Accounts.Where(a => a.Id == account.Id).ExecuteDeleteAsync(Token);
 
-        Assert.Equal(0, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.identity_users WHERE account_id = {account.Id}"));
-        Assert.Equal(0, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE account_id = {account.Id}"));
-        Assert.Equal(1, await CountAsync(db, $"SELECT count(*) AS \"Value\" FROM app.roles WHERE id = {role.Id}"));
+        Assert.Equal(0, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.identity_users WHERE account_id = {account.Id}", Token));
+        Assert.Equal(0, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.account_roles WHERE account_id = {account.Id}", Token));
+        Assert.Equal(1, await AccountsTestSupport.CountAsync(provider, $"SELECT count(*) AS \"Value\" FROM app.roles WHERE id = {role.Id}", Token));
     }
-
-    private static Task<long> CountAsync(AppDbContext db, FormattableString sql) =>
-        db.Database.SqlQuery<long>(sql).SingleAsync(Token);
 }
