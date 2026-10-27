@@ -6,21 +6,21 @@ public class RequestContractTests
     public void Every_application_request_returns_a_result()
     {
         IReadOnlyList<Type> messages = RequestContract.MessagesIn(typeof(ApplicationAssembly).Assembly);
+        Assert.NotEmpty(messages);
 
-        Assert.All(messages, message => Assert.True(
-            RequestContract.ReturnsResult(message),
-            $"{message.FullName} must return Result<T>."));
+        Assert.DoesNotContain(messages, message => !RequestContract.ReturnsResult(message));
     }
 
     [Fact]
-    public void Every_test_request_returns_a_result_and_the_check_finds_them()
+    public void The_helper_finds_queries_and_commands_and_tells_which_return_a_result()
     {
-        IReadOnlyList<Type> messages = RequestContract.MessagesIn(typeof(RequestContractTests).Assembly);
+        Type[] expected = [typeof(CreateThingCommand), typeof(EchoQuery), typeof(UnwrappedQuery)];
 
-        Assert.Contains(typeof(EchoQuery), messages);
-        Assert.Contains(typeof(CreateThingCommand), messages);
-        Assert.All(messages, message => Assert.True(
-            RequestContract.ReturnsResult(message),
-            $"{message.FullName} must return Result<T>."));
+        IEnumerable<(Type, bool)> found = RequestContract.MessagesIn(typeof(RequestContractTests).Assembly)
+            .Where(expected.Contains)
+            .OrderBy(message => message.Name, StringComparer.Ordinal)
+            .Select(message => (message, RequestContract.ReturnsResult(message)));
+
+        Assert.Equal([(typeof(CreateThingCommand), true), (typeof(EchoQuery), true), (typeof(UnwrappedQuery), false)], found);
     }
 }

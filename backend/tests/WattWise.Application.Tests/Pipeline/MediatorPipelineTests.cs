@@ -17,38 +17,42 @@ public sealed class MediatorPipelineTests : IDisposable
     }
 
     [Fact]
-    public async Task Valid_request_reaches_the_handler_and_returns_its_value()
+    public async Task A_valid_request_reaches_the_handler_and_returns_its_value()
     {
         Result<string> result = await _host.Mediator.Send(new EchoQuery("Ada"), Token);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("Hello, Ada", result.Value);
-        Assert.Equal(1, _host.Recorder.Calls);
+        Assert.Equal((true, "Hello, Ada", 1), (result.IsSuccess, result.Value, _host.Recorder.Calls));
     }
 
     [Fact]
-    public async Task Invalid_request_fails_with_a_validation_error_and_skips_the_handler()
+    public async Task An_invalid_request_fails_with_the_validation_code_and_the_exact_message_per_property()
     {
         Result<string> result = await _host.Mediator.Send(new EchoQuery(string.Empty), Token);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.Equal("Validation.Failed", result.Error.Code);
-        Assert.NotNull(result.Error.FieldErrors);
-        Assert.Contains("Name", result.Error.FieldErrors.Keys);
-        Assert.NotEmpty(result.Error.FieldErrors["Name"]);
+        Assert.Equal(
+            ("Validation.Failed", ErrorType.Validation, "Name: 'Name' must not be empty."),
+            (result.Error.Code, result.Error.Type, string.Join(" | ", result.Error.FieldErrors!.SelectMany(pair => pair.Value.Select(message => $"{pair.Key}: {message}")))));
+    }
+
+    [Fact]
+    public async Task An_invalid_request_never_reaches_the_handler()
+    {
+        await _host.Mediator.Send(new EchoQuery(string.Empty), Token);
+
         Assert.Equal(0, _host.Recorder.Calls);
     }
 
     [Fact]
-    public async Task Validation_collects_every_message_for_a_property()
+    public async Task Every_message_for_one_property_is_kept_in_rule_order()
     {
         Result<string> result = await _host.Mediator.Send(new EchoQuery(new string('x', 20) + "1"), Token);
 
-        Assert.True(result.IsFailure);
-        Assert.NotNull(result.Error.FieldErrors);
-        Assert.Equal(2, result.Error.FieldErrors["Name"].Length);
-        Assert.Contains("'Name' must not contain digits.", result.Error.FieldErrors["Name"]);
+        Assert.Equal(
+            [
+                "The length of 'Name' must be 20 characters or fewer. You entered 21 characters.",
+                "'Name' must not contain digits.",
+            ],
+            result.Error.FieldErrors!["Name"]);
     }
 
     [Fact]
@@ -56,62 +60,64 @@ public sealed class MediatorPipelineTests : IDisposable
     {
         Result<string> result = await _host.Mediator.Send(new AcronymQuery(null, null), Token);
 
-        Assert.True(result.IsFailure);
-        Assert.NotNull(result.Error.FieldErrors);
-        Assert.Equal(["IPAddress", "URL"], result.Error.FieldErrors.Keys.Order().ToArray());
-        Assert.Equal(0, _host.Recorder.Calls);
+        Assert.Equal(["IPAddress", "URL"], result.Error.FieldErrors!.Keys.Order().ToArray());
     }
 
     [Fact]
-    public async Task Nested_property_errors_use_the_validators_dotted_path()
+    public async Task A_nested_property_keeps_the_validators_dotted_path()
     {
         Result<string> result = await _host.Mediator.Send(new CreateThingCommand(new Address(null)), Token);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.Validation, result.Error.Type);
-        Assert.NotNull(result.Error.FieldErrors);
-        Assert.Contains("Address.StreetName", result.Error.FieldErrors.Keys);
-        Assert.Equal(0, _host.Recorder.Calls);
+        Assert.Equal(["Address.StreetName"], result.Error.FieldErrors!.Keys.ToArray());
     }
 
     [Fact]
-    public async Task Request_without_a_validator_passes_through_and_keeps_its_error()
+    public async Task A_request_without_validators_keeps_its_handlers_error()
     {
         Result<string> result = await _host.Mediator.Send(new NotFoundQuery(), Token);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.NotFound, result.Error.Type);
-        Assert.Equal("Test.Missing", result.Error.Code);
-        Assert.Null(result.Error.FieldErrors);
+        Assert.Equal(new Error("Test.Missing", "The thing is missing.", ErrorType.NotFound), result.Error);
     }
 
     [Fact]
-    public async Task Success_is_logged_as_handled()
+    public async Task A_success_logs_one_debug_line_naming_the_request()
     {
         await _host.Mediator.Send(new EchoQuery("Ada"), Token);
 
-        FakeLogRecord record = Assert.Single(_host.LoggingBehaviorRecords());
-        Assert.Equal(LogLevel.Debug, record.Level);
-        Assert.StartsWith("Handled EchoQuery in ", record.Message, StringComparison.Ordinal);
+        Assert.Equal(
+            [(LogLevel.Debug, "EchoQuery")],
+            _host.LoggingBehaviorRecords().Select(record => (record.Level, Structured(record, "RequestName"))));
     }
 
     [Fact]
-    public async Task Failure_is_logged_with_its_error_code()
+    public async Task A_failure_logs_one_information_line_with_the_error_code()
     {
         await _host.Mediator.Send(new NotFoundQuery(), Token);
 
-        FakeLogRecord record = Assert.Single(_host.LoggingBehaviorRecords());
-        Assert.Equal(LogLevel.Information, record.Level);
-        Assert.Contains("failed with Test.Missing", record.Message, StringComparison.Ordinal);
+        Assert.Equal(
+            [(LogLevel.Information, "NotFoundQuery", "Test.Missing")],
+            _host.LoggingBehaviorRecords().Select(record => (record.Level, Structured(record, "RequestName"), Structured(record, "ErrorCode"))));
     }
 
     [Fact]
-    public async Task Exception_propagates_and_the_logging_behavior_logs_nothing()
+    public async Task An_exception_from_the_handler_propagates_unchanged()
     {
-        InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+        Assert.Equal(
+            "Boom.",
+            (await Assert.ThrowsAsync<InvalidOperationException>(async () => await _host.Mediator.Send(new ThrowingQuery(), Token))).Message);
+    }
+
+    [Fact]
+    public async Task The_logging_behavior_logs_nothing_for_an_exception()
+    {
+        await Assert.ThrowsAsync<InvalidOperationException>(
             async () => await _host.Mediator.Send(new ThrowingQuery(), Token));
 
-        Assert.Equal("Boom.", exception.Message);
         Assert.Empty(_host.LoggingBehaviorRecords());
+    }
+
+    private static string? Structured(FakeLogRecord record, string key)
+    {
+        return record.StructuredState!.Single(pair => pair.Key == key).Value;
     }
 }
