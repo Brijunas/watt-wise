@@ -6,6 +6,11 @@
       "version": "11.0.0-rc.2.26504.105",
       "commands": ["dotnet-ef"],
       "rollForward": false
+    },
+    "dotnet-stryker": {
+      "version": "5.0.0",
+      "commands": ["dotnet-stryker"],
+      "rollForward": false
     }
   }
 }

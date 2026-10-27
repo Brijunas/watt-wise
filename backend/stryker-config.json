@@ -1,0 +1,8 @@
+{
+  "stryker-config": {
+    "test-runner": "mtp",
+    "mutate": ["!**/Persistence/Migrations/**", "!**/*.g.cs"],
+    "reporters": ["html", "json", "cleartext"],
+    "thresholds": { "high": 80, "low": 60, "break": 60 }
+  }
+}

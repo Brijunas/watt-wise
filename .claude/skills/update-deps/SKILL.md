@@ -41,6 +41,7 @@ Work through the sources in this order. The SDK goes first because the NuGet cho
 - Set the survey's SDK version in `mise.toml` (`dotnet = "<version>"`) and `global.json` (`sdk.version`), then `mise install`.
 - At a GA release, follow "At .NET 11 GA" in [conventions.md](../../../backend/docs/conventions.md): `dotnet = "latest"` in mise.toml, the GA SDK and `"allowPrerelease": false` in global.json, and the comment in mise.toml removed.
 - Set `dotnet-ef` in `.config/dotnet-tools.json` to the same build as the EF Core packages, then `dotnet tool restore`.
+- Set every other tool in `.config/dotnet-tools.json` (e.g. `dotnet-stryker`) to its newest stable version that is old enough, as the survey shows, then `dotnet tool restore`.
 - `mise upgrade` for the floating tools (node lts, pnpm, betterleaks). Nothing in the repo changes for those; they matter because the checks run with them.
 
 **JS (pnpm)**

@@ -81,7 +81,35 @@ PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-post
   - stable pagination (`ORDER BY` with a unique tie-breaker);
   - null, empty and missing values in requests and columns.
 
-Mutation testing (Stryker.NET) and property-based tests (CsCheck) aren't set up yet.
+## Mutation testing
+
+Stryker.NET (`dotnet-stryker`, a local tool: `dotnet tool restore`) changes the production code in small ways and checks that a test fails. A surviving mutant is behavior no test pins down. Settings are in `backend/stryker-config.json`.
+
+- **What is mutated, which tests run.** `WattWise.Domain` with `WattWise.Domain.Tests`, and `WattWise.Application` with `WattWise.Application.Tests`: two runs, because Stryker's solution mode would also run the integration tests (Docker). Migrations and generated files are excluded.
+- **Command.** Run each from the repo root; reports go to `backend/StrykerOutput/<Project>/reports/` (git-ignored; open `mutation-report.html`):
+
+  ```bash
+  dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Domain -p WattWise.Domain.csproj -tp backend/tests/WattWise.Domain.Tests/WattWise.Domain.Tests.csproj
+  dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Application -p WattWise.Application.csproj -tp backend/tests/WattWise.Application.Tests/WattWise.Application.Tests.csproj
+  ```
+
+- **Only changed code.** Add `--since:main` (files changed against `main`) or `--mutate "**/Pricing/*.cs"` (a glob, repeatable) to a run.
+- **Thresholds.** `high`, `low` and `break` go under `stryker-config` in `stryker-config.json`; `high` 80 and `low` 60 are Stryker's defaults and only colour the report. `break` 60 makes a run exit with code 1 below 60 %, a floor under today's scores so the score can't drop; raise it as survivors are killed.
+- Treat each survivor as a missing or weak test: add the assertion that kills it, or note why the mutant is equivalent.
+
+## Property-based tests
+
+CsCheck generates inputs and shrinks a failing case. Use it where a rule must hold for all inputs, not for single examples:
+
+- Domain calculations (totals, rounding, splitting an amount across periods never loses or invents a cent).
+- DST and zone logic: any `Instant` maps to exactly one zone and local time, and back.
+- Parsing and mapping round trips: `parse(format(x)) == x`.
+
+Example-based tests of the known edge cases stay; a property adds the cases nobody listed. Properties use `Gen` and `.Sample(...)` inside a normal `[Fact]`. A failure prints a seed (e.g. `Seed = 0ABC...`); rerun that case by passing it as `seed: "0ABC..."` to `Sample`, then keep the seed as a regression test.
+
+## External HTTP stubs
+
+External HTTP sources are stubbed with WireMock.Net, an in-process HTTP server, so tests run the real `HttpClient` pipeline. It is added with E9's ESO grid plan ingestion, the first external source ([epics.md](../../docs/epics.md#e9-grid-plan-domain)).
 
 ## Framework
 
