@@ -3,12 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
-using WattWise.Domain.Identities;
+using WattWise.Domain.Accounts;
 using WattWise.Domain.Localization;
-using WattWise.Infrastructure.Identity;
+using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {

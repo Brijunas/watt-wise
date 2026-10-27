@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using WattWise.Domain.Identities;
-using WattWise.Infrastructure.Identity;
+using WattWise.Domain.Accounts;
+using WattWise.Infrastructure.Accounts;
 
 namespace WattWise.Infrastructure.Persistence.Configurations;
 

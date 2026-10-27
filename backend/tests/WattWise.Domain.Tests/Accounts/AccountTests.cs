@@ -1,9 +1,9 @@
 using NodaTime;
 
-using WattWise.Domain.Identities;
+using WattWise.Domain.Accounts;
 using WattWise.Domain.Localization;
 
-namespace WattWise.Domain.Tests;
+namespace WattWise.Domain.Tests.Accounts;
 
 public class AccountTests
 {

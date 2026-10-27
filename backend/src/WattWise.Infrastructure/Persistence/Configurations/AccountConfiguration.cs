@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-using WattWise.Domain.Identities;
+using WattWise.Domain.Accounts;
 using WattWise.Domain.Localization;
 
 namespace WattWise.Infrastructure.Persistence.Configurations;

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
 /// The email and password way of proving who an account's user is. The email is a credential that

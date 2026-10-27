@@ -38,8 +38,8 @@ A feature creates only the subfolders it needs. A subfolder that would hold one 
 
 ## Features
 
-- **One feature per route section:** the pages under one route prefix belong together. The backend's endpoint groups don't decide it: the sessions endpoints sit in the auth group, yet the devices pages are their own feature. A demo or a single page is a feature like any other.
-- **Expected first features.** `frontend`: `account` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `account` (sign-in only), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](../../docs/technical.md#admin-application)).
+- **One feature per route section:** the pages under one route prefix belong together. The backend's endpoint groups don't decide it: the sessions endpoints sit in the `/api/v1/auth` group, yet the devices pages are their own feature. A demo or a single page is a feature like any other.
+- **Expected first features.** `frontend`: `accounts` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `accounts` (sign-in only), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](../../docs/technical.md#admin-application)).
 - **Worked example (S4.9 sign-in):**
 
 ```
@@ -52,13 +52,13 @@ frontend/src/
 │   ├── sign-in.tsx                         renders SignInForm
 │   ├── sign-in.test.tsx                    the route's integration test, MSW for the API
 │   └── devices.tsx                         renders DeviceList inside protected-layout
-├── features/account/
+├── features/accounts/
 │   ├── api/use-sign-in.ts                  the generated sign-in mutation plus core's session update
 │   ├── components/sign-in-form.tsx         SignInFields wired to use-sign-in, errors via error-messages
 │   ├── components/sign-in-form.test.tsx
 │   └── schemas/sign-up.ts
 ├── features/devices/device-list.tsx        one file, so no subfolder yet
-└── testing/mocks/handlers/auth.ts          shared by the account tests and the route tests
+└── testing/mocks/handlers/auth.ts          shared by the accounts tests and the route tests
 ```
 
 ## Import direction

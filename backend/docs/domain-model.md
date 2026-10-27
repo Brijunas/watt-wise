@@ -16,7 +16,7 @@ Rule of thumb: tell, don't ask. A handler calls `account.AddRole(roleId)`; it ne
 
 ## Folders
 
-Domain folders are named for an area in the plural (`Identities`), each holding the aggregates, child entities and value objects of that area; the namespace follows the folder. A type no area owns gets a folder named for its concept (`Localization/Language`), never `Common` or `Shared`.
+Domain folders are named for an area in the plural (`Accounts`), each holding the aggregates, child entities and value objects of that area; the namespace follows the folder, and the same word names the area's folder in the other projects ([architecture.md](architecture.md#folders)). A type no area owns gets a folder named for its concept (`Localization/Language`), never `Common` or `Shared`.
 
 ## Entities
 
@@ -50,7 +50,7 @@ Domain folders are named for an area in the plural (`Identities`), each holding 
 
 - A handler does four things: load through a repository, check what needs I/O, call the domain, save once through `IUnitOfWork.SaveChangesAsync`. Business rules stay in Domain; a long handler is a sign they didn't.
 - Expected failures (not found, conflict, a rule the input breaks) are `Result` errors; a `DomainException` the handler expects is converted ([error-handling.md](error-handling.md#failure-model)).
-- Frameworks that live in Infrastructure (Identity, SMTP, Hangfire) reach handlers only through Application ports.
+- Frameworks that live in Infrastructure (ASP.NET Core Identity, SMTP, Hangfire) reach handlers only through Application ports.
 
 ## Persistence ports
 

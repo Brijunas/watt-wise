@@ -17,7 +17,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261026220130_Initial";
+    public override string LastMigrationId => "20261027072158_Initial";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -80,7 +80,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("identity_user_tokens", "app");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.Account", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.Account", b =>
             {
                 b.Property<Guid>("Id")
                     .HasColumnType("uuid")
@@ -101,7 +101,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("accounts", "app");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.AccountRole", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.AccountRole", b =>
             {
                 b.Property<Guid>("AccountId")
                     .HasColumnType("uuid")
@@ -120,7 +120,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("account_roles", "app");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.Permission", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.Permission", b =>
             {
                 b.Property<Guid>("Id")
                     .HasColumnType("uuid")
@@ -146,7 +146,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("permissions", "app");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.Role", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.Role", b =>
             {
                 b.Property<Guid>("Id")
                     .HasColumnType("uuid")
@@ -167,7 +167,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("roles", "app");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.RolePermission", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.RolePermission", b =>
             {
                 b.Property<Guid>("RoleId")
                     .HasColumnType("uuid")
@@ -186,7 +186,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("role_permissions", "app");
             });
 
-        modelBuilder.Entity("WattWise.Infrastructure.Identity.AccountIdentity", b =>
+        modelBuilder.Entity("WattWise.Infrastructure.Accounts.AccountIdentity", b =>
             {
                 b.Property<Guid>("Id")
                     .ValueGeneratedOnAdd()
@@ -276,7 +276,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("identity_users", "app");
             });
 
-        modelBuilder.Entity("WattWise.Infrastructure.Identity.EmailLinkToken", b =>
+        modelBuilder.Entity("WattWise.Infrastructure.Accounts.EmailLinkToken", b =>
             {
                 b.Property<Guid>("IdentityId")
                     .HasColumnType("uuid")
@@ -307,7 +307,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
             {
-                b.HasOne("WattWise.Infrastructure.Identity.AccountIdentity", null)
+                b.HasOne("WattWise.Infrastructure.Accounts.AccountIdentity", null)
                     .WithMany()
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -317,7 +317,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
             {
-                b.HasOne("WattWise.Infrastructure.Identity.AccountIdentity", null)
+                b.HasOne("WattWise.Infrastructure.Accounts.AccountIdentity", null)
                     .WithMany()
                     .HasForeignKey("UserId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -325,16 +325,16 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasConstraintName("fk_identity_user_tokens_identity_users_user_id");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.AccountRole", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.AccountRole", b =>
             {
-                b.HasOne("WattWise.Domain.Identities.Account", null)
+                b.HasOne("WattWise.Domain.Accounts.Account", null)
                     .WithMany("_roles")
                     .HasForeignKey("AccountId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired()
                     .HasConstraintName("fk_account_roles_accounts_account_id");
 
-                b.HasOne("WattWise.Domain.Identities.Role", null)
+                b.HasOne("WattWise.Domain.Accounts.Role", null)
                     .WithMany()
                     .HasForeignKey("RoleId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -342,16 +342,16 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasConstraintName("fk_account_roles_roles_role_id");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.RolePermission", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.RolePermission", b =>
             {
-                b.HasOne("WattWise.Domain.Identities.Permission", null)
+                b.HasOne("WattWise.Domain.Accounts.Permission", null)
                     .WithMany()
                     .HasForeignKey("PermissionId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired()
                     .HasConstraintName("fk_role_permissions_permissions_permission_id");
 
-                b.HasOne("WattWise.Domain.Identities.Role", null)
+                b.HasOne("WattWise.Domain.Accounts.Role", null)
                     .WithMany("_permissions")
                     .HasForeignKey("RoleId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -359,19 +359,19 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasConstraintName("fk_role_permissions_roles_role_id");
             });
 
-        modelBuilder.Entity("WattWise.Infrastructure.Identity.AccountIdentity", b =>
+        modelBuilder.Entity("WattWise.Infrastructure.Accounts.AccountIdentity", b =>
             {
-                b.HasOne("WattWise.Domain.Identities.Account", null)
+                b.HasOne("WattWise.Domain.Accounts.Account", null)
                     .WithOne()
-                    .HasForeignKey("WattWise.Infrastructure.Identity.AccountIdentity", "AccountId")
+                    .HasForeignKey("WattWise.Infrastructure.Accounts.AccountIdentity", "AccountId")
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired()
                     .HasConstraintName("fk_identity_users_accounts_account_id");
             });
 
-        modelBuilder.Entity("WattWise.Infrastructure.Identity.EmailLinkToken", b =>
+        modelBuilder.Entity("WattWise.Infrastructure.Accounts.EmailLinkToken", b =>
             {
-                b.HasOne("WattWise.Infrastructure.Identity.AccountIdentity", null)
+                b.HasOne("WattWise.Infrastructure.Accounts.AccountIdentity", null)
                     .WithMany()
                     .HasForeignKey("IdentityId")
                     .OnDelete(DeleteBehavior.Cascade)
@@ -379,12 +379,12 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasConstraintName("fk_email_link_tokens_identity_users_identity_id");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.Account", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.Account", b =>
             {
                 b.Navigation("_roles");
             });
 
-        modelBuilder.Entity("WattWise.Domain.Identities.Role", b =>
+        modelBuilder.Entity("WattWise.Domain.Accounts.Role", b =>
             {
                 b.Navigation("_permissions");
             });

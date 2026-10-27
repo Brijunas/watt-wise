@@ -1,4 +1,4 @@
-namespace WattWise.Domain.Identities;
+namespace WattWise.Domain.Accounts;
 
 /// <summary>The link that gives an account one role.</summary>
 public sealed class AccountRole

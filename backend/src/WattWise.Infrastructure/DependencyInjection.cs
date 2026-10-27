@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 using NodaTime;
 
-using WattWise.Infrastructure.Identity;
+using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 using WattWise.Infrastructure.Persistence.Schema;
 

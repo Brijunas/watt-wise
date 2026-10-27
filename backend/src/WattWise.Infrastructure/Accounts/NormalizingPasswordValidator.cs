@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
 /// Identity's <see cref="PasswordValidator{TUser}"/> (length, character classes) applied to the

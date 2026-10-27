@@ -13,7 +13,7 @@ Watt-Wise helps Lithuanian households find the cheapest electricity setup. A use
 
 ## Core user flow
 
-1. User signs up / logs in.
+1. User signs up / signs in.
 2. User creates a **consumption object** (e.g. home, summer house). An account can have any number of objects, each with its own uploads, current plans and results.
 3. For each object the user:
    - uploads the hourly consumption CSV exported from the ESO "Mano ESO" portal;
@@ -56,7 +56,7 @@ The UI is designed mobile-first: every screen works well on a phone and scales u
 
 ### Accounts and data
 
-- Login via email and password in MVP. A new account must confirm its email before its first sign-in, and a forgotten password is reset through a link sent to that email. OAuth / third-party sign-in may be added later; the account model must not block it.
+- Sign-in with email and password in MVP. A new account must confirm its email before its first sign-in, and a forgotten password is reset through a link sent to that email. OAuth / third-party sign-in may be added later; the account model must not block it.
 - Data is kept until the user deletes it. Users can fully delete their account and data, and fully export their data (GDPR).
 
 ## Non-goals for MVP

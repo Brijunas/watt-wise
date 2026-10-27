@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
-using WattWise.Infrastructure.Identity;
+using WattWise.Infrastructure.Accounts;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class LockoutTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {

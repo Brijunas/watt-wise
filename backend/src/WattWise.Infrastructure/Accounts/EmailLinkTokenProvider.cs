@@ -12,7 +12,7 @@ using NodaTime;
 
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
 /// Identity's token provider for the email confirmation and password reset links. A token is 32

@@ -11,7 +11,7 @@ Both inner layers get unit tests, each of a different kind. The outer layers are
 | Domain         | Entities, value objects and domain services: the cost engine, time-of-use zones, DST handling, pricing components. | Unit tests. Pure: no mocks, no I/O. Most of the backend's tests live here.                                                   |
 | Application    | Use cases and handlers, validators, pipeline behaviors.                                                            | Unit tests. The ports (repositories, external data sources) are replaced with fakes, so the tests check orchestration logic. |
 | Infrastructure | EF Core mappings, migrations, repositories, external data adapters.                                                | No unit tests. Integration tests against a real PostgreSQL (Testcontainers), with external HTTP sources stubbed.             |
-| Api, Jobs      | Endpoints, auth, error mapping; each Hangfire job end to end.                                                      | Few or no unit tests. Functional tests through `WebApplicationFactory` and against a real PostgreSQL.                        |
+| Api, Jobs      | Endpoints, sign-in and permission checks, error mapping; each Hangfire job end to end.                             | Few or no unit tests. Functional tests through `WebApplicationFactory` and against a real PostgreSQL.                        |
 
 Rules of thumb:
 
@@ -26,7 +26,7 @@ Rules of thumb:
 | `WattWise.Domain.Tests`                    | Unit        | Domain, including golden-case tests for the calculation engine.                                                                                             |
 | `WattWise.Application.Tests`               | Unit        | Application handlers, validators and pipeline behaviors.                                                                                                    |
 | `WattWise.Infrastructure.IntegrationTests` | Integration | Persistence, migrations and external adapters against PostgreSQL.                                                                                           |
-| `WattWise.Api.IntegrationTests`            | Functional  | Endpoints and auth through `WebApplicationFactory`, ProblemDetails mapping.                                                                                 |
+| `WattWise.Api.IntegrationTests`            | Functional  | Endpoints, sign-in and permission checks through `WebApplicationFactory`, ProblemDetails mapping.                                                           |
 | `WattWise.Jobs.IntegrationTests`           | Functional  | Each Hangfire job end to end against PostgreSQL with stubbed external sources: expected rows written, draft plans produced, retries and idempotent re-runs. |
 | `WattWise.Testing`                         | Library     | Not a test project: the shared PostgreSQL fixture, `TestHostFactory` and `Poll`, referenced by the three integration projects.                              |
 
@@ -44,7 +44,7 @@ The integration and functional projects run against a real PostgreSQL started by
 Writing an integration test:
 
 - Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `jobs` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
-- Identity comes with `AddInfrastructure()`, so `BuildServices(role)` already has `UserManager`. To test expiry, swap the clock with `BuildServices(role, services => services.Replace(ServiceDescriptor.Singleton<IClock>(fakeClock)))`.
+- ASP.NET Core Identity comes with `AddInfrastructure()`, so `BuildServices(role)` already has `UserManager`. To test expiry, swap the clock with `BuildServices(role, services => services.Replace(ServiceDescriptor.Singleton<IClock>(fakeClock)))`.
 - Api tests start the host through `TestHostFactory<Program>` (`WattWise.Testing`, a `WebApplicationFactory` for any web host) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
 - Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `jobs` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
@@ -76,7 +76,7 @@ PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-post
   - optimistic concurrency: two scopes load and both save (`SaveChangesBarrier`, `CommandBarrier`), exactly one wins;
   - a failure mid-use-case persists nothing;
   - `timestamptz` and NodaTime: `Instant` round trips at microsecond precision (PostgreSQL's limit), Europe/Vilnius local time on 23- and 25-hour DST days, zone boundaries at the exact minute;
-  - case-sensitive text and collation in lookups and filters, Identity's normalized fields included;
+  - case-sensitive text and collation in lookups and filters, ASP.NET Core Identity's normalized fields included;
   - `numeric` precision and rounding for money and energy amounts; `jsonb` mapping and queries, if used;
   - stable pagination (`ORDER BY` with a unique tie-breaker);
   - null, empty and missing values in requests and columns.

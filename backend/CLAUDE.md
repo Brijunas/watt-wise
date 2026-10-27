@@ -1,6 +1,6 @@
 # CLAUDE.md (backend)
 
-Notes for Claude Code when working in `backend/`. The rules themselves live in [docs/](docs/): read [docs/architecture.md](docs/architecture.md) and [docs/conventions.md](docs/conventions.md) before writing C#, [docs/domain-model.md](docs/domain-model.md) before writing Domain or Application code, and [docs/testing.md](docs/testing.md) before writing tests. When a change touches errors, logging or jobs, read [docs/error-handling.md](docs/error-handling.md), [docs/observability.md](docs/observability.md) or [docs/jobs.md](docs/jobs.md) first.
+Notes for Claude Code when working in `backend/`. The rules themselves live in [docs/](docs/): read [docs/architecture.md](docs/architecture.md) and [docs/conventions.md](docs/conventions.md) before writing C#, [docs/domain-model.md](docs/domain-model.md) before writing Domain or Application code, and [docs/testing.md](docs/testing.md) before writing tests. When a change touches errors, logging or jobs, read [docs/error-handling.md](docs/error-handling.md), [docs/observability.md](docs/observability.md) or [docs/jobs.md](docs/jobs.md) first. When a change touches accounts, sign-in or permissions, read [docs/features/accounts.md](docs/features/accounts.md) and the root [security.md](../docs/security.md) first.
 
 ## C# files
 
@@ -16,7 +16,7 @@ Hook scripts are in the root `.claude/hooks/`, registered in both `.claude/setti
 - `backend-unused-usings` runs after every edit of a `backend/**/*.cs` file and reports unused usings (IDE0005). Remove them before moving on.
 - `backend-migration-guard` blocks `dotnet ef database update` and edits to a migration's `*.Designer.cs` or `AppDbContextModelSnapshot.cs`. Change the model instead; only a migration's `Up`/`Down` take hand edits.
 - `backend-build-check` builds the solution (in its own output folder under `~/.cache`, so it never races other builds) when a session stops with changed C# or project files, and blocks the stop once on any warning or error. Fix them before stopping.
-- `/ef-migration` turns a model change into a migration. Only the user can start it, so ask them to run it rather than running `dotnet ef migrations add` yourself.
+- `/ef-migration` holds the steps that turn a model change into a migration. Run those steps yourself after asking whether to regenerate `Initial` or add a migration; never hand migration commands to the user.
 - Run the `backend-reviewer` agent before opening a PR that touches `backend/`. The test agents are under "Testing rules".
 - To inspect the Development stack, use the `postgres` MCP (read-only `reader` role; writes fail with SQLSTATE 25006) and the `grafana` MCP (Loki logs, Tempo traces, Mimir metrics). Both need the stack running and `op` signed in.
 

@@ -8,10 +8,10 @@ using Microsoft.Extensions.DependencyInjection;
 using NodaTime;
 using NodaTime.Testing;
 
-using WattWise.Infrastructure.Identity;
+using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {

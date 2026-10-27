@@ -4,11 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
-using WattWise.Domain.Identities;
-using WattWise.Infrastructure.Identity;
+using WattWise.Domain.Accounts;
+using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 public class EmailRuleTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {

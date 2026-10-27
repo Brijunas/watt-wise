@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
 /// NFKC-normalizes a password before Identity's default hasher (PBKDF2-HMAC-SHA512, 100,000

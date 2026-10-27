@@ -1,4 +1,4 @@
-namespace WattWise.Domain.Identities;
+namespace WattWise.Domain.Accounts;
 
 /// <summary>
 /// One thing an account may be allowed to do, such as <c>admin.access</c>. Endpoints check

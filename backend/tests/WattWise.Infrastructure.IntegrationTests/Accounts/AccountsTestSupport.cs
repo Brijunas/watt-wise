@@ -4,12 +4,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using NodaTime;
 
-using WattWise.Domain.Identities;
+using WattWise.Domain.Accounts;
 using WattWise.Domain.Localization;
-using WattWise.Infrastructure.Identity;
+using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 
-namespace WattWise.Infrastructure.IntegrationTests;
+namespace WattWise.Infrastructure.IntegrationTests.Accounts;
 
 /// <summary>What the account tests share: services with Identity as the Api has them, and a way to make an account with its identity.</summary>
 internal static class AccountsTestSupport

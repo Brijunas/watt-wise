@@ -1,6 +1,6 @@
 using NodaTime;
 
-namespace WattWise.Infrastructure.Identity;
+namespace WattWise.Infrastructure.Accounts;
 
 /// <summary>
 /// The live email link of one kind (Identity's purpose string) for one identity. Only the SHA-256

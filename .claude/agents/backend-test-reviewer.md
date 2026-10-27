@@ -22,7 +22,7 @@ each test targets.
    tautological.
 3. **Exact assertions?** Flag tests whose only checks are `NotNull`, `NotEmpty`, counts, `Succeeded`
    or "no exception". Flag whole-table counts in a shared class clone.
-4. **Faked what should be real?** In integration tests: a faked `AppDbContext`, repository, Identity
+4. **Faked what should be real?** In integration tests: a faked `AppDbContext`, repository, ASP.NET Core Identity
    store or `DatabaseMigrator`, EF InMemory, SQLite, `EnsureCreated`. In unit tests: faking the class
    under test. Also: state read back through the same context that wrote it, or the wrong
    `DatabaseRole` for the code under test.
