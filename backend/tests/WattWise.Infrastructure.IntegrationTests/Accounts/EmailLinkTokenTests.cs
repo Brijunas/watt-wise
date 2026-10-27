@@ -27,14 +27,14 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         string token = await ConfirmationTokenAsync(provider, id);
 
         IdentityResult first = await ConfirmEmailAsync(provider, id, token);
         IdentityResult second = await ConfirmEmailAsync(provider, id, token);
 
         Assert.True(first.Succeeded, Describe(first));
-        Assert.True(await InScopeAsync(provider, id, (users, identity) => users.IsEmailConfirmedAsync(identity)));
+        Assert.True(await InScopeAsync(provider, id, (users, accountIdentity) => users.IsEmailConfirmedAsync(accountIdentity)));
         Assert.Contains("InvalidToken", Codes(second));
         Assert.Equal(0, await RowCountAsync(provider, id, Confirmation));
     }
@@ -44,7 +44,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, string oldPassword) = await CreateIdentityAsync(provider);
+        (Guid id, string oldPassword) = await CreateAccountIdentityAsync(provider);
         string token = await ResetTokenAsync(provider, id);
         string newPassword = AccountsTestSupport.ValidPassword();
         string otherPassword = AccountsTestSupport.ValidPassword();
@@ -69,7 +69,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
         string resetToken;
         await using (ServiceProvider issuing = fixture.BuildAccountServices(clock))
         {
-            (id, _) = await CreateIdentityAsync(issuing);
+            (id, _) = await CreateAccountIdentityAsync(issuing);
             confirmationToken = await ConfirmationTokenAsync(issuing, id);
             resetToken = await ResetTokenAsync(issuing, id);
         }
@@ -91,7 +91,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         string token = await ResetTokenAsync(provider, id);
         clock.Advance(Duration.FromSeconds(secondsAfterIssue));
 
@@ -111,7 +111,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         string token = await ConfirmationTokenAsync(provider, id);
         clock.Advance(Duration.FromSeconds(secondsAfterIssue));
 
@@ -129,7 +129,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         string older = await ResetTokenAsync(provider, id);
         clock.Advance(Duration.FromMinutes(1));
         string newer = await ResetTokenAsync(provider, id);
@@ -147,7 +147,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         string confirmationToken = await ConfirmationTokenAsync(provider, id);
         _ = await ResetTokenAsync(provider, id);
 
@@ -162,7 +162,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, string oldPassword) = await CreateIdentityAsync(provider);
+        (Guid id, string oldPassword) = await CreateAccountIdentityAsync(provider);
         string token = await ResetTokenAsync(provider, id);
 
         IdentityResult rejected = await ResetPasswordAsync(provider, id, token, "short");
@@ -185,7 +185,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         string token = await ResetTokenAsync(provider, id);
         string[] altered =
         [
@@ -225,8 +225,8 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
-        (Guid otherId, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        (Guid otherId, _) = await CreateAccountIdentityAsync(provider);
         _ = await ResetTokenAsync(provider, id);
         string othersToken = await ResetTokenAsync(provider, otherId);
 
@@ -242,7 +242,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         string confirmationToken = await ConfirmationTokenAsync(provider, id);
         string resetToken = await ResetTokenAsync(provider, id);
 
@@ -266,7 +266,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
         SaveChangesBarrier barrier = new();
         await using ServiceProvider provider = fixture.BuildAccountServices(
             clock, services => services.AddDbContext<AppDbContext>(options => options.AddInterceptors(barrier)));
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         string token = await ResetTokenAsync(provider, id);
         string firstPassword = AccountsTestSupport.ValidPassword();
         string secondPassword = AccountsTestSupport.ValidPassword();
@@ -297,7 +297,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
         CommandBarrier barrier = new();
         await using ServiceProvider provider = fixture.BuildAccountServices(
             clock, services => services.AddDbContext<AppDbContext>(options => options.AddInterceptors(barrier)));
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
         barrier.Arm("email_link_tokens", 2);
 
         string[] tokens = await Task.WhenAll(ResetTokenAsync(provider, id), ResetTokenAsync(provider, id));
@@ -317,7 +317,7 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
 
         string token = await ResetTokenAsync(provider, id);
 
@@ -336,14 +336,14 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         FakeClock clock = NewClock();
         await using ServiceProvider provider = fixture.BuildAccountServices(clock);
-        (Guid id, _) = await CreateIdentityAsync(provider);
-        (Guid otherId, _) = await CreateIdentityAsync(provider);
+        (Guid id, _) = await CreateAccountIdentityAsync(provider);
+        (Guid otherId, _) = await CreateAccountIdentityAsync(provider);
         _ = await ConfirmationTokenAsync(provider, id);
         _ = await ResetTokenAsync(provider, id);
         _ = await ResetTokenAsync(provider, otherId);
         Assert.Equal(2, await RowCountAsync(provider, id));
 
-        IdentityResult deleted = await InScopeAsync(provider, id, (users, identity) => users.DeleteAsync(identity));
+        IdentityResult deleted = await InScopeAsync(provider, id, (users, accountIdentity) => users.DeleteAsync(accountIdentity));
 
         Assert.True(deleted.Succeeded, Describe(deleted));
         Assert.Equal(0, await RowCountAsync(provider, id));
@@ -363,13 +363,13 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
 
     private static string Describe(IdentityResult result) => string.Join(", ", Codes(result));
 
-    private static async Task<(Guid Id, string Password)> CreateIdentityAsync(ServiceProvider provider)
+    private static async Task<(Guid Id, string Password)> CreateAccountIdentityAsync(ServiceProvider provider)
     {
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         string password = AccountsTestSupport.ValidPassword();
-        AccountIdentity identity = await AccountsTestSupport.CreateIdentityAsync(
+        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
             scope.ServiceProvider, AccountsTestSupport.UniqueEmail(), password, Token);
-        return (identity.Id, password);
+        return (accountIdentity.Id, password);
     }
 
     private static async Task<T> InScopeAsync<T>(
@@ -377,26 +377,26 @@ public class EmailLinkTokenTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         UserManager<AccountIdentity> users = scope.ServiceProvider.GetRequiredService<UserManager<AccountIdentity>>();
-        AccountIdentity identity = await users.FindByIdAsync(id.ToString())
-            ?? throw new InvalidOperationException("The identity does not exist.");
-        return await action(users, identity);
+        AccountIdentity accountIdentity = await users.FindByIdAsync(id.ToString())
+            ?? throw new InvalidOperationException("The AccountIdentity does not exist.");
+        return await action(users, accountIdentity);
     }
 
     private static Task<string> ConfirmationTokenAsync(ServiceProvider provider, Guid id) =>
-        InScopeAsync(provider, id, (users, identity) => users.GenerateEmailConfirmationTokenAsync(identity));
+        InScopeAsync(provider, id, (users, accountIdentity) => users.GenerateEmailConfirmationTokenAsync(accountIdentity));
 
     private static Task<string> ResetTokenAsync(ServiceProvider provider, Guid id) =>
-        InScopeAsync(provider, id, (users, identity) => users.GeneratePasswordResetTokenAsync(identity));
+        InScopeAsync(provider, id, (users, accountIdentity) => users.GeneratePasswordResetTokenAsync(accountIdentity));
 
     private static Task<IdentityResult> ConfirmEmailAsync(ServiceProvider provider, Guid id, string token) =>
-        InScopeAsync(provider, id, (users, identity) => users.ConfirmEmailAsync(identity, token));
+        InScopeAsync(provider, id, (users, accountIdentity) => users.ConfirmEmailAsync(accountIdentity, token));
 
     private static Task<IdentityResult> ResetPasswordAsync(
         ServiceProvider provider, Guid id, string token, string newPassword) =>
-        InScopeAsync(provider, id, (users, identity) => users.ResetPasswordAsync(identity, token, newPassword));
+        InScopeAsync(provider, id, (users, accountIdentity) => users.ResetPasswordAsync(accountIdentity, token, newPassword));
 
     private static Task<bool> CheckPasswordAsync(ServiceProvider provider, Guid id, string password) =>
-        InScopeAsync(provider, id, (users, identity) => users.CheckPasswordAsync(identity, password));
+        InScopeAsync(provider, id, (users, accountIdentity) => users.CheckPasswordAsync(accountIdentity, password));
 
     private static async Task<int> RowCountAsync(ServiceProvider provider, Guid id, string? purpose = null)
     {

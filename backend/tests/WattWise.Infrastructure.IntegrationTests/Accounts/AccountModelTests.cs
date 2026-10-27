@@ -34,12 +34,12 @@ public class AccountModelTests(DatabaseFixture fixture) : IClassFixture<Database
         await using AsyncServiceScope readScope = reader.CreateAsyncScope();
         AppDbContext readDb = readScope.ServiceProvider.GetRequiredService<AppDbContext>();
         Account loaded = await readDb.Accounts.SingleAsync(a => a.Id == account.Id, Token);
-        AccountIdentity identity = await readDb.Users.SingleAsync(i => i.AccountId == account.Id, Token);
+        AccountIdentity accountIdentity = await readDb.Users.SingleAsync(i => i.AccountId == account.Id, Token);
 
         Assert.Equal(Language.En, loaded.PreferredLanguage);
         // PostgreSQL keeps microseconds, NodaTime ticks.
         Assert.True(Math.Abs((account.CreatedAt - loaded.CreatedAt).TotalNanoseconds) < 1000);
-        Assert.Equal(email, identity.Email);
+        Assert.Equal(email, accountIdentity.Email);
     }
 
     [Theory]

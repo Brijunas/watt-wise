@@ -16,23 +16,23 @@ public class LockoutTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
     {
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AccountIdentity identity = await AccountsTestSupport.CreateIdentityAsync(
+        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
             scope.ServiceProvider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword(), Token);
         UserManager<AccountIdentity> users = scope.ServiceProvider.GetRequiredService<UserManager<AccountIdentity>>();
 
         for (int attempt = 1; attempt <= 4; attempt++)
         {
-            await users.AccessFailedAsync(identity);
+            await users.AccessFailedAsync(accountIdentity);
         }
 
-        Assert.False(await users.IsLockedOutAsync(identity));
+        Assert.False(await users.IsLockedOutAsync(accountIdentity));
 
         DateTimeOffset before = DateTimeOffset.UtcNow;
-        await users.AccessFailedAsync(identity);
+        await users.AccessFailedAsync(accountIdentity);
         DateTimeOffset after = DateTimeOffset.UtcNow;
 
-        Assert.True(await users.IsLockedOutAsync(identity));
-        DateTimeOffset? lockoutEnd = await users.GetLockoutEndDateAsync(identity);
+        Assert.True(await users.IsLockedOutAsync(accountIdentity));
+        DateTimeOffset? lockoutEnd = await users.GetLockoutEndDateAsync(accountIdentity);
         Assert.NotNull(lockoutEnd);
         Assert.InRange(lockoutEnd.Value, before.AddMinutes(15), after.AddMinutes(15));
     }

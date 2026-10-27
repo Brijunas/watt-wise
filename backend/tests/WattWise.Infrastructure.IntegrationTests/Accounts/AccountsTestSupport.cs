@@ -43,7 +43,7 @@ internal static class AccountsTestSupport
         Account.Create(language, SystemClock.Instance.GetCurrentInstant());
 
     /// <summary>Saves a new account and creates its AccountIdentity through <see cref="UserManager{TUser}"/>.</summary>
-    public static async Task<AccountIdentity> CreateIdentityAsync(
+    public static async Task<AccountIdentity> CreateAccountIdentityAsync(
         IServiceProvider services, string email, string password, CancellationToken cancellationToken)
     {
         AppDbContext db = services.GetRequiredService<AppDbContext>();
@@ -52,9 +52,9 @@ internal static class AccountsTestSupport
         await db.SaveChangesAsync(cancellationToken);
 
         UserManager<AccountIdentity> users = services.GetRequiredService<UserManager<AccountIdentity>>();
-        AccountIdentity identity = AccountIdentity.Create(account.Id, email);
-        IdentityResult result = await users.CreateAsync(identity, password);
+        AccountIdentity accountIdentity = AccountIdentity.Create(account.Id, email);
+        IdentityResult result = await users.CreateAsync(accountIdentity, password);
         Assert.True(result.Succeeded, string.Join(", ", result.Errors.Select(error => error.Code)));
-        return identity;
+        return accountIdentity;
     }
 }

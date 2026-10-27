@@ -88,13 +88,13 @@ public class PasswordRuleTests(DatabaseFixture fixture) : IClassFixture<Database
         Assert.NotEqual(nfc, nfd);
         await using ServiceProvider provider = fixture.BuildAccountServices();
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AccountIdentity identity = await AccountsTestSupport.CreateIdentityAsync(
+        AccountIdentity accountIdentity = await AccountsTestSupport.CreateAccountIdentityAsync(
             scope.ServiceProvider, AccountsTestSupport.UniqueEmail(), nfc, Token);
         UserManager<AccountIdentity> users = scope.ServiceProvider.GetRequiredService<UserManager<AccountIdentity>>();
 
-        Assert.True(await users.CheckPasswordAsync(identity, nfd));
-        Assert.True(await users.CheckPasswordAsync(identity, nfc));
-        Assert.False(await users.CheckPasswordAsync(identity, nfc + "x"));
+        Assert.True(await users.CheckPasswordAsync(accountIdentity, nfd));
+        Assert.True(await users.CheckPasswordAsync(accountIdentity, nfc));
+        Assert.False(await users.CheckPasswordAsync(accountIdentity, nfc + "x"));
     }
 
     private async Task<IdentityResult> CreateAsync(string password)
