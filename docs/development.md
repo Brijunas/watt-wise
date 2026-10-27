@@ -61,13 +61,14 @@ Each app's dev server and preview get their settings from 1Password through the 
 
 The rules behind these (analyzers, `.editorconfig`, the test projects) are in [backend/docs/conventions.md](../backend/docs/conventions.md) and [backend/docs/testing.md](../backend/docs/testing.md).
 
-| Command                                                   | What it does                                                                                         |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `dotnet tool restore`                                     | Restores the local tools (`dotnet-ef`) from `.config/dotnet-tools.json`. Rerun after a change to it. |
-| `dotnet build backend/WattWise.slnx`                      | Builds the solution. Must end with 0 warnings.                                                       |
-| `dotnet format backend/WattWise.slnx`                     | Fixes whitespace, code style and unused usings across the solution.                                  |
-| `dotnet format backend/WattWise.slnx --verify-no-changes` | Reports what `dotnet format` would change, without changing it.                                      |
-| `dotnet test --solution backend/WattWise.slnx`            | Runs every test project. The integration tests start PostgreSQL in Docker.                           |
+| Command                                                                                                                                                                        | What it does                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dotnet tool restore`                                                                                                                                                          | Restores the local tools (`dotnet-ef`, `dotnet-stryker`) from `.config/dotnet-tools.json`. Rerun after a change to it.                               |
+| `dotnet build backend/WattWise.slnx`                                                                                                                                           | Builds the solution. Must end with 0 warnings.                                                                                                       |
+| `dotnet format backend/WattWise.slnx`                                                                                                                                          | Fixes whitespace, code style and unused usings across the solution.                                                                                  |
+| `dotnet format backend/WattWise.slnx --verify-no-changes`                                                                                                                      | Reports what `dotnet format` would change, without changing it.                                                                                      |
+| `dotnet test --solution backend/WattWise.slnx`                                                                                                                                 | Runs every test project. The integration tests start PostgreSQL in Docker.                                                                           |
+| `dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Domain -p WattWise.Domain.csproj -tp backend/tests/WattWise.Domain.Tests/WattWise.Domain.Tests.csproj` | Mutation tests Domain with its unit tests; the Application command and the options are in [testing.md](../backend/docs/testing.md#mutation-testing). |
 
 ### Running a single test
 

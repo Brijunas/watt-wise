@@ -116,7 +116,12 @@ def dotnet_sdk():
     ef = tools["dotnet-ef"]["version"]
     if ef != release["release-version"] and version_key(release["release-version"]) > version_key(ef):
         rows.append(("dotnet-ef", ef, "->", "matching EF build", "check NuGet", ""))
-    print_table(f".NET SDK (global.json, mise.toml; support phase: {feed['support-phase']})", rows)
+    for name, tool in tools.items():
+        if name != "dotnet-ef":  # dotnet-ef follows the SDK; every other tool is a plain NuGet package
+            row = nuget_row(name, tool["version"])
+            if row:
+                rows.append(row)
+    print_table(f".NET SDK and tools (global.json, mise.toml; support phase: {feed['support-phase']})", rows)
 
 
 def docker_tags(repo, pattern):

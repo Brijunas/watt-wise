@@ -75,7 +75,7 @@ Rich, filterable chart of consumption at hourly, daily and monthly resolution us
 
 ## E9. Grid plan domain
 
-ESO grid plan model with its pricing components. Household parameters (contracted power, phases) if the ESO tariff structure requires them; this epic resolves that open question in `docs/product.md`. Draft/published lifecycle. Grid plan ingestion job from the ESO source writing drafts. Admin UI to create, edit, publish and retire grid plans. Public catalog page for grid plans.
+ESO grid plan model with its pricing components. Household parameters (contracted power, phases) if the ESO tariff structure requires them; this epic resolves that open question in `docs/product.md`. Draft/published lifecycle. Grid plan ingestion job from the ESO source writing drafts. As the first external HTTP source, it brings in WireMock.Net to stub that source in the job's integration tests ([testing.md](../backend/docs/testing.md#external-http-stubs)); E10 and E11 reuse it. Admin UI to create, edit, publish and retire grid plans. Public catalog page for grid plans.
 
 ## E10. Provider plan domain
 
