@@ -4,18 +4,18 @@ The batches that rewrite the backend tests to [testing.md](../testing.md), follo
 
 ## Progress
 
-| Batch | Scope                                         | Done | Tests (before → after) | Run time (MTP)                                                               | Mutation score (baseline → after)    |
-| ----- | --------------------------------------------- | ---- | ---------------------- | ---------------------------------------------------------------------------- | ------------------------------------ |
-| 0     | Support code, Infrastructure Stryker baseline | [x]  | 157 → 157              | 19.3 s → 34.2 s (machine busier: unchanged Domain 0.41 → 1.33 s)             | Infrastructure: 37.42 % (taken here) |
-| 1     | Domain.Tests                                  | [x]  | 14 → 27                | 0.41 s → 0.98 s (on battery, powersave: unchanged Application 0.50 → 0.69 s) | Domain 69.23 % → 88.46 %             |
-| 2     | Application.Tests                             | [x]  | 23 → 26                | 0.50 s → 0.55 s (on battery, balanced: unchanged Domain 0.98 → 0.45 s)       | Application 65.62 % → 78.12 %        |
-| 3     | Infrastructure.Tests (new, unit)              | [x]  | 0 → 59                 | — → 0.48 s (on battery, balanced: unchanged Application 0.55 → 0.38 s)       | Infrastructure 37.42 % → 51.94 %     |
-| 4     | Infrastructure.IntegrationTests: Accounts     | [ ]  | 71 →                   | 6.71 s →                                                                     | Infrastructure ≥ baseline            |
-| 5     | Infrastructure.IntegrationTests: platform     | [ ]  | →                      | →                                                                            | Infrastructure ≥ baseline            |
-| 6     | Api.Tests (new, unit)                         | [ ]  | 0 →                    | →                                                                            | Api: taken here                      |
-| 7     | Api.IntegrationTests                          | [ ]  | 41 →                   | 6.08 s →                                                                     | Api ≥ batch 6                        |
-| 8     | Jobs.IntegrationTests                         | [ ]  | 7 →                    | 5.55 s →                                                                     | n/a                                  |
-| 9     | Final: testing.md, agents, thresholds         | [ ]  | 157 →                  | 19.3 s →                                                                     | all projects                         |
+| Batch | Scope                                         | Done | Tests (before → after) | Run time (MTP)                                                                                                                 | Mutation score (baseline → after)    |
+| ----- | --------------------------------------------- | ---- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| 0     | Support code, Infrastructure Stryker baseline | [x]  | 157 → 157              | 19.3 s → 34.2 s (machine busier: unchanged Domain 0.41 → 1.33 s)                                                               | Infrastructure: 37.42 % (taken here) |
+| 1     | Domain.Tests                                  | [x]  | 14 → 27                | 0.41 s → 0.98 s (on battery, powersave: unchanged Application 0.50 → 0.69 s)                                                   | Domain 69.23 % → 88.46 %             |
+| 2     | Application.Tests                             | [x]  | 23 → 26                | 0.50 s → 0.55 s (on battery, balanced: unchanged Domain 0.98 → 0.45 s)                                                         | Application 65.62 % → 78.12 %        |
+| 3     | Infrastructure.Tests (new, unit)              | [x]  | 0 → 59                 | — → 0.48 s (on battery, balanced: unchanged Application 0.55 → 0.38 s)                                                         | Infrastructure 37.42 % → 51.94 %     |
+| 4     | Infrastructure.IntegrationTests: Accounts     | [x]  | 71 → 76                | 6.71 s → 12.28 s (cloud machine, 4 vCPU: same project before this batch 13.17 s; unchanged Infrastructure.Tests 1.52 → 1.46 s) | Infrastructure 51.94 % → 52.26 %     |
+| 5     | Infrastructure.IntegrationTests: platform     | [ ]  | →                      | →                                                                                                                              | Infrastructure ≥ baseline            |
+| 6     | Api.Tests (new, unit)                         | [ ]  | 0 →                    | →                                                                                                                              | Api: taken here                      |
+| 7     | Api.IntegrationTests                          | [ ]  | 41 →                   | 6.08 s →                                                                                                                       | Api ≥ batch 6                        |
+| 8     | Jobs.IntegrationTests                         | [ ]  | 7 →                    | 5.55 s →                                                                                                                       | n/a                                  |
+| 9     | Final: testing.md, agents, thresholds         | [ ]  | 157 →                  | 19.3 s →                                                                                                                       | all projects                         |
 
 Infrastructure.IntegrationTests is split in two (batches 4 and 5) to keep each session-sized; each half deletes only its own old files.
 
