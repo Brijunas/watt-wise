@@ -1,21 +1,22 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 using Npgsql;
 
 using WattWise.Infrastructure.Persistence;
-using WattWise.Infrastructure.Persistence.Schema;
 
 namespace WattWise.Infrastructure.IntegrationTests;
 
-[SuppressMessage("Security", "EF1003:Possible SQL injection", Justification = "Schema names can't be parameters; only DatabaseSchemas constants are concatenated, values are parameters.")]
+[SuppressMessage("Security", "EF1003:Possible SQL injection", Justification = "Schema names can't be parameters; only literals from the test data are concatenated, values are parameters.")]
 public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
     private const string PermissionDenied = "42501";
     private const string ReadOnlySqlTransaction = "25006";
-    private static readonly string[] ProbeSchemas = [DatabaseSchemas.App, DatabaseSchemas.Hangfire, DatabaseSchemas.Migrations];
+    private static readonly string[] ProbeSchemas = ["app", "hangfire", "migrations"];
 
     // Tests in a class run one after another, so the probe tables are created idempotently for each and never raced.
     public async ValueTask InitializeAsync()
@@ -35,10 +36,10 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Theory]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.App)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.App)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Hangfire)]
-    public async Task Role_reads_and_writes_its_schema(DatabaseRole role, string schema)
+    [InlineData(DatabaseRole.Api, "app")]
+    [InlineData(DatabaseRole.Jobs, "app")]
+    [InlineData(DatabaseRole.Jobs, "hangfire")]
+    public async Task Role_can_insert_select_update_and_delete_in_its_schema(DatabaseRole role, string schema)
     {
         await using ServiceProvider provider = fixture.BuildServices(role);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
@@ -47,63 +48,21 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         List<int> ids = await db.Database
             .SqlQueryRaw<int>("INSERT INTO " + Table(schema) + " (note) VALUES ({0}) RETURNING id AS \"Value\"", "inserted")
             .ToListAsync(Token);
-        int id = Assert.Single(ids);
+        int id = ids.Single();
         string selected = await db.Database
             .SqlQueryRaw<string>("SELECT note AS \"Value\" FROM " + Table(schema) + " WHERE id = {0}", id)
             .SingleAsync(Token);
         int updated = await db.Database.ExecuteSqlRawAsync("UPDATE " + Table(schema) + " SET note = {0} WHERE id = {1}", ["updated", id], Token);
         int deleted = await db.Database.ExecuteSqlRawAsync("DELETE FROM " + Table(schema) + " WHERE id = {0}", [id], Token);
 
-        Assert.Equal("inserted", selected);
-        Assert.Equal(1, updated);
-        Assert.Equal(1, deleted);
+        Assert.Equal(("inserted", 1, 1), (selected, updated, deleted));
     }
 
     [Theory]
-    [InlineData(DatabaseSchemas.App)]
-    [InlineData(DatabaseSchemas.Hangfire)]
-    [InlineData(DatabaseSchemas.Migrations)]
-    public async Task Reader_reads_every_schema(string schema)
-    {
-        string note = "probe-" + Guid.NewGuid().ToString("N");
-        await using (ServiceProvider cliProvider = fixture.BuildServices(DatabaseRole.Cli))
-        await using (AsyncServiceScope cliScope = cliProvider.CreateAsyncScope())
-        {
-            AppDbContext cliDb = cliScope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await cliDb.Database.ExecuteSqlRawAsync("INSERT INTO " + Table(schema) + " (note) VALUES ({0})", [note], Token);
-        }
-
-        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Reader);
-        await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        string selected = await db.Database
-            .SqlQueryRaw<string>("SELECT note AS \"Value\" FROM " + Table(schema) + " WHERE note = {0}", note)
-            .SingleAsync(Token);
-
-        Assert.Equal(note, selected);
-    }
-
-    [Theory]
-    [InlineData(DatabaseSchemas.App)]
-    [InlineData(DatabaseSchemas.Hangfire)]
-    public async Task Reader_cannot_write(string schema)
-    {
-        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Reader);
-        await using AsyncServiceScope scope = provider.CreateAsyncScope();
-        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        PostgresException exception = await Assert.ThrowsAsync<PostgresException>(
-            () => db.Database.ExecuteSqlRawAsync("INSERT INTO " + Table(schema) + " (note) VALUES ({0})", ["blocked"], Token));
-
-        Assert.Equal(ReadOnlySqlTransaction, exception.SqlState);
-    }
-
-    [Theory]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.Hangfire)]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.Migrations)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Migrations)]
-    public async Task Role_cannot_read_another_schema(DatabaseRole role, string schema)
+    [InlineData(DatabaseRole.Api, "hangfire")]
+    [InlineData(DatabaseRole.Api, "migrations")]
+    [InlineData(DatabaseRole.Jobs, "migrations")]
+    public async Task Role_cannot_read_a_schema_it_has_no_grant_on(DatabaseRole role, string schema)
     {
         await using ServiceProvider provider = fixture.BuildServices(role);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
@@ -116,17 +75,13 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
     }
 
     [Theory]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.App, PermissionDenied)]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.Hangfire, PermissionDenied)]
-    [InlineData(DatabaseRole.Api, DatabaseSchemas.Migrations, PermissionDenied)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.App, PermissionDenied)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Hangfire, PermissionDenied)]
-    [InlineData(DatabaseRole.Jobs, DatabaseSchemas.Migrations, PermissionDenied)]
-    // The reader's sessions are read-only transactions, which PostgreSQL checks before privileges.
-    [InlineData(DatabaseRole.Reader, DatabaseSchemas.App, ReadOnlySqlTransaction)]
-    [InlineData(DatabaseRole.Reader, DatabaseSchemas.Hangfire, ReadOnlySqlTransaction)]
-    [InlineData(DatabaseRole.Reader, DatabaseSchemas.Migrations, ReadOnlySqlTransaction)]
-    public async Task Role_cannot_create_tables(DatabaseRole role, string schema, string sqlState)
+    [InlineData(DatabaseRole.Api, "app")]
+    [InlineData(DatabaseRole.Api, "hangfire")]
+    [InlineData(DatabaseRole.Api, "migrations")]
+    [InlineData(DatabaseRole.Jobs, "app")]
+    [InlineData(DatabaseRole.Jobs, "hangfire")]
+    [InlineData(DatabaseRole.Jobs, "migrations")]
+    public async Task Role_cannot_create_tables_in_a_schema(DatabaseRole role, string schema)
     {
         await using ServiceProvider provider = fixture.BuildServices(role);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
@@ -135,28 +90,112 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         PostgresException exception = await Assert.ThrowsAsync<PostgresException>(
             () => db.Database.ExecuteSqlRawAsync("CREATE TABLE " + schema + ".ddl_probe (id int)", Token));
 
-        Assert.Equal(sqlState, exception.SqlState);
+        Assert.Equal(PermissionDenied, exception.SqlState);
     }
 
+    [Theory]
+    [InlineData("app")]
+    [InlineData("hangfire")]
+    public async Task Reader_reads_rows_in_app_and_hangfire(string schema)
+    {
+        string note = await InsertProbeRowAsCliAsync(schema);
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Reader);
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        string selected = await db.Database
+            .SqlQueryRaw<string>("SELECT note AS \"Value\" FROM " + Table(schema) + " WHERE note = {0}", note)
+            .SingleAsync(Token);
+
+        Assert.Equal(note, selected);
+    }
+
+    // characterization: deploy/postgres/bootstrap.sql:64 (GRANT pg_read_all_data TO reader reaches every schema;
+    // deploy/docs/postgres.md:37 says nobody reads migrations).
     [Fact]
-    public async Task Migration_history_lives_in_its_own_schema_owned_by_owner()
+    public async Task Reader_reads_rows_in_migrations()
+    {
+        string note = await InsertProbeRowAsCliAsync("migrations");
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Reader);
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        string selected = await db.Database
+            .SqlQueryRaw<string>("SELECT note AS \"Value\" FROM " + Table("migrations") + " WHERE note = {0}", note)
+            .SingleAsync(Token);
+
+        Assert.Equal(note, selected);
+    }
+
+    // Source: deploy/postgres/bootstrap.sql:70 (ALTER ROLE reader SET default_transaction_read_only = on).
+    [Theory]
+    [InlineData("app")]
+    [InlineData("hangfire")]
+    [InlineData("migrations")]
+    public async Task Reader_sessions_are_read_only_by_default(string schema)
+    {
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Reader);
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        PostgresException exception = await Assert.ThrowsAsync<PostgresException>(
+            () => db.Database.ExecuteSqlRawAsync("INSERT INTO " + Table(schema) + " (note) VALUES ({0})", ["blocked"], Token));
+
+        // The reader's sessions are read-only transactions, which PostgreSQL checks before privileges.
+        Assert.Equal(ReadOnlySqlTransaction, exception.SqlState);
+    }
+
+    // Source: deploy/docs/postgres.md role table (the reader has pg_read_all_data and nothing else).
+    [Theory]
+    [InlineData("app", "INSERT INTO {0}.access_probe (note) VALUES ('blocked')")]
+    [InlineData("hangfire", "INSERT INTO {0}.access_probe (note) VALUES ('blocked')")]
+    [InlineData("migrations", "INSERT INTO {0}.access_probe (note) VALUES ('blocked')")]
+    [InlineData("app", "CREATE TABLE {0}.ddl_probe (id int)")]
+    [InlineData("hangfire", "CREATE TABLE {0}.ddl_probe (id int)")]
+    [InlineData("migrations", "CREATE TABLE {0}.ddl_probe (id int)")]
+    public async Task Reader_cannot_write_even_in_a_read_write_transaction(string schema, string statementTemplate)
+    {
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Reader);
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync(Token);
+        await db.Database.ExecuteSqlRawAsync("SET TRANSACTION READ WRITE", Token);
+
+        PostgresException exception = await Assert.ThrowsAsync<PostgresException>(
+            () => db.Database.ExecuteSqlRawAsync(string.Format(CultureInfo.InvariantCulture, statementTemplate, schema), Token));
+
+        Assert.Equal(PermissionDenied, exception.SqlState);
+    }
+
+    [Theory]
+    [InlineData("migrations", "__ef_migrations_history")]
+    [InlineData("hangfire", "job")]
+    [InlineData("hangfire", "schema")]
+    [InlineData("hangfire", "server")]
+    public async Task Table_is_owned_by_owner_in_its_expected_schema(string schema, string table)
     {
         await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Cli);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        string? schema = await db.Database
-            .SqlQuery<string>($"SELECT schemaname AS \"Value\" FROM pg_tables WHERE tablename = '__ef_migrations_history'")
-            .SingleOrDefaultAsync(Token);
         string? owner = await db.Database
-            .SqlQuery<string>($"SELECT tableowner AS \"Value\" FROM pg_tables WHERE tablename = '__ef_migrations_history'")
+            .SqlQuery<string>($"SELECT tableowner AS \"Value\" FROM pg_tables WHERE schemaname = {schema} AND tablename = {table}")
             .SingleOrDefaultAsync(Token);
 
-        Assert.Equal(DatabaseSchemas.Migrations, schema);
         Assert.Equal("owner", owner);
     }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private static string Table(string schema) => schema + ".access_probe";
+
+    private async Task<string> InsertProbeRowAsCliAsync(string schema)
+    {
+        string note = "probe-" + Guid.NewGuid().ToString("N");
+        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Cli);
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.ExecuteSqlRawAsync("INSERT INTO " + Table(schema) + " (note) VALUES ({0})", [note], Token);
+        return note;
+    }
 }
