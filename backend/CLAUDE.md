@@ -30,14 +30,14 @@ The rules are in "Writing tests that catch bugs" in [docs/testing.md](docs/testi
 
 - Expected values are literals from the spec or by hand, never computed by production code. Assert exact values and exact stored state, never only `NotNull` or a count.
 - Fake only boundaries (`IClock` → `FakeClock`, external HTTP, SMTP, ports in Application tests). Integration tests use the real PostgreSQL fixture: `IClassFixture<DatabaseFixture>`, the role the code uses, unique data per test, state read back in a new scope. Never InMemory or SQLite.
-- Sentence-style names, one behavior per test, plain xUnit `Assert`.
+- Sentence-style names, one behavior and one logical assert per test, plain xUnit `Assert`.
 - The `backend-test-writer` agent writes tests (plan first); `backend-test-reviewer` reviews them.
 
 | Run                                | Command                                                                                                                                                                     |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit tests                         | `dotnet test --project backend/tests/WattWise.Domain.Tests` and `--project backend/tests/WattWise.Application.Tests`                                                        |
+| Unit tests                         | `dotnet test --project backend/tests/WattWise.Domain.Tests` (also `Application.Tests`, `Infrastructure.Tests`, `Api.Tests`)                                                 |
 | Integration tests (Docker running) | `dotnet test --project backend/tests/WattWise.Infrastructure.IntegrationTests` (also `Api.`, `Jobs.IntegrationTests`)                                                       |
 | One class                          | `dotnet test --project <project> --filter-class "*.<Class>"`                                                                                                                |
 | Mutation testing                   | `dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/<Project> -p WattWise.<Project>.csproj -tp …` ([docs/testing.md](docs/testing.md#mutation-testing)) |
 
-Run Stryker from the repo root, one source project per run (Domain, Application): started in `backend/` it finds the `.slnx`, switches to solution mode and also runs the Docker integration tests.
+Run Stryker from the repo root, one source project per run (Domain, Application, Infrastructure, Api): started in `backend/` it finds the `.slnx`, switches to solution mode and also runs the Docker integration tests.

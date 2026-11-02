@@ -83,7 +83,7 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         Assert.Equal(PermissionDenied, exception.SqlState);
     }
 
-    // bootstrap.sql:64 gives reader pg_read_all_data, so it reads migrations too (decision D11).
+    // bootstrap.sql:64 gives reader pg_read_all_data, so it reads migrations too.
     [Theory]
     [InlineData("app")]
     [InlineData("hangfire")]
