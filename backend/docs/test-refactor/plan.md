@@ -14,7 +14,7 @@ The batches that rewrite the backend tests to [testing.md](../testing.md), follo
 | 5     | Infrastructure.IntegrationTests: platform     | [x]  | 76 → 96                | 5.06 s → 5.33 s (local, 16 cores, on battery: unchanged Application 0.55 → 0.54 s)                                             | Infrastructure 52.26 % → 56.45 %     |
 | 6     | Api.Tests (new, unit)                         | [x]  | 0 → 28                 | — → 0.38 s (local, 16 cores, on battery, balanced-battery: unchanged Application 0.54 → 0.49 s)                                | Api: 46.28 % (taken here)            |
 | 7     | Api.IntegrationTests                          | [x]  | 39 → 40                | 6.08 s → 3.86 s (local, 16 cores, on AC power, balanced: unchanged Application 0.49 → 0.36 s)                                  | Api 46.28 % → 51.24 %                |
-| 8     | Jobs.IntegrationTests                         | [ ]  | 7 →                    | 5.55 s →                                                                                                                       | n/a                                  |
+| 8     | Jobs.IntegrationTests                         | [x]  | 7 → 11                 | 5.55 s → 4.21 s (local, 16 cores, on AC power, balanced: unchanged Application 0.36 → 0.46 s)                                  | n/a                                  |
 | 9     | Final: testing.md, agents, thresholds         | [ ]  | 157 →                  | 19.3 s →                                                                                                                       | all projects                         |
 
 Infrastructure.IntegrationTests is split in two (batches 4 and 5) to keep each session-sized; each half deletes only its own old files.
