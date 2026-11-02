@@ -1,4 +1,4 @@
-namespace WattWise.Api.IntegrationTests;
+namespace WattWise.Testing;
 
 /// <summary>Walks an exception and its inner exceptions, outermost first.</summary>
 public static class ExceptionChain

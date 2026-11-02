@@ -2,7 +2,6 @@ using System.Net;
 
 using Hangfire;
 using Hangfire.Storage;
-using Hangfire.Storage.Monitoring;
 
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,7 @@ public class NoOpJobTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task The_no_op_job_executes()
+    public async Task A_triggered_no_op_job_succeeds_as_the_recurring_job_no_op()
     {
         await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Jobs));
         using HttpClient client = factory.CreateClient();
@@ -25,30 +24,31 @@ public class NoOpJobTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
         JobStorage storage = factory.Services.GetRequiredService<JobStorage>();
 
         manager.Trigger(NoOpJob.RecurringJobId);
-
-        SucceededJobDto succeeded = await Poll.UntilAsync(
+        string jobId = await Poll.UntilAsync(
             () => storage.GetMonitoringApi()
                 .SucceededJobs(0, 50)
-                .Select(pair => pair.Value)
-                .FirstOrDefault(job => job.Job?.Type == typeof(NoOpJob)),
+                .FirstOrDefault(pair => pair.Value.Job?.Type == typeof(NoOpJob)).Key,
             "the no-op job to succeed",
             Token,
             TimeSpan.FromSeconds(30));
 
-        Assert.Equal(typeof(NoOpJob), succeeded.Job.Type);
+        using IStorageConnection connection = storage.GetConnection();
+        string? recurringJobId = connection.GetJobParameter(jobId, "RecurringJobId");
+
+        // characterization: backend/src/WattWise.Jobs/Recurring/NoOpJob.cs:9 (Hangfire stores job parameters as JSON, hence the quotes)
+        Assert.Equal("\"no-op\"", recurringJobId);
     }
 
     [Fact]
-    public async Task The_no_op_job_is_registered_as_recurring()
+    public async Task The_no_op_job_is_scheduled_hourly()
     {
         await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Jobs));
         using HttpClient client = factory.CreateClient();
         JobStorage storage = factory.Services.GetRequiredService<JobStorage>();
-
         using IStorageConnection connection = storage.GetConnection();
-        RecurringJobDto job = Assert.Single(connection.GetRecurringJobs(), j => j.Id == NoOpJob.RecurringJobId);
 
-        Assert.False(string.IsNullOrWhiteSpace(job.Cron));
+        // characterization: backend/src/WattWise.Jobs/Recurring/RecurringJobs.cs:11
+        Assert.Equal("0 * * * *", connection.GetRecurringJobs().Single(j => j.Id == NoOpJob.RecurringJobId).Cron);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class NoOpJobTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixtu
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    // Until E4 adds admin access, the local-requests-only filter is the dashboard's only protection.
+    // The default local-requests-only filter is the dashboard's only protection; E6 (S6.4) makes it an internal UI on saturn's loopback (jobs.md).
     [Fact]
     public async Task The_dashboard_rejects_a_non_local_request()
     {
