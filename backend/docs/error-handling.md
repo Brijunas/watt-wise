@@ -87,7 +87,7 @@ Responses with no body of their own (routing 404, 405, binding failures) get Pro
 
 1. Add the value to `ErrorType` and a factory to `Error` (`Error.Conflict(code, description)`).
 2. Build: it fails with CS8509 in `ErrorTypeMapping`. Add the status code line there.
-3. Add a case for it to `ErrorMappingTests` in Api.IntegrationTests.
+3. Add a case for it to `ErrorTypeMappingTests` in `WattWise.Api.Tests`, and a test for it in `ErrorResponseTests` in Api.IntegrationTests (with an endpoint in `TestErrorsEndpointModule`).
 4. Add a row to the categories table above.
 
 **A new domain exception**

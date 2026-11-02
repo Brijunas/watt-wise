@@ -13,9 +13,9 @@ namespace WattWise.Api.IntegrationTests;
 /// Class fixture: one Api host for every test of a class, with the test error endpoints mapped and
 /// a Serilog sink (<see cref="Logs"/>) and an OpenTelemetry span processor (<see cref="Spans"/>) registered.
 /// Activity listeners and the sink see events from every host in the process, so tests filter by trace id.
-/// It allows <see cref="AllowedOrigin"/> through CORS. It owns a database of its own, managed by a <see cref="DatabaseFixture"/>.
+/// It allows <see cref="AllowedOrigin"/> through CORS and owns a database clone of its own.
 /// </summary>
-public sealed class ErrorsApiFixture(PostgresContainerFixture postgres) : IAsyncLifetime
+public sealed class ApiHostFixture(PostgresContainerFixture postgres) : IAsyncLifetime
 {
     public const string AllowedOrigin = "https://app.example.test";
 

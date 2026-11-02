@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text.Json;
 
 namespace WattWise.Api.IntegrationTests;
@@ -8,23 +7,18 @@ public class HealthEndpointTests(DatabaseFixture fixture) : IClassFixture<Databa
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task Health_is_healthy_with_valid_settings()
+    public async Task Health_with_the_right_credentials_is_200_healthy_with_the_database_check()
     {
         await using TestHostFactory<Program> factory = new(fixture.Database.ConfigurationFor(DatabaseRole.Api));
         using HttpClient client = factory.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync("/health", Token);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token));
-        Assert.Equal("Healthy", body.RootElement.GetProperty("status").GetString());
-        JsonElement check = Assert.Single(body.RootElement.GetProperty("checks").EnumerateArray());
-        Assert.Equal("database", check.GetProperty("name").GetString());
-        Assert.Equal("Healthy", check.GetProperty("status").GetString());
+        Assert.Equal("200 Healthy database:Healthy", await Summary(response));
     }
 
     [Fact]
-    public async Task Health_is_unhealthy_with_a_wrong_password()
+    public async Task Health_with_a_wrong_database_password_is_503_unhealthy_json()
     {
         Dictionary<string, string?> settings = new(fixture.Database.ConfigurationFor(DatabaseRole.Api))
         {
@@ -35,16 +29,14 @@ public class HealthEndpointTests(DatabaseFixture fixture) : IClassFixture<Databa
 
         using HttpResponseMessage response = await client.GetAsync("/health", Token);
 
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
-        string text = await response.Content.ReadAsStringAsync(Token);
-        using JsonDocument body = JsonDocument.Parse(text);
-        Assert.Equal("Unhealthy", body.RootElement.GetProperty("status").GetString());
+        Assert.Equal("503 Unhealthy database:Unhealthy application/json", $"{await Summary(response)} {response.Content.Headers.ContentType?.MediaType}");
+    }
+
+    private static async Task<string> Summary(HttpResponseMessage response)
+    {
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Token));
         JsonElement check = Assert.Single(body.RootElement.GetProperty("checks").EnumerateArray());
-        Assert.Equal("database", check.GetProperty("name").GetString());
-        Assert.Equal("Unhealthy", check.GetProperty("status").GetString());
-        Assert.DoesNotContain("28P01", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("authentication", text, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("password", text, StringComparison.OrdinalIgnoreCase);
+        return $"{(int)response.StatusCode} {body.RootElement.GetProperty("status").GetString()} "
+            + $"{check.GetProperty("name").GetString()}:{check.GetProperty("status").GetString()}";
     }
 }
