@@ -9,31 +9,14 @@ namespace WattWise.Infrastructure.IntegrationTests;
 
 public class DatabaseMigratorTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
-    private static CancellationToken Token => TestContext.Current.CancellationToken;
+    private const string HistoryQuery =
+        "SELECT migration_id || '/' || product_version AS \"Value\" FROM migrations.__ef_migrations_history ORDER BY migration_id";
 
+    private static CancellationToken Token => PlatformSql.Token;
+
+    // characterization: DatabaseMigrator.cs:22 (span name), EfCoreMigrationsStep.cs:9 and HangfireStorageStep.cs:18 (step names); the order is architecture.md "Persistence" (EF Core first, then Hangfire).
     [Fact]
-    public async Task Schema_steps_run_ef_core_first_then_hangfire()
-    {
-        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Cli);
-        await using AsyncServiceScope scope = provider.CreateAsyncScope();
-
-        string[] names = [.. scope.ServiceProvider.GetServices<ISchemaStep>().Select(step => step.Name)];
-
-        Assert.Equal(["ef-core-migrations", "hangfire-storage"], names);
-    }
-
-    [Fact]
-    public async Task Migrating_an_up_to_date_database_again_succeeds()
-    {
-        await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Cli);
-        await using AsyncServiceScope scope = provider.CreateAsyncScope();
-
-        // The clone is already migrated by the fixture, so every step must be a no-op here.
-        await scope.ServiceProvider.GetRequiredService<DatabaseMigrator>().MigrateAsync(Token);
-    }
-
-    [Fact]
-    public async Task Each_schema_step_runs_in_its_own_span()
+    public async Task Each_schema_step_runs_in_its_own_span_with_ef_core_first()
     {
         using ActivitySource testSource = new("WattWise.Tests.Migrator");
         ConcurrentQueue<Activity> stopped = new();
@@ -46,15 +29,28 @@ public class DatabaseMigratorTests(DatabaseFixture fixture) : IClassFixture<Data
         ActivitySource.AddActivityListener(listener);
         await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Cli);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        using Activity root = testSource.StartActivity("migrate") ?? throw new InvalidOperationException("The listener did not record the root span.");
 
-        using (Activity? root = testSource.StartActivity("migrate"))
+        await scope.ServiceProvider.GetRequiredService<DatabaseMigrator>().MigrateAsync(Token);
+
+        // Listeners are process-wide, so keep only this test's trace.
+        string[] names = [.. stopped.Where(span => span.TraceId == root.TraceId && span.Parent == root).Select(span => span.DisplayName)];
+        Assert.Equal(["schema-step ef-core-migrations", "schema-step hangfire-storage"], names);
+    }
+
+    [Fact]
+    public async Task A_rerun_leaves_the_migration_history_unchanged()
+    {
+        List<string> before = await PlatformSql.QueryAsync<string>(fixture, DatabaseRole.Cli, HistoryQuery);
+        Assert.NotEmpty(before);
+        await using (ServiceProvider provider = fixture.BuildServices(DatabaseRole.Cli))
+        await using (AsyncServiceScope scope = provider.CreateAsyncScope())
         {
-            Assert.NotNull(root);
             await scope.ServiceProvider.GetRequiredService<DatabaseMigrator>().MigrateAsync(Token);
-
-            // Listeners are process-wide, so keep only this test's trace.
-            string[] names = [.. stopped.Where(span => span.TraceId == root.TraceId).Select(span => span.DisplayName)];
-            Assert.Equal(["schema-step ef-core-migrations", "schema-step hangfire-storage"], names);
         }
+
+        List<string> after = await PlatformSql.QueryAsync<string>(fixture, DatabaseRole.Cli, HistoryQuery);
+
+        Assert.Equal(before, after);
     }
 }
