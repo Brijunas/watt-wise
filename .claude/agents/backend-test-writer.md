@@ -58,59 +58,25 @@ not them.
   passes, and the project's mutation score is not lower than the baseline.
 - **Mutation check.** Production code doesn't change in a rewrite, so `--since:main` mutates nothing.
   Run the whole source project, or `--mutate` with the same glob the baseline used, one source
-  project per run from the repo root, as `testing.md` says. Compare the score to the baseline you were
-  given (for the current refactor, `backend/docs/test-refactor/inventory.md`) on the same scope, and
+  project per run from the repo root, as [testing.md](../../backend/docs/testing.md#mutation-testing) says. Compare the score to the baseline you were
+  given on the same scope, and
   report both.
 
 ## Assertion rules
 
-- Expected values are literals taken from the spec or calculated by hand. Show the arithmetic in a
-  comment when it isn't obvious. Never compute them by calling production code or re-implementing its
-  logic in the test.
-- `NotNull`, `NotEmpty`, `Count > 0` or "doesn't throw" are never the only check. Assert exact values,
-  exact error codes (`Error.Code`, ProblemDetails `code` via `ProblemDetailsAssertions`) and exact
-  persisted state.
-- Never fake the class under test. Fake only true boundaries: `IClock` with NodaTime's `FakeClock`,
-  external HTTP sources, SMTP and other ports in Application tests. Application tests use hand-written
-  fakes of the ports; don't add a mocking library. Integration tests never fake `AppDbContext`,
-  repositories or ASP.NET Core Identity.
-- One behavior per test, Arrange / Act / Assert separated by blank lines. Names are sentences in the
-  existing style: `A_reset_link_sets_the_new_password_and_a_second_use_fails`.
-- Plain xUnit `Assert`; no assertion libraries. Pass `TestContext.Current.CancellationToken` to every
-  async call.
-- Code rules still apply: one type per file, no unused usings (the hook reports them), 0 build warnings.
+Follow "Writing tests that catch bugs" in
+[testing.md](../../backend/docs/testing.md#writing-tests-that-catch-bugs): literal expected values,
+exact assertions, fake only boundaries, one logical assert per test, theories that never branch, a
+happy and a sad path for every reachable branch, characterization marking, no rename-only tests.
+Code rules still apply: one type per file, no unused usings (the hook reports them), 0 build warnings.
 
 ## PostgreSQL integration tests
 
-- Use the existing fixtures; never build a container, Respawn or a DbContext by hand.
-  `PostgresContainerFixture` (assembly fixture, `AssemblyFixtures.cs`) already runs the real bootstrap
-  and the real migrations through `DatabaseMigrator`. Take `IClassFixture<DatabaseFixture>`: each
-  class gets its own clone of the migrated template.
-- Never use EF Core InMemory or SQLite. They differ from PostgreSQL in constraints, transactions,
-  collation and types.
-- Tests in one class share the clone. Make unique data per test (`AccountsTestSupport.UniqueEmail()`,
-  fresh `Guid`s) and assert on your own rows, never on whole-table counts.
-- Connect as the role the code under test uses: `DatabaseFixture.BuildServices(DatabaseRole.Api)` for
-  Api code, `Jobs` for jobs, `Cli` only for migration checks. Swap the clock with
-  `services.Replace(ServiceDescriptor.Singleton<IClock>(clock))`.
-- Run each step in its own scope, the way requests do. Assert stored state through a **new scope or a
-  new provider**, never the context that did the write.
-- Api tests: `TestHostFactory<Program>` with the clone's `api` settings, real HTTP calls through its
-  client. Assert both the response (status and body, ProblemDetails fields) and the rows read back
-  through a separate `BuildServices(DatabaseRole.Api)` provider.
-- Jobs tests follow "Testing a job" in `backend/docs/jobs.md`.
-- Cover PostgreSQL behavior the change touches:
-  - unique and FK violations mapped to the right `Error` / HTTP status (409, 404, 422), not 500
-  - optimistic concurrency: two scopes load, both save (use `SaveChangesBarrier` / `CommandBarrier`);
-    exactly one wins
-  - rollback: a failure mid-use-case leaves nothing persisted
-  - `timestamptz` and NodaTime: `Instant` round trips at microsecond precision, Europe/Vilnius local
-    time on 23- and 25-hour DST days, zone boundaries at the exact minute
-  - case-sensitive text and collation in lookups and filters (ASP.NET Core Identity's normalized fields included)
-  - `numeric` precision and rounding for money and energy amounts
-  - `jsonb` mapping and queries, if used
-  - stable pagination ordering (ORDER BY with a unique tie-breaker)
-  - null vs empty vs missing values in requests and columns
+Use the fixtures and follow the PostgreSQL rules and list in
+[testing.md](../../backend/docs/testing.md#shared-postgresql-fixture) and
+[Writing tests that catch bugs](../../backend/docs/testing.md#writing-tests-that-catch-bugs). Add a
+case from that list only when the change touches that behavior. Jobs tests follow "Testing a job" in
+`backend/docs/jobs.md`.
 
 ## Unit tests
 
@@ -128,8 +94,8 @@ not them.
    `dotnet test --project backend/tests/<Project> --filter-class "*.<Class>"`.
 2. `dotnet build backend/WattWise.slnx` has 0 warnings. `dotnet format backend/WattWise.slnx --verify-no-changes` is clean.
 3. Mutation check. If `.config/dotnet-tools.json` lists `dotnet-stryker`, run Stryker as
-   `backend/docs/testing.md` says, on the changed code (for a rewrite, as "Rewriting existing tests"
-   says). For each surviving mutant, add a test that kills it or explain why it is equivalent.
+   [testing.md](../../backend/docs/testing.md#mutation-testing) says, on the changed code (for a
+   rewrite, as "Rewriting existing tests" says). For each surviving mutant, add a test that kills it or explain why it is equivalent.
    Otherwise do it by hand: for each production branch the
    tests touch, name one mutation (flipped comparison, off-by-one, removed call, swapped argument) and
    the test that fails on it. Say that Stryker isn't set up.

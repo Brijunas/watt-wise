@@ -2,7 +2,7 @@
 name: backend-test-reviewer
 description: Skeptical read-only review of new, changed or deleted Watt-Wise backend tests. Use after tests are written (by backend-test-writer or by hand) and before the PR. Reports weak and redundant tests, missing cases, coverage lost by deletion and surviving mutants; never edits files.
 tools: Read, Grep, Glob, Bash
-model: opus
+model: sonnet
 ---
 
 You review backend tests as a skeptic: assume each test proves nothing until it shows otherwise.
@@ -26,11 +26,10 @@ each test targets.
    store or `DatabaseMigrator`, EF InMemory, SQLite, `EnsureCreated`. In unit tests: faking the class
    under test. Also: state read back through the same context that wrote it, or the wrong
    `DatabaseRole` for the code under test.
-5. **Missing cases.** Check against the spec and these: the sad path for each conditional; unique and
-   FK violations mapped to the right error; concurrent updates; rollback on failure; `Instant`
-   precision and Europe/Vilnius DST days; case sensitivity and collation; `numeric` rounding; `jsonb`;
-   pagination tie-breakers; null vs empty vs missing; authorization (wrong permission, other account's
-   data).
+5. **Missing cases.** Check against the spec, the sad path of each reachable branch (argument guards
+   included), the PostgreSQL list in
+   [testing.md](../../backend/docs/testing.md#writing-tests-that-catch-bugs), and authorization
+   (wrong permission, other account's data).
 6. **Redundant?** Does another test, in any layer, already pin this behavior? Would deleting this test
    let through a bug no other test catches, or lower the mutation score? If neither, flag it for
    removal. Flag Infrastructure, Api and Jobs tests that re-check a rule already pinned in Domain or
@@ -40,7 +39,9 @@ each test targets.
    marked `characterization: <file:line>`, and the cited production line must produce it today. Flag
    unmarked ones, and marked ones that don't match the code they cite.
 
-Also check the conventions: sentence-style names, AAA, one behavior per test,
+Also check the conventions in
+[testing.md](../../backend/docs/testing.md#writing-tests-that-catch-bugs): one logical assert per
+test, theories that never branch, no rename-only tests, sentence-style names, AAA,
 `TestContext.Current.CancellationToken`, one type per file.
 
 ## Deleted tests
@@ -51,7 +52,7 @@ For every test the diff removes, name the behavior it protected and the test tha
 ## Mutation run
 
 If `.config/dotnet-tools.json` lists `dotnet-stryker`, run it on the changed production code as
-`backend/docs/testing.md` says and list the surviving mutants. Otherwise say that Stryker isn't set
+[testing.md](../../backend/docs/testing.md#mutation-testing) says and list the surviving mutants. Otherwise say that Stryker isn't set
 up, and list by hand the mutations of the changed production code that no test would catch.
 
 When the tests were rewritten and production code didn't change, `--since:main` mutates nothing. Run

@@ -4,33 +4,35 @@ What each backend layer tests and where those tests live. The layers themselves 
 
 ## What to test in each layer
 
-Both inner layers get unit tests, each of a different kind. The outer layers are covered by integration and functional tests instead.
+Every layer gets unit tests for the code that needs no database or host, each of a different kind. What does need one is covered by integration and functional tests.
 
-| Layer          | What to test                                                                                                       | How                                                                                                                          |
-| -------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Domain         | Entities, value objects and domain services: the cost engine, time-of-use zones, DST handling, pricing components. | Unit tests. Pure: no mocks, no I/O. Most of the backend's tests live here.                                                   |
-| Application    | Use cases and handlers, validators, pipeline behaviors.                                                            | Unit tests. The ports (repositories, external data sources) are replaced with fakes, so the tests check orchestration logic. |
-| Infrastructure | EF Core mappings, migrations, repositories, external data adapters.                                                | No unit tests. Integration tests against a real PostgreSQL (Testcontainers), with external HTTP sources stubbed.             |
-| Api, Jobs      | Endpoints, sign-in and permission checks, error mapping; each Hangfire job end to end.                             | Few or no unit tests. Functional tests through `WebApplicationFactory` and against a real PostgreSQL.                        |
+| Layer          | What to test                                                                                                                                                   | How                                                                                                                                           |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain         | Entities, value objects and domain services: the cost engine, time-of-use zones, DST handling, pricing components.                                             | Unit tests. Pure: no mocks, no I/O. Most of the backend's tests live here.                                                                    |
+| Application    | Use cases and handlers, validators, pipeline behaviors.                                                                                                        | Unit tests. The ports (repositories, external data sources) are replaced with fakes, so the tests check orchestration logic.                  |
+| Infrastructure | Code that needs no database (normalization, password rules, settings validators, filters); EF Core mappings, migrations, repositories, external data adapters. | Unit tests for the first kind. Integration tests against a real PostgreSQL (Testcontainers) for the rest, with external HTTP sources stubbed. |
+| Api            | Code that needs no host (error mapping, ProblemDetails customization, settings validators); endpoints, sign-in and permission checks.                          | Unit tests for the first kind. Functional tests through `WebApplicationFactory` and against a real PostgreSQL for the rest.                   |
+| Jobs           | Each Hangfire job end to end; the host's wiring (recurring registration, dashboard access, request logging, worker count, settings validation).                | Functional tests through the Jobs host and a real PostgreSQL.                                                                                 |
 
 Rules of thumb:
 
-- If a scenario can be tested with a unit test, test it with a unit test. Use an integration test only for what a unit test can't reach.
-- Test conditional logic and error paths (one happy path and at least one sad path), not coverage numbers.
-- Endpoints should stay thin and delegate to handlers, so their behaviour is checked by functional tests, not unit tests.
+- Test a behavior in the lowest layer that reaches it. A higher layer tests only what it adds (wiring, status code, ProblemDetails `code`, permissions, real PostgreSQL behavior, stored rows), not the lower layer's rule again.
+- Code that needs no database or host is unit tested in `WattWise.Infrastructure.Tests` or `WattWise.Api.Tests`, which reach `internal` types through `InternalsVisibleTo`. Jobs has no unit project: its few hostless tests (such as `RequestLogLevelTests`) live in `WattWise.Jobs.IntegrationTests`. Use an integration test only for what a unit test can't reach.
+- Test conditional logic and error paths, not coverage numbers.
+- Endpoints should stay thin and delegate to handlers, so their behaviour is checked by functional tests.
 
 ## Test projects
 
-| Project                                    | Kind        | Covers                                                                                                                                                      |
-| ------------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `WattWise.Domain.Tests`                    | Unit        | Domain, including golden-case tests for the calculation engine.                                                                                             |
-| `WattWise.Application.Tests`               | Unit        | Application handlers, validators and pipeline behaviors.                                                                                                    |
-| `WattWise.Infrastructure.Tests`            | Unit        | Infrastructure code that needs no database: normalization, password rules and hashing, settings validators, the span filter.                                |
-| `WattWise.Infrastructure.IntegrationTests` | Integration | Persistence, migrations and external adapters against PostgreSQL.                                                                                           |
-| `WattWise.Api.Tests`                       | Unit        | Api code that needs no host: the error mapping and ProblemDetails customization, the CORS settings validator, the health response writer.                   |
-| `WattWise.Api.IntegrationTests`            | Functional  | Endpoints, sign-in and permission checks through `WebApplicationFactory`, ProblemDetails mapping.                                                           |
-| `WattWise.Jobs.IntegrationTests`           | Functional  | Each Hangfire job end to end against PostgreSQL with stubbed external sources: expected rows written, draft plans produced, retries and idempotent re-runs. |
-| `WattWise.Testing`                         | Library     | Not a test project: the shared PostgreSQL fixture, `TestHostFactory` and `Poll`, referenced by the three integration projects.                              |
+| Project                                    | Kind        | Covers                                                                                                                                                                                                                                          |
+| ------------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WattWise.Domain.Tests`                    | Unit        | Domain, including golden-case tests for the calculation engine.                                                                                                                                                                                 |
+| `WattWise.Application.Tests`               | Unit        | Application handlers, validators and pipeline behaviors.                                                                                                                                                                                        |
+| `WattWise.Infrastructure.Tests`            | Unit        | Infrastructure code that needs no database: normalization, password rules and hashing, settings validators, the span filter.                                                                                                                    |
+| `WattWise.Infrastructure.IntegrationTests` | Integration | Persistence, migrations and external adapters against PostgreSQL.                                                                                                                                                                               |
+| `WattWise.Api.Tests`                       | Unit        | Api code that needs no host: the error mapping and ProblemDetails customization, the CORS settings validator, the health response writer.                                                                                                       |
+| `WattWise.Api.IntegrationTests`            | Functional  | Endpoints, sign-in and permission checks through `WebApplicationFactory`, ProblemDetails mapping.                                                                                                                                               |
+| `WattWise.Jobs.IntegrationTests`           | Functional  | Each Hangfire job end to end against PostgreSQL with stubbed external sources (rows written, retries, idempotent re-runs), and the host's wiring: recurring registration, dashboard access, request logging, worker count, settings validation. |
+| `WattWise.Testing`                         | Library     | Not a test project: the shared PostgreSQL fixture, `TestHostFactory` and `Poll`, referenced by the three integration projects.                                                                                                                  |
 
 ## Shared PostgreSQL fixture
 
@@ -67,14 +69,20 @@ Assertions:
 - `NotNull`, `NotEmpty`, a count or "doesn't throw" is never the only check. Assert exact values, exact error codes (`Error.Code`, the ProblemDetails `code`) and exact stored state.
 - Never fake the class under test. Fake only boundaries: `IClock` with NodaTime's `FakeClock`, external HTTP sources, SMTP and the ports in Application tests (hand-written fakes, no mocking library). Integration tests never fake `AppDbContext`, repositories or ASP.NET Core Identity.
 - One behavior per test, arranged, acted and asserted in separate blocks. Names are sentences (`A_reset_link_sets_the_new_password_and_a_second_use_fails`). Plain xUnit `Assert`; every async call gets `TestContext.Current.CancellationToken`.
+- One logical assert per test: one `Assert` call. A helper that checks one contract (such as `ProblemDetailsAssertions`) or one `Assert.Equal` on a tuple or record of the outcome counts as one. Precondition checks in Arrange are allowed.
+- Variants of one rule go in a `[Theory]` that never branches on its arguments.
+- Every reachable branch gets a happy and a sad path, argument guards included. A branch only a production change can reach is named as unreachable.
+- An expected value that only the code gives is marked `// characterization: <file:line>` and needs the user's approval.
+- No test that can only fail on a rename.
+- **Faking time.** Our code takes `IClock` (`FakeClock` in tests). ASP.NET Core Identity has its own clock (lockout, token lifetimes): a `TimeProvider` that `UserManager` reads from DI, faked with the hand-written `FixedTimeProvider` (Infrastructure.IntegrationTests).
 
 PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-postgresql-fixture)):
 
-- Never use EF Core InMemory, SQLite, `EnsureCreated` or a hand-built container or `DbContext`; they differ from PostgreSQL in constraints, transactions, collation and types.
+- Never use EF Core InMemory, SQLite, `EnsureCreated` or a hand-built container, Respawn or `DbContext`; they differ from PostgreSQL in constraints, transactions, collation and types.
 - Tests in a class share one clone, so each makes unique data (`AccountsTestSupport.UniqueEmail()`, fresh `Guid`s) and asserts on its own rows, never on whole-table counts.
 - Run each step in its own scope, as requests do, and read stored state back through a new scope or provider, never the context that wrote it. Api tests assert both the HTTP response and the rows.
 - Cover the PostgreSQL behavior the change touches:
-  - unique and foreign-key violations map to the right error and status (409, 404, 422), not 500;
+  - unique and foreign-key violations map to the right error and status (409, 404, 422), not 500; until a use case maps a violation to an error, assert the SQLSTATE and the exact constraint name;
   - optimistic concurrency: two scopes load and both save (`SaveChangesBarrier`, `CommandBarrier`), exactly one wins;
   - a failure mid-use-case persists nothing;
   - `timestamptz` and NodaTime: `Instant` round trips at microsecond precision (PostgreSQL's limit), Europe/Vilnius local time on 23- and 25-hour DST days, zone boundaries at the exact minute;
@@ -87,18 +95,38 @@ PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-post
 
 Stryker.NET (`dotnet-stryker`, a local tool: `dotnet tool restore`) changes the production code in small ways and checks that a test fails. A surviving mutant is behavior no test pins down. Settings are in `backend/stryker-config.json`.
 
-- **What is mutated, which tests run.** `WattWise.Domain` with `WattWise.Domain.Tests`, `WattWise.Application` with `WattWise.Application.Tests` and `WattWise.Api` with `WattWise.Api.Tests`: three runs, because Stryker's solution mode would also run the integration tests (Docker). Migrations and generated files are excluded.
-- **Command.** Run each from the repo root; reports go to `backend/StrykerOutput/<Project>/reports/` (git-ignored; open `mutation-report.html`):
+- **What is mutated, which tests run.** One source project per run, with the tests that reach it: Domain and Application with their own test projects, Infrastructure with `Infrastructure.Tests` and `Infrastructure.IntegrationTests`, Api with `Api.Tests` only (its integration tests would need Docker for every mutant). Jobs has no run; its host wiring is checked by hand-mutating it in review. Migrations and generated files are excluded.
+- **Commands.** Run each from the repo root; reports go to `backend/StrykerOutput/<Project>/reports/` (git-ignored; open `mutation-report.html`). The Infrastructure run needs Docker and takes minutes:
 
   ```bash
   dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Domain -p WattWise.Domain.csproj -tp backend/tests/WattWise.Domain.Tests/WattWise.Domain.Tests.csproj
   dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Application -p WattWise.Application.csproj -tp backend/tests/WattWise.Application.Tests/WattWise.Application.Tests.csproj
+  dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Infrastructure -p WattWise.Infrastructure.csproj -tp backend/tests/WattWise.Infrastructure.Tests/WattWise.Infrastructure.Tests.csproj -tp backend/tests/WattWise.Infrastructure.IntegrationTests/WattWise.Infrastructure.IntegrationTests.csproj
   dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Api -p WattWise.Api.csproj -tp backend/tests/WattWise.Api.Tests/WattWise.Api.Tests.csproj
   ```
 
-- **Only changed code.** Add `--since:main` (files changed against `main`) or `--mutate "**/Pricing/*.cs"` (a glob, repeatable) to a run.
-- **Thresholds.** `high`, `low` and `break` go under `stryker-config` in `stryker-config.json`; `high` 80 and `low` 60 are Stryker's defaults and only colour the report. `break` 60 makes a run exit with code 1 below 60 %, a floor under today's scores so the score can't drop; raise it as survivors are killed.
-- Treat each survivor as a missing or weak test: add the assertion that kills it, or note why the mutant is equivalent.
+  Start Stryker from the repo root: started in `backend/`, it finds the `.slnx`, switches to solution mode and also runs the Docker integration tests.
+
+- **Rules.**
+  - A change that adds production code: add `--since:main` (files changed against `main`) or `--mutate "**/Pricing/*.cs"` (a glob, repeatable) to a run.
+  - A test-only change (a rewrite) mutates nothing under `--since:main`: use a full run or `--mutate`, never `--since:main`.
+  - Kill every killable survivor. Record accepted survivors, each with its reason, in the commit.
+  - A change must not lower a project's score. The targets are the scores of 2026-11-02: Domain 88.46 %, Application 78.12 %, Infrastructure 57.42 %, Api 51.24 %.
+  - `high`, `low` and `break` go under `stryker-config` in `stryker-config.json`; `high` 80 and `low` 60 are Stryker's defaults and only colour the report. A run exits with code 1 below `break`, the floor all four runs must meet: the lowest of their scores rounded down to a multiple of 5. Raise it when killed survivors lift the lowest score past the next multiple.
+
+## Reference tests
+
+Follow these when writing a test in the same project:
+
+| Project                                    | Classes                                                                    |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| `WattWise.Domain.Tests`                    | `Accounts/AccountTests`                                                    |
+| `WattWise.Application.Tests`               | `Pipeline/MediatorPipelineTests`                                           |
+| `WattWise.Infrastructure.Tests`            | `Persistence/DatabaseSettingsValidatorTests`, `Accounts/PasswordRuleTests` |
+| `WattWise.Infrastructure.IntegrationTests` | `Accounts/EmailLinkRedemptionTests`, `RoleAccessTests`                     |
+| `WattWise.Api.Tests`                       | `ErrorHandling/ResultHttpExtensionsTests`                                  |
+| `WattWise.Api.IntegrationTests`            | `ErrorResponseTests`, `CorsTests`                                          |
+| `WattWise.Jobs.IntegrationTests`           | `NoOpJobTests`                                                             |
 
 ## Property-based tests
 
