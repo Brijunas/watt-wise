@@ -5,37 +5,54 @@ using Microsoft.OpenApi.Reader;
 
 namespace WattWise.Api.IntegrationTests;
 
-public class OpenApiDocumentTests(ErrorsApiFixture fixture) : IClassFixture<ErrorsApiFixture>
+public class OpenApiDocumentTests(ApiHostFixture fixture) : IClassFixture<ApiHostFixture>
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task Document_is_valid_and_describes_the_api_under_the_v1_prefix()
+    public async Task The_openapi_document_has_no_parse_errors()
     {
-        using HttpClient client = fixture.Factory.CreateClient();
+        ReadResult result = await LoadAsync();
 
-        using HttpResponseMessage response = await client.GetAsync("/openapi/v1.json", Token);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        await using Stream stream = await response.Content.ReadAsStreamAsync(Token);
-        (OpenApiDocument? document, OpenApiDiagnostic? diagnostic) = await OpenApiDocument.LoadAsync(
-            stream, "json", settings: null, Token);
-        Assert.NotNull(document);
-        Assert.NotNull(diagnostic);
-        Assert.Empty(diagnostic.Errors);
-        Assert.Equal("Watt-Wise API", document.Info.Title);
-        Assert.Equal("v1", document.Info.Version);
-        Assert.Contains("/api/v1/test/errors/ok", document.Paths.Keys);
+        Assert.Empty(result.Diagnostic!.Errors);
     }
 
     [Fact]
-    public async Task Scalar_ui_is_served_as_html()
+    public async Task The_openapi_document_is_titled_Watt_Wise_API_version_v1()
+    {
+        OpenApiDocument document = (await LoadAsync()).Document!;
+
+        // The version "v1" is characterization: backend/src/WattWise.Api/OpenApi/OpenApiServiceCollectionExtensions.cs:17
+        Assert.Equal("Watt-Wise API v1", $"{document.Info.Title} {document.Info.Version}");
+    }
+
+    [Fact]
+    public async Task The_openapi_document_lists_the_about_get_operation()
+    {
+        OpenApiDocument document = (await LoadAsync()).Document!;
+
+        Assert.Equal(
+            [HttpMethod.Get],
+            document.Paths["/api/v1/about"].Operations!.Keys);
+    }
+
+    [Fact]
+    public async Task Scalar_is_served_as_html_outside_production()
     {
         using HttpClient client = fixture.Factory.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync("/scalar", Token);
 
+        Assert.Equal("200 text/html", $"{(int)response.StatusCode} {response.Content.Headers.ContentType?.MediaType}");
+    }
+
+    private async Task<ReadResult> LoadAsync()
+    {
+        using HttpClient client = fixture.Factory.CreateClient();
+        using HttpResponseMessage response = await client.GetAsync("/openapi/v1.json", Token);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+        await using Stream stream = await response.Content.ReadAsStreamAsync(Token);
+
+        return await OpenApiDocument.LoadAsync(stream, "json", settings: null, Token);
     }
 }

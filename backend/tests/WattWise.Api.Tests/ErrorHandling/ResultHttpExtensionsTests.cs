@@ -44,12 +44,13 @@ public class ResultHttpExtensionsTests
         {
             ["Address.StreetName"] = ["a"],
             ["Items[0].Name"] = ["b"],
+            ["IPAddress"] = ["c"],
         });
 
         ValidationProblem problem = Assert.IsType<ValidationProblem>(failure.ToHttpResult().Result);
 
         Assert.Equal(
-            new Dictionary<string, string[]> { ["address.streetName"] = ["a"], ["items[0].name"] = ["b"] },
+            new Dictionary<string, string[]> { ["address.streetName"] = ["a"], ["items[0].name"] = ["b"], ["ipAddress"] = ["c"] },
             problem.ProblemDetails.Errors);
     }
 
