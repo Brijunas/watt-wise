@@ -27,6 +27,7 @@ Rules of thumb:
 | `WattWise.Application.Tests`               | Unit        | Application handlers, validators and pipeline behaviors.                                                                                                    |
 | `WattWise.Infrastructure.Tests`            | Unit        | Infrastructure code that needs no database: normalization, password rules and hashing, settings validators, the span filter.                                |
 | `WattWise.Infrastructure.IntegrationTests` | Integration | Persistence, migrations and external adapters against PostgreSQL.                                                                                           |
+| `WattWise.Api.Tests`                       | Unit        | Api code that needs no host: the error mapping and ProblemDetails customization, the CORS settings validator, the health response writer.                   |
 | `WattWise.Api.IntegrationTests`            | Functional  | Endpoints, sign-in and permission checks through `WebApplicationFactory`, ProblemDetails mapping.                                                           |
 | `WattWise.Jobs.IntegrationTests`           | Functional  | Each Hangfire job end to end against PostgreSQL with stubbed external sources: expected rows written, draft plans produced, retries and idempotent re-runs. |
 | `WattWise.Testing`                         | Library     | Not a test project: the shared PostgreSQL fixture, `TestHostFactory` and `Poll`, referenced by the three integration projects.                              |
@@ -86,12 +87,13 @@ PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-post
 
 Stryker.NET (`dotnet-stryker`, a local tool: `dotnet tool restore`) changes the production code in small ways and checks that a test fails. A surviving mutant is behavior no test pins down. Settings are in `backend/stryker-config.json`.
 
-- **What is mutated, which tests run.** `WattWise.Domain` with `WattWise.Domain.Tests`, and `WattWise.Application` with `WattWise.Application.Tests`: two runs, because Stryker's solution mode would also run the integration tests (Docker). Migrations and generated files are excluded.
+- **What is mutated, which tests run.** `WattWise.Domain` with `WattWise.Domain.Tests`, `WattWise.Application` with `WattWise.Application.Tests` and `WattWise.Api` with `WattWise.Api.Tests`: three runs, because Stryker's solution mode would also run the integration tests (Docker). Migrations and generated files are excluded.
 - **Command.** Run each from the repo root; reports go to `backend/StrykerOutput/<Project>/reports/` (git-ignored; open `mutation-report.html`):
 
   ```bash
   dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Domain -p WattWise.Domain.csproj -tp backend/tests/WattWise.Domain.Tests/WattWise.Domain.Tests.csproj
   dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Application -p WattWise.Application.csproj -tp backend/tests/WattWise.Application.Tests/WattWise.Application.Tests.csproj
+  dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/Api -p WattWise.Api.csproj -tp backend/tests/WattWise.Api.Tests/WattWise.Api.Tests.csproj
   ```
 
 - **Only changed code.** Add `--since:main` (files changed against `main`) or `--mutate "**/Pricing/*.cs"` (a glob, repeatable) to a run.

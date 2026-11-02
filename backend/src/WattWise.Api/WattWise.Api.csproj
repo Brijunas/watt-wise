@@ -23,6 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="WattWise.Api.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\WattWise.Application\WattWise.Application.csproj" />
     <ProjectReference Include="..\WattWise.Infrastructure\WattWise.Infrastructure.csproj" />
   </ItemGroup>
