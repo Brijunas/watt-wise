@@ -9,6 +9,17 @@ How the backend sends transactional email: the port, the messages, rendering, th
 - **Language:** the caller picks the language, normally the account's preferred one. `Language.Lt` and `Language.En` have a template each.
 - **Adapter:** Infrastructure's `Email/SmtpEmailSender` renders the message with `EmailRenderer` and sends it with MailKit, on a new connection per message. `AddInfrastructure()` registers both through a private `AddEmail()`, so every host has them; Jobs and the Cli need no `Smtp` settings unless they send.
 
+## Sending in the background
+
+Built in S4.3; S4.2 sends inline until then.
+
+- **Queue:** a request that sends an email (register, resend confirmation, forgot password) doesn't wait for SMTP. It hands the `EmailMessage` to an in-process queue, a bounded `System.Threading.Channels` channel behind the `IEmailSender` port or a small wrapper.
+- **Sender:** a hosted service in the Api reads the queue and sends with `SmtpEmailSender`.
+- **Why:** a request that sends mail and one that doesn't take the same time, so response timing can't show whether an email has an account ([security.md](../../docs/security.md#accounts)).
+- **No Hangfire:** the Api never touches Hangfire ([jobs.md](jobs.md)), and a queued email holds a link whose token must never be stored ([security.md](../../docs/security.md#accounts)). So nothing goes to the database.
+- **Lost on stop:** emails still queued when the Api stops are lost; the user asks for the email again.
+- **Full queue:** the email is dropped and logged at Error (kind and language only, never the recipient), and the request still succeeds.
+
 ## Rendering
 
 Fluid 2.40 (Liquid) fills the placeholders and Mjml.Net 4.15 compiles the HTML part into responsive, email-safe HTML. Both are MIT, maintained, free and widely used. Liquid is safe because a template can't run code.

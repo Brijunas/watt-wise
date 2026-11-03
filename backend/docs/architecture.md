@@ -148,7 +148,7 @@ The account model, ASP.NET Core Identity and the sign-in flows are in [features/
 ## Shared services
 
 - **Clock:** code that needs the current time takes NodaTime's `IClock` (`SystemClock.Instance`, registered by `AddInfrastructure()`; `FakeClock` in tests).
-- **Email sending:** the Api sends directly over SMTP with MailKit, through an Application port ([technical.md](../../docs/technical.md#cross-cutting)); the messages, templates and settings are in [email.md](email.md). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
+- **Email sending:** the Api sends directly over SMTP with MailKit, through an Application port ([technical.md](../../docs/technical.md#cross-cutting)); the messages, templates and settings are in [email.md](email.md). The Api queues each email in memory and a hosted service sends it, so a request never waits on SMTP; no Hangfire ([email.md](email.md#sending-in-the-background)). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
 
 ## Logging and observability
 
