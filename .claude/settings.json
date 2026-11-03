@@ -83,5 +83,6 @@
     "playwright@anthropic-plugin-directory": true,
     "github@anthropic-plugin-directory": false
   },
-  "enabledMcpjsonServers": ["postgres", "grafana", "github"]
+  "enabledMcpjsonServers": ["grafana", "github"],
+  "disabledMcpjsonServers": ["postgres"]
 }

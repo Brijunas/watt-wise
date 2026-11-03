@@ -5,6 +5,7 @@
 #   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
 #
 # Passwords are never rendered; they stay in compose.env (op run, first start only).
+# GRAFANA_URL is not used by compose: the grafana MCP server reads it (.claude/mcp/grafana.sh).
 # Vault: "Watt Wise Development", items postgres-admin, pgadmin, grafana and otlp.
 POSTGRES_BIND_ADDRESS="{{ op://Watt Wise Development/postgres-admin/server }}"
 POSTGRES_PORT="{{ op://Watt Wise Development/postgres-admin/port }}"
@@ -15,5 +16,6 @@ PGADMIN_PORT="{{ op://Watt Wise Development/pgadmin/port }}"
 PGADMIN_DEFAULT_EMAIL="{{ op://Watt Wise Development/pgadmin/username }}"
 GRAFANA_BIND_ADDRESS="{{ op://Watt Wise Development/grafana/server }}"
 GRAFANA_PORT="{{ op://Watt Wise Development/grafana/port }}"
+GRAFANA_URL="{{ op://Watt Wise Development/grafana/url }}"
 OTLP_BIND_ADDRESS="{{ op://Watt Wise Development/otlp/server }}"
 OTLP_PORT="{{ op://Watt Wise Development/otlp/port }}"

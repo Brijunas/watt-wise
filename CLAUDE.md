@@ -43,7 +43,7 @@ Sessions may start at the repo root or inside a project (`backend/`), and both m
 - Hook and MCP scripts find the repo with `git rev-parse --show-toplevel`, never with `$CLAUDE_PROJECT_DIR` alone, which is the folder the session started in.
 - `prettier-write` (PostToolUse) runs Prettier on every repo file Claude writes or edits, so a Markdown table or JSON may be reformatted right after an edit. That is expected; don't undo it.
 - A hook that takes a `flock` closes the lock's fd for `dotnet` children (`9>&-`): MSBuild's reused nodes and the compiler server outlive the build and would hold the lock for minutes.
-- MCP servers are in the root `.mcp.json`: `postgres` (read-only `reader` role), `grafana` (logs, traces and metrics in Grafana LGTM) and `github` (token from `gh auth token` at start; the GitHub plugin stays off because its server needs a token in the environment). When a new observability or external tool is added, add or update its MCP server in the same change.
+- MCP servers are in the root `.mcp.json`: `postgres` (read-only `reader` role; disabled in both `settings.json` files so it doesn't ask 1Password at every session start), `grafana` (logs, traces and metrics in Grafana LGTM; its URL comes from the rendered `deploy/.env`, no `op`) and `github` (token from `gh auth token` at start; the GitHub plugin stays off because its server needs a token in the environment). When a new observability or external tool is added, add or update its MCP server in the same change.
 
 ## Commands
 
