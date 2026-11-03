@@ -6,7 +6,9 @@ using Microsoft.Extensions.Options;
 
 using NodaTime;
 
+using WattWise.Application.Email;
 using WattWise.Infrastructure.Accounts;
+using WattWise.Infrastructure.Email;
 using WattWise.Infrastructure.Persistence;
 using WattWise.Infrastructure.Persistence.Schema;
 
@@ -14,6 +16,8 @@ namespace WattWise.Infrastructure;
 
 public static class DependencyInjection
 {
+    private static int _mailKitTelemetryConfigured;
+
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
         // Settings are read from the built configuration, not at registration, so sources added
@@ -33,6 +37,31 @@ public static class DependencyInjection
         services.AddSingleton<IClock>(SystemClock.Instance);
         services.AddSchemaSteps();
         services.AddIdentity();
+        services.AddEmail();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers email sending. The settings are not validated at start, so hosts that never send email
+    /// (Jobs, Cli) run without them; the Api, the only host that sends email, requires them at start.
+    /// </summary>
+    private static IServiceCollection AddEmail(this IServiceCollection services)
+    {
+        // Read from the built configuration like the database settings above; validated when first resolved.
+        services.AddOptions<SmtpSettings>()
+            .Configure<IConfiguration>((settings, configuration) => settings.ReadFrom(configuration));
+        services.AddSingleton<IValidateOptions<SmtpSettings>, SmtpSettingsValidator>();
+
+        // MailKit's own spans and metrics (mailkit.net.smtp, mailkit.net.socket); the sources are listed in the observability setup.
+        // Configured once per process, however many hosts or providers call this.
+        if (Interlocked.Exchange(ref _mailKitTelemetryConfigured, 1) == 0)
+        {
+            MailKit.Telemetry.SmtpClient.Configure();
+        }
+
+        // Singleton: the parsed templates are cached and the sender holds no per-request state (a client is created per send).
+        services.AddSingleton<EmailRenderer>();
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
         return services;
     }
 

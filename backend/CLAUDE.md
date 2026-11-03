@@ -18,7 +18,7 @@ Hook scripts are in the root `.claude/hooks/`, registered in both `.claude/setti
 - `backend-build-check` builds the solution (in its own output folder under `~/.cache`, so it never races other builds) when a session stops with changed C# or project files, and blocks the stop once on any warning or error. Fix them before stopping.
 - `/ef-migration` holds the steps that turn a model change into a migration. Run those steps yourself after asking whether to regenerate `Initial` or add a migration; never hand migration commands to the user.
 - Run the `backend-reviewer` agent before opening a PR that touches `backend/`. The test agents are under "Testing rules".
-- To inspect the Development stack, use the `postgres` MCP (read-only `reader` role; writes fail with SQLSTATE 25006) and the `grafana` MCP (Loki logs, Tempo traces, Mimir metrics). Both need the stack running and `op` signed in.
+- To inspect the Development stack, use the `postgres` MCP (read-only `reader` role; writes fail with SQLSTATE 25006) and the `grafana` MCP (Loki logs, Tempo traces, Mimir metrics). Both need the stack running. `postgres` is off by default (it needs `op` signed in); ask the user to turn it on with `/mcp` when you need the database.
 
 ## Before committing
 

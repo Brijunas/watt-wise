@@ -7,7 +7,7 @@ public class CorsStartupTests(DatabaseFixture fixture) : IClassFixture<DatabaseF
     [Fact]
     public async Task A_malformed_origin_stops_the_host_naming_the_setting()
     {
-        Dictionary<string, string?> settings = new(fixture.Database.ConfigurationFor(DatabaseRole.Api))
+        Dictionary<string, string?> settings = new(ApiTestSettings.For(fixture.Database))
         {
             ["Cors:AllowedOrigins:0"] = "https://app.example.test/path",
         };

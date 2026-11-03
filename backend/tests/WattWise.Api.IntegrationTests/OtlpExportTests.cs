@@ -14,7 +14,7 @@ public class OtlpExportTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
     public async Task A_valid_otlp_endpoint_exports_traces_to_the_trace_service()
     {
         await using OtlpTestReceiver receiver = await OtlpTestReceiver.StartAsync(Token);
-        Dictionary<string, string?> settings = new(fixture.Database.ConfigurationFor(DatabaseRole.Api))
+        Dictionary<string, string?> settings = new(ApiTestSettings.For(fixture.Database))
         {
             ["Observability:OtlpEndpoint"] = receiver.Endpoint.GetLeftPart(UriPartial.Authority),
         };

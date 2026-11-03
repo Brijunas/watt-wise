@@ -71,6 +71,7 @@ Three hosts wire the layers together and are deployed separately:
 
 - Each host's `appsettings.json` lists every key a secret lands in with an empty value, so the file shows where each secret goes. `appsettings.<Environment>.json` holds only non-secret per-environment settings. A required setting that is blank counts as missing; what a blank optional setting means (such as `Observability:OtlpEndpoint` or `Cors:AllowedOrigins`) is under its own section.
 - The values come from 1Password as environment variables ([technical.md](../../docs/technical.md#cross-cutting)). In Development they come from the host's committed `.env.development` file (e.g. `WattWise.Api/.env.development`), which `op run` resolves at start. That file also sets the .NET environment name (`launchSettings.json` doesn't), so a host started without it runs as Production and stops on the missing settings. Deployed environments get the values from their compose stack.
+- **Exception: `Smtp`.** Its non-secret connection settings (host, port, TLS mode, from address and name) sit in `appsettings.json` and `appsettings.<Environment>.json`; only `Smtp:Username` and `Smtp:Password` come from 1Password ([email.md](email.md#settings)).
 
 ## Request handling
 
@@ -147,7 +148,7 @@ The account model, ASP.NET Core Identity and the sign-in flows are in [features/
 ## Shared services
 
 - **Clock:** code that needs the current time takes NodaTime's `IClock` (`SystemClock.Instance`, registered by `AddInfrastructure()`; `FakeClock` in tests).
-- **Email sending:** the Api sends directly over SMTP with MailKit, through an Application port ([technical.md](../../docs/technical.md#cross-cutting)). A failed send is logged and doesn't fail the request, since the user can ask for the email again.
+- **Email sending:** over SMTP with MailKit, through an Application port ([technical.md](../../docs/technical.md#cross-cutting)); the messages, templates and settings are in [email.md](email.md). From S4.3 the Api only records an email request in the database and the Jobs host sends it, so a request never waits on SMTP; the plan is in [s4.3-plan.md](../../docs/s4.3-plan.md) until it ships. A failed send is retried by the Jobs host and never fails the request.
 
 ## Logging and observability
 

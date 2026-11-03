@@ -118,6 +118,8 @@ pgAdmin listens on the address and port in the `pgadmin` item (http://127.0.0.1:
 
 The stack also runs Grafana LGTM, which receives the apps' traces, metrics and logs. Grafana is at the `grafana` item's `url` (http://127.0.0.1:3000 today), without a login; see [deploy/docs/lgtm.md](../deploy/docs/lgtm.md). On a machine set up before S2.8, render `deploy/.env` again (step 1) and run `docker compose -f deploy/docker-compose.development.yml up -d --wait` to add it.
 
+The stack also runs Mailpit, which catches every email the Development Api sends. Its web UI is at the `mailpit` item's `url` (http://127.0.0.1:8025 today); see [deploy/docs/mailpit.md](../deploy/docs/mailpit.md). On a machine set up before S4.2, render `deploy/.env` again (step 1) and run `docker compose -f deploy/docker-compose.development.yml up -d --wait` to add it.
+
 ## 6. Check that everything works
 
 Run the [checks](development.md#checks) from development.md. Every one should pass; the backend tests need the Docker daemon running. From here on, [development.md](development.md) covers everyday work.
@@ -132,7 +134,7 @@ Any editor works. For VS Code, install the ESLint and Prettier extensions and tu
 
 Project settings for Claude Code ship with the repo (`.claude/` and `CLAUDE.md`), so there is nothing to install. What they enforce is described under "Code style / linting" and "Secrets and configuration" in [technical.md](technical.md). Personal overrides go in `.claude/settings.local.json`, which stays out of git.
 
-`.mcp.json` adds three MCP servers that run in Docker: `postgres` (read-only, as the `reader` role through the `postgres-reader` item), `grafana` (Grafana LGTM) and `github` (uses the `gh` sign-in). Claude Code asks to approve them on first use. `postgres` and `grafana` need the Development stack running and `op` signed in; `github` needs `gh auth login`.
+`.mcp.json` adds three MCP servers that run in Docker: `postgres` (read-only, as the `reader` role through the `postgres-reader` item), `grafana` (Grafana LGTM) and `github` (uses the `gh` sign-in). `postgres` is off by default, because it asks 1Password for the `reader` password on every session start; turn it on with `/mcp` in a session that needs the database. `grafana` and `github` start with every session. `postgres` and `grafana` need the Development stack running; `postgres` also needs `op` signed in, `grafana` reads its URL from `deploy/.env` (rendered in step 5) and `github` needs `gh auth login`.
 
 ## Troubleshooting
 
