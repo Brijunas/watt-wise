@@ -83,7 +83,7 @@ The default is `StartTls`, so an environment that forgets the key doesn't send i
 A failed send is logged and doesn't throw, because the user can ask for the email again.
 
 - **What is logged:** at Error, the email kind, the language and the exception's type name (`SocketException`, `AuthenticationException`, …); a server refusal (`SmtpCommandException`) adds its SMTP status code. Never the recipient and never the exception object or its message: a server's reply often echoes the address (`550 <user@x> unknown`), and a message can name the host or username.
-- **What is caught:** SMTP, TLS, authentication, network and timeout failures, and `NotSupportedException` (the server offers no AUTH or no STARTTLS). Cancellation propagates, and so does a bug such as a broken template or a missing setting.
+- **What is caught:** SMTP, TLS, authentication, network and timeout failures, and `NotSupportedException` (the server offers no AUTH or no STARTTLS). Cancellation propagates, and so does a bug such as a broken template, a missing setting or a recipient that isn't an address (callers pass the account's normalized, validated email).
 - **Timeout:** every client operation has a 30-second timeout (`TimeoutMilliseconds` in `SmtpEmailSender`) instead of MailKit's two minutes, so a stalled server doesn't hold a request. A timeout is logged like any failure.
 - A success is logged at Debug.
 
