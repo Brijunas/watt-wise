@@ -24,7 +24,7 @@ public static class ObservabilityHostApplicationBuilderExtensions
 {
     private const string EnvironmentAttribute = "deployment.environment.name";
 
-    private static readonly string[] AppSources = ["WattWise.*", "Microsoft.AspNetCore", "System.Net.Http"];
+    private static readonly string[] AppSources = ["WattWise.*", "Microsoft.AspNetCore", "System.Net.Http", "mailkit.net.smtp", "mailkit.net.socket"];
 
     private static readonly string[] AppMeters =
     [
@@ -35,6 +35,8 @@ public static class ObservabilityHostApplicationBuilderExtensions
         "Microsoft.AspNetCore.Server.Kestrel",
         "Microsoft.AspNetCore.Routing",
         "Microsoft.AspNetCore.Diagnostics",
+        "mailkit.net.smtp",
+        "mailkit.net.socket",
     ];
 
     /// <summary>

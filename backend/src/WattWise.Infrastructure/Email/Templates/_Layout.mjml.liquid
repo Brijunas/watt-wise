@@ -1,0 +1,25 @@
+<mjml lang="{{ lang }}">
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Helvetica, Arial, sans-serif" />
+      <mj-text font-size="16px" line-height="24px" color="#1f2937" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f3f4f6">
+    <mj-section padding-bottom="0">
+      <mj-column>
+        <mj-text font-size="22px" font-weight="bold" color="#0f766e">Watt-Wise</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" border-radius="8px">
+      <mj-column>
+{{ body | raw }}
+      </mj-column>
+    </mj-section>
+    <mj-section>
+      <mj-column>
+        <mj-text font-size="12px" line-height="18px" color="#6b7280">{{ footer }}</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

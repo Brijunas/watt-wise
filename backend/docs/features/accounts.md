@@ -1,6 +1,6 @@
 # Accounts
 
-The account is the user: its id, preferred language and creation time, and everything the user owns hangs off it. This doc is how the feature is built: the model, ASP.NET Core Identity and, from S4.2 on, the sign-in flows. Each E4 story adds its section here. What the feature enforces (passwords, lockout, tokens, sessions, permissions) is decided in the root [security.md](../../../docs/security.md); the token flow seen by clients is in the root [technical.md](../../../docs/technical.md#backend).
+The account is the user: its id, preferred language and creation time, and everything the user owns hangs off it. This doc is how the feature is built: the model, ASP.NET Core Identity, the emails it sends and, from S4.3 on, the sign-in flows. Each E4 story adds its section here. What the feature enforces (passwords, lockout, tokens, sessions, permissions) is decided in the root [security.md](../../../docs/security.md); the token flow seen by clients is in the root [technical.md](../../../docs/technical.md#backend).
 
 ## Vocabulary
 
@@ -21,11 +21,24 @@ The feature's word is `Accounts` in every project ([architecture.md](../architec
 | Project                                       | Where                         | What                                                                                                                                                                                                                   |
 | --------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Domain                                        | `Accounts/`                   | `Account`, `AccountRole`, `Role`, `RolePermission`, `Permission`                                                                                                                                                       |
-| Application                                   | `Accounts/`                   | Use cases and ports, from S4.3                                                                                                                                                                                         |
+| Application                                   | `Accounts/`                   | The email records (`EmailConfirmationEmail`, `AccountAlreadyExistsEmail`, `PasswordResetEmail`); use cases and ports from S4.3                                                                                         |
+| Application, Infrastructure                   | `Email/`                      | The email concept, shared by every feature: Application's `IEmailSender` and `EmailMessage`, Infrastructure's `SmtpEmailSender`, `EmailRenderer`, `SmtpSettings` and the templates ([email.md](../email.md))           |
 | Infrastructure                                | `Accounts/`                   | The ASP.NET Core Identity adapter: `AccountIdentity`, `EmailLinkToken` and `EmailLinkTokenProvider`, `EmailLookupNormalizer`, `NormalizingPasswordHasher`, the password validators                                     |
 | Infrastructure                                | `Persistence/Configurations/` | The EF mappings (`AccountConfiguration`, `AccountIdentityConfiguration`, …), in the folder every feature shares                                                                                                        |
 | Api                                           | `Endpoints/`                  | `AccountsEndpointModule`, from S4.3. It maps the `/api/v1/auth` route group; the public name stays `auth`, like the shared i18n namespace ([frontend/docs/structure.md](../../../frontend/docs/structure.md#features)) |
 | Domain.Tests, Infrastructure.IntegrationTests | `Accounts/`                   | The feature's tests. `AccountsTestSupport` builds services for the `api` role, with an optional `FakeClock`, and makes accounts, `AccountIdentity` records and unique emails                                           |
+
+## Emails
+
+The account flows send three messages, each in the account's preferred language (LT or EN). They are records in Application's `Accounts/`; S4.2 built the sending, the stories below build and send them ([email.md](../email.md)).
+
+| Message                     | What it says                                                                         | Sent by                              |
+| --------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------ |
+| `EmailConfirmationEmail`    | Confirm your email with this link, valid 24 hours; ignore this if you didn't sign up | S4.3, on registration and on resend  |
+| `AccountAlreadyExistsEmail` | Someone tried to sign up with your email, which already has an account; no link      | S4.3, instead of a confirmation link |
+| `PasswordResetEmail`        | Set a new password with this link, valid 1 hour; ignore this if you didn't ask       | S4.5                                 |
+
+Link lifetimes and the no-account-discovery rule are in [security.md](../../../docs/security.md#accounts).
 
 ## Model
 

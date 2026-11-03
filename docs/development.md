@@ -98,14 +98,14 @@ First-time setup (roles, passwords, first start) is "Development database" in [s
 | Command                                                                                                              | What it does                                                                                                                |
 | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env`                                             | Renders the stack's settings again after one of them changes in 1Password.                                                  |
-| `docker compose -f deploy/docker-compose.development.yml up -d --wait`                                               | Starts PostgreSQL, pgAdmin and Grafana LGTM and waits until they are healthy.                                               |
+| `docker compose -f deploy/docker-compose.development.yml up -d --wait`                                               | Starts PostgreSQL, pgAdmin, Grafana LGTM and Mailpit and waits until they are healthy.                                      |
 | `docker compose -f deploy/docker-compose.development.yml down`                                                       | Stops and removes the containers. The data stays in the volumes.                                                            |
 | `docker compose -f deploy/docker-compose.development.yml ps`                                                         | Shows the containers and their health.                                                                                      |
 | `docker compose -f deploy/docker-compose.development.yml logs -f postgres`                                           | Follows one service's log.                                                                                                  |
 | `docker compose -f deploy/docker-compose.development.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d wattwise'` | Opens psql as `admin` in the `wattwise` database.                                                                           |
 | `docker compose -f deploy/docker-compose.development.yml down -v`                                                    | Also deletes the volumes: the database, pgAdmin's state and Grafana's data. Afterwards redo setup.md step 5 from the start. |
 
-pgAdmin is at the `pgadmin` item's address and port, and asks for the `postgres-admin` password the first time ([postgres.md](../deploy/docs/postgres.md#pgadmin)). Grafana is at the `grafana` item's `url` ([lgtm.md](../deploy/docs/lgtm.md)).
+pgAdmin is at the `pgadmin` item's address and port, and asks for the `postgres-admin` password the first time ([postgres.md](../deploy/docs/postgres.md#pgadmin)). Grafana is at the `grafana` item's `url` ([lgtm.md](../deploy/docs/lgtm.md)). Mailpit's web UI is at the `mailpit` item's `url`, and every email the Development Api sends shows up there ([mailpit.md](../deploy/docs/mailpit.md)).
 
 ## Migrations
 

@@ -118,6 +118,8 @@ pgAdmin listens on the address and port in the `pgadmin` item (http://127.0.0.1:
 
 The stack also runs Grafana LGTM, which receives the apps' traces, metrics and logs. Grafana is at the `grafana` item's `url` (http://127.0.0.1:3000 today), without a login; see [deploy/docs/lgtm.md](../deploy/docs/lgtm.md). On a machine set up before S2.8, render `deploy/.env` again (step 1) and run `docker compose -f deploy/docker-compose.development.yml up -d --wait` to add it.
 
+The stack also runs Mailpit, which catches every email the Development Api sends. Its web UI is at the `mailpit` item's `url` (http://127.0.0.1:8025 today); see [deploy/docs/mailpit.md](../deploy/docs/mailpit.md). On a machine set up before S4.2, render `deploy/.env` again (step 1) and run `docker compose -f deploy/docker-compose.development.yml up -d --wait` to add it.
+
 ## 6. Check that everything works
 
 Run the [checks](development.md#checks) from development.md. Every one should pass; the backend tests need the Docker daemon running. From here on, [development.md](development.md) covers everyday work.

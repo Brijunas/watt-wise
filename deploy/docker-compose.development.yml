@@ -1,6 +1,6 @@
-# Development environment: PostgreSQL, pgAdmin and Grafana LGTM (traces, metrics and logs
-# over OTLP). Bind addresses, ports and user names come from 1Password, rendered into
-# deploy/.env (read by compose automatically):
+# Development environment: PostgreSQL, pgAdmin, Grafana LGTM (traces, metrics and logs
+# over OTLP) and Mailpit (catches every email the Api sends). Bind addresses, ports and
+# user names come from 1Password, rendered into deploy/.env (read by compose automatically):
 #   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
 # Passwords are read only on first start of empty volumes, through op run:
 #   op run --env-file deploy/development/compose.env -- \
@@ -71,6 +71,20 @@ services:
       - '${OTLP_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${OTLP_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:4317'
     volumes:
       - lgtm-data:/data
+
+  mailpit:
+    image: axllent/mailpit:v1.33.0
+    restart: unless-stopped
+    environment:
+      # The Api always authenticates, as against Brevo; Mailpit accepts any credentials over plain SMTP. Published on loopback only.
+      MP_SMTP_AUTH_ACCEPT_ANY: 'true'
+      MP_SMTP_AUTH_ALLOW_INSECURE: 'true'
+    ports:
+      # SMTP; the Api sends its email here.
+      - '${MAILPIT_SMTP_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${MAILPIT_SMTP_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:1025'
+      # Web UI and API.
+      - '${MAILPIT_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${MAILPIT_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:8025'
+    # No volume: caught mail is throwaway.
 
 volumes:
   postgres-data:

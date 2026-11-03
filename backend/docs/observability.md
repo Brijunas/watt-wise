@@ -24,8 +24,8 @@ Every host calls `builder.AddObservability("<service name>")` (`WattWise.Infrast
 **OpenTelemetry**
 
 - The resource carries `service.name`, `service.version` (the entry assembly's informational version) and `deployment.environment.name` (the lower-cased .NET environment).
-- Traces come from the `WattWise.*`, `Microsoft.AspNetCore` and `System.Net.Http` activity sources, plus Npgsql. .NET 11 emits the ASP.NET Core and HttpClient spans natively, so no instrumentation packages are needed for them.
-- Metrics come from the `WattWise.*`, `System.Runtime`, `System.Net.Http` and ASP.NET Core meters (hosting, Kestrel, routing, diagnostics), plus Npgsql.
+- Traces come from the `WattWise.*`, `Microsoft.AspNetCore` and `System.Net.Http` activity sources, plus Npgsql and MailKit (`mailkit.net.smtp`, `mailkit.net.socket`; its spans hold no recipient or server reply, see [email.md](email.md#telemetry)). .NET 11 emits the ASP.NET Core and HttpClient spans natively, so no instrumentation packages are needed for them.
+- Metrics come from the `WattWise.*`, `System.Runtime`, `System.Net.Http` and ASP.NET Core meters (hosting, Kestrel, routing, diagnostics), plus Npgsql and the two MailKit meters. `AddInfrastructure()` switches MailKit's telemetry on ([email.md](email.md#telemetry)).
 
 **OTLP export**
 

@@ -6,7 +6,7 @@
 #
 # Passwords are never rendered; they stay in compose.env (op run, first start only).
 # GRAFANA_URL is not used by compose: the grafana MCP server reads it (.claude/mcp/grafana.sh).
-# Vault: "Watt Wise Development", items postgres-admin, pgadmin, grafana and otlp.
+# Vault: "Watt Wise Development", items postgres-admin, pgadmin, grafana, otlp, mailpit-smtp and mailpit.
 POSTGRES_BIND_ADDRESS="{{ op://Watt Wise Development/postgres-admin/server }}"
 POSTGRES_PORT="{{ op://Watt Wise Development/postgres-admin/port }}"
 POSTGRES_USER="{{ op://Watt Wise Development/postgres-admin/username }}"
@@ -19,3 +19,7 @@ GRAFANA_PORT="{{ op://Watt Wise Development/grafana/port }}"
 GRAFANA_URL="{{ op://Watt Wise Development/grafana/url }}"
 OTLP_BIND_ADDRESS="{{ op://Watt Wise Development/otlp/server }}"
 OTLP_PORT="{{ op://Watt Wise Development/otlp/port }}"
+MAILPIT_SMTP_BIND_ADDRESS="{{ op://Watt Wise Development/mailpit-smtp/server }}"
+MAILPIT_SMTP_PORT="{{ op://Watt Wise Development/mailpit-smtp/port }}"
+MAILPIT_BIND_ADDRESS="{{ op://Watt Wise Development/mailpit/server }}"
+MAILPIT_PORT="{{ op://Watt Wise Development/mailpit/port }}"

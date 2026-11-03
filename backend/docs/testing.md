@@ -32,7 +32,7 @@ Rules of thumb:
 | `WattWise.Api.Tests`                       | Unit        | Api code that needs no host: the error mapping and ProblemDetails customization, the CORS settings validator, the health response writer.                                                                                                       |
 | `WattWise.Api.IntegrationTests`            | Functional  | Endpoints, sign-in and permission checks through `WebApplicationFactory`, ProblemDetails mapping.                                                                                                                                               |
 | `WattWise.Jobs.IntegrationTests`           | Functional  | Each Hangfire job end to end against PostgreSQL with stubbed external sources (rows written, retries, idempotent re-runs), and the host's wiring: recurring registration, dashboard access, request logging, worker count, settings validation. |
-| `WattWise.Testing`                         | Library     | Not a test project: the shared PostgreSQL fixture, `TestHostFactory` and `Poll`, referenced by the three integration projects.                                                                                                                  |
+| `WattWise.Testing`                         | Library     | Not a test project: the shared PostgreSQL and Mailpit fixtures, `TestHostFactory` and `Poll`, referenced by the three integration projects.                                                                                                     |
 
 ## Shared PostgreSQL fixture
 
@@ -52,6 +52,15 @@ Writing an integration test:
 - Api tests start the host through `TestHostFactory<Program>` (`WattWise.Testing`, a `WebApplicationFactory` for any web host) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
 - Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `jobs` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
+
+## Shared Mailpit fixture
+
+SMTP is never stubbed: email tests send over real SMTP to a Mailpit container and read the message back through Mailpit's API ([email.md](email.md#testing)).
+
+- **`MailpitContainerFixture`** (`tests/WattWise.Testing`) starts the same image as the compose file on fixed free loopback ports, with the same start retries as the PostgreSQL fixture (rootless Docker with pasta), and the `wattwise.tests` label.
+- **Settings and client.** It gives the `Smtp:*` keys that point at the container, and a small client over Mailpit's HTTP API that finds a message by its recipient. Tests use a unique recipient each, so they share the container.
+- **Used by** `Email/SmtpEmailSender` tests in Infrastructure.IntegrationTests. The sender's failure paths are unit tests against a scripted in-process SMTP server (`ScriptedSmtpServer` in Infrastructure.Tests), because Mailpit can't be told to refuse or stall.
+- **Api hosts** start with `SmtpTestSettings.Dummy` (StartTls, so it also passes in Production); `TestHostEnvironment` stands in for the host environment in service providers built without a host.
 
 ## Testing the pipeline and error mapping
 
