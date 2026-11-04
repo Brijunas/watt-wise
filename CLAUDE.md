@@ -41,6 +41,8 @@ Sessions may start at the repo root or inside a project (`backend/`), and both m
 - Agents and skills live in the root `.claude/agents/` and `.claude/skills/`, named `<project>-…` when they belong to one project. Claude Code finds them from a subfolder by walking up.
 - Path-scoped rules and notes for one project go in `<project>/.claude/rules/` and `<project>/CLAUDE.md`.
 - `settings.json` is not inherited from the root. A project Claude may be started in has its own `.claude/settings.json`, registering the same hooks, MCP servers and deny rules; change both together. Hook scripts live once, in the root `.claude/hooks/`. Today only `backend/` has one; start frontend sessions at the root.
+- Concurrent sessions each work in their own worktree. Don't start a branch in a checkout another session is using: it branches from that session's HEAD and carries its commits into your PR.
+- Agent briefs that write code against a library tell the agent to check the library's API in Context7 first. Every Agent call passes `model: "sonnet"`, research and report writers included.
 - Hook and MCP scripts find the repo with `git rev-parse --show-toplevel`, never with `$CLAUDE_PROJECT_DIR` alone, which is the folder the session started in.
 - `prettier-write` (PostToolUse) runs Prettier on every repo file Claude writes or edits, so a Markdown table or JSON may be reformatted right after an edit. That is expected; don't undo it.
 - A hook that takes a `flock` closes the lock's fd for `dotnet` children (`9>&-`): MSBuild's reused nodes and the compiler server outlive the build and would hold the lock for minutes.

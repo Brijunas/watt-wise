@@ -3,3 +3,4 @@ backend/**/bin/
 backend/**/obj/
 backend/**/TestResults/
 backend/openapi/
+.claude/worktrees/

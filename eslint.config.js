@@ -112,6 +112,7 @@ export default defineConfig(
     '**/coverage/',
     'backend/**/bin/',
     'backend/**/obj/',
+    '.claude/worktrees/',
   ]),
   js.configs.recommended,
   {
