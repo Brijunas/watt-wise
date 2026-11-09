@@ -79,6 +79,11 @@ open_url() {
 
 # pause "msg" waits for the human to confirm they've done the manual part.
 pause() {
+  # Never wait in a dry run or when stdin is not a terminal (agent or pipe use).
+  if [[ "${DRY_RUN:-0}" == 1 || ! -t 0 ]]; then
+    printf '  %s%s (continuing: no terminal or dry run)%s\n' "$DIM" "${1:-Press Enter to continue}" "$RESET"
+    return 0
+  fi
   printf '  %s%s%s ' "$DIM" "${1:-Press Enter to continue}" "$RESET"
   read -r _ || true
 }
@@ -204,7 +209,12 @@ finish() {
 # Every stage checks first and skips what is already done, so reruns are safe.
 # Overridable by env: AGENT_USER (corvus), GH_USER (Brijunas), GH_REPO
 # (Brijunas/watt-wise), OP_VAULT ("Watt Wise Development"), WW_CONFIG_DIR
-# (~/.config/wattwise).
+# (~/.config/wattwise), SIGNING_KEY (path of the signing key to use, which skips the
+# choice in the commit-signing stage; needed when there is no terminal).
+#
+# Uses `sudo -n` when sudo needs no password (tethys), so an agent can run it without
+# a human; otherwise sudo asks. Docker commands go through `sg docker -c` while this
+# shell lacks the docker group.
 
 DRY_RUN=0
 AGENT_USER="${AGENT_USER:-corvus}"
@@ -217,6 +227,9 @@ DOCKER_REPO_URL="https://download.docker.com/linux/fedora/docker-ce.repo"
 
 # Packages from the Fedora repositories.
 TOOL_PACKAGES=(tmux jq ShellCheck unison git gh curl)
+# Runtime libraries: Node 26 loads libatomic.so.1. openssl3-libs: on Fedora 45 only OpenSSL 4 is
+# installed by default, and Stryker.NET (.NET's OpenSSL 3 interop) segfaults (exit 139) without it.
+RUNTIME_PACKAGES=(libatomic openssl3-libs)
 # Chromium's runtime libraries for Playwright. `playwright install-deps` only
 # knows apt, so the Fedora names are listed here.
 PLAYWRIGHT_PACKAGES=(nss nspr atk at-spi2-atk cups-libs libdrm libxkbcommon
@@ -227,6 +240,20 @@ PLAYWRIGHT_PACKAGES=(nss nspr atk at-spi2-atk cups-libs libdrm libxkbcommon
 run() {
   if (( DRY_RUN )); then note "dry-run: $*"; return 0; fi
   "$@"
+}
+
+# SUDO is the sudo prefix: `sudo -n` when no password is needed, else plain sudo.
+SUDO=(sudo)
+if command -v sudo >/dev/null 2>&1 && sudo -n true >/dev/null 2>&1; then SUDO=(sudo -n); fi
+
+# docker ARGS... runs docker, through `sg docker -c` when this shell lacks the docker group
+# (right after usermod -aG docker, before the next login).
+dk() {
+  if docker info >/dev/null 2>&1 || ! id -nG "$AGENT_USER" | tr ' ' '\n' | grep -qx docker; then
+    docker "$@"
+  else
+    sg docker -c "$(printf '%q ' docker "$@")"
+  fi
 }
 
 # ok / bad print a verification result. bad returns failure so callers can chain.
@@ -257,24 +284,28 @@ stage_preflight() {
   [[ "${ID:-}" == "fedora" ]] || die "Only Fedora is supported (found '${ID:-unknown}')."
   ok "Fedora ${VERSION_ID:-?}"
   command -v sudo >/dev/null 2>&1 || die "sudo is not installed."
-  if (( DRY_RUN )); then
+  if "${SUDO[@]}" true >/dev/null 2>&1 && [[ "${SUDO[1]:-}" == "-n" ]]; then
+    ok "passwordless sudo (sudo -n)"
+  elif (( DRY_RUN )); then
     note "dry-run: would ask for your sudo password (sudo -v)"
-  else
+  elif [[ -t 0 ]]; then
     say "Some stages need sudo. Enter your password if asked."
     sudo -v || die "sudo failed."
     ok "sudo works"
+  else
+    die "sudo needs a password and there is no terminal. Run this in a terminal."
   fi
   pause_live "Press Enter to start."
 }
 
 stage_packages() {
   stage "System packages"
-  say "tmux, jq, ShellCheck, unison, git, gh, curl and Playwright's browser libraries."
+  say "tmux, jq, ShellCheck, unison, git, gh, curl, libatomic (for Node), openssl3-libs (for Stryker) and Playwright's browser libraries."
   local -a todo
-  mapfile -t todo < <(missing_rpms "${TOOL_PACKAGES[@]}" "${PLAYWRIGHT_PACKAGES[@]}")
+  mapfile -t todo < <(missing_rpms "${TOOL_PACKAGES[@]}" "${RUNTIME_PACKAGES[@]}" "${PLAYWRIGHT_PACKAGES[@]}")
   if (( ${#todo[@]} )); then
     note "missing: ${todo[*]}"
-    run sudo dnf -y install "${todo[@]}"
+    run "${SUDO[@]}" dnf -y install "${todo[@]}"
   else
     ok "all packages already installed"
   fi
@@ -293,11 +324,11 @@ stage_docker() {
   say "Docker Engine from Docker's own Fedora repository, with compose and buildx."
   local -a docker_pkgs=(docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin)
   if [[ ! -f /etc/yum.repos.d/docker-ce.repo ]]; then
-    run sudo dnf -y install dnf-plugins-core
+    run "${SUDO[@]}" dnf -y install dnf-plugins-core
     if dnf --version 2>/dev/null | grep -qi dnf5; then
-      run sudo dnf config-manager addrepo --from-repofile="$DOCKER_REPO_URL"
+      run "${SUDO[@]}" dnf config-manager addrepo --from-repofile="$DOCKER_REPO_URL"
     else
-      run sudo dnf config-manager --add-repo "$DOCKER_REPO_URL"
+      run "${SUDO[@]}" dnf config-manager --add-repo "$DOCKER_REPO_URL"
     fi
   else
     ok "docker-ce repository already added"
@@ -306,26 +337,28 @@ stage_docker() {
   mapfile -t todo < <(missing_rpms "${docker_pkgs[@]}")
   if (( ${#todo[@]} )); then
     note "missing: ${todo[*]}"
-    run sudo dnf -y install "${docker_pkgs[@]}"
+    run "${SUDO[@]}" dnf -y install "${docker_pkgs[@]}"
   else
     ok "Docker packages already installed"
   fi
   systemctl is-enabled docker >/dev/null 2>&1 && systemctl is-active docker >/dev/null 2>&1 \
-    || run sudo systemctl enable --now docker
+    || run "${SUDO[@]}" systemctl enable --now docker
   id -nG "$AGENT_USER" | tr ' ' '\n' | grep -qx docker \
-    || run sudo usermod -aG docker "$AGENT_USER"
+    || run "${SUDO[@]}" usermod -aG docker "$AGENT_USER"
   (( DRY_RUN )) && return 0
   systemctl is-active docker >/dev/null 2>&1 && ok "docker service is running" || bad "docker service is not running"
   id -nG "$AGENT_USER" | tr ' ' '\n' | grep -qx docker && ok "$AGENT_USER is in the docker group" || bad "$AGENT_USER is not in the docker group"
-  if sudo docker compose version >/dev/null 2>&1; then
-    ok "$(sudo docker compose version)"
+  if "${SUDO[@]}" docker compose version >/dev/null 2>&1; then
+    ok "$("${SUDO[@]}" docker compose version)"
   else
     bad "docker compose plugin missing"
   fi
-  if ! docker info >/dev/null 2>&1; then
-    warn "This shell does not have the docker group yet. Log out and back in (or run 'newgrp docker') before agent-user.sh."
-  else
+  if docker info >/dev/null 2>&1; then
     ok "docker works without sudo"
+  elif dk info >/dev/null 2>&1; then
+    ok "docker works through 'sg docker -c' (this shell lacks the new group; agent-user.sh does the same)"
+  else
+    bad "docker does not work, not even through 'sg docker -c'"
   fi
 }
 
@@ -335,7 +368,7 @@ stage_linger() {
   if [[ "$(loginctl show-user "$AGENT_USER" -p Linger --value 2>/dev/null)" == "yes" ]]; then
     ok "linger already enabled"
   else
-    run sudo loginctl enable-linger "$AGENT_USER"
+    run "${SUDO[@]}" loginctl enable-linger "$AGENT_USER"
   fi
   (( DRY_RUN )) && return 0
   [[ "$(loginctl show-user "$AGENT_USER" -p Linger --value 2>/dev/null)" == "yes" ]] \
@@ -347,8 +380,8 @@ ensure_op_cli() {
   command -v op >/dev/null 2>&1 && { ok "op: $(op --version)"; return 0; }
   say "The 1Password CLI is missing; adding 1Password's rpm repository."
   if (( DRY_RUN )); then note "dry-run: would add /etc/yum.repos.d/1password.repo and install 1password-cli"; return 0; fi
-  sudo rpm --import https://downloads.1password.com/linux/keys/1password.asc
-  sudo tee /etc/yum.repos.d/1password.repo >/dev/null <<'REPO'
+  "${SUDO[@]}" rpm --import https://downloads.1password.com/linux/keys/1password.asc
+  "${SUDO[@]}" tee /etc/yum.repos.d/1password.repo >/dev/null <<'REPO'
 [1password]
 name=1Password Stable Channel
 baseurl=https://downloads.1password.com/linux/rpm/stable/$basearch
@@ -357,7 +390,7 @@ gpgcheck=1
 repo_gpgcheck=1
 gpgkey=https://downloads.1password.com/linux/keys/1password.asc
 REPO
-  sudo dnf -y install 1password-cli
+  "${SUDO[@]}" dnf -y install 1password-cli
   ok "op: $(op --version)"
 }
 
@@ -434,66 +467,120 @@ stage_github() {
   fi
 }
 
+# pub_of SPEC: prints the public key file for a user.signingkey value (a path to the
+# private or public key); fails for 'key::...' values and missing files.
+pub_of() {
+  local f="${1/#\~/$HOME}"
+  [[ "$f" == key::* || -z "$f" ]] && return 1
+  [[ "$f" == *.pub ]] || f="$f.pub"
+  [[ -r "$f" ]] || return 1
+  printf '%s' "$f"
+}
+
+# key_body FILE: the "type base64" part of a public key file.
+key_body() { awk 'NR==1 {print $1" "$2}' "$1"; }
+
+# signing_listed BODY: the key is among GitHub's public list of $GH_USER's signing keys.
+signing_listed() {
+  curl -fsS "https://api.github.com/users/$GH_USER/ssh_signing_keys" 2>/dev/null \
+    | jq -r '.[].key' | awk '{print $1" "$2}' | grep -qxF "$1"
+}
+
+# choose_signing_key: sets CHOSEN_KEY to the key to sign with. SIGNING_KEY wins; else a
+# numbered choice of ~/.ssh/*.pub or a new ~/.ssh/tethys_signing. Never asks for a bare path.
+choose_signing_key() {
+  CHOSEN_KEY=""
+  if [[ -n "${SIGNING_KEY:-}" ]]; then
+    pub_of "$SIGNING_KEY" >/dev/null || die "SIGNING_KEY=$SIGNING_KEY: no public key file found there."
+    CHOSEN_KEY="$SIGNING_KEY"; return 0
+  fi
+  local -a keys=()
+  local f
+  for f in "$HOME"/.ssh/*.pub; do [[ -e "$f" ]] && keys+=("$f"); done
+  local gen="$HOME/.ssh/tethys_signing"
+  (( DRY_RUN )) && { note "dry-run: would offer ${#keys[@]} key(s) from ~/.ssh and 'generate $gen'"; return 1; }
+  [[ -t 0 ]] || die "No signing key is set and there is no terminal. Set SIGNING_KEY=<path of the key> and run again."
+  say "Choose the key to sign commits with:"
+  local i=1
+  for f in "${keys[@]}"; do printf '    %s) %s\n' "$i" "$f"; i=$((i + 1)); done
+  printf '    %s) generate %s\n' "$i" "$gen"
+  local pick=""
+  while true; do
+    read -r -p "  Number: " pick || die "No choice made."
+    [[ "$pick" =~ ^[0-9]+$ ]] && (( pick >= 1 && pick <= i )) && break
+    warn "Enter a number from 1 to $i."
+  done
+  if (( pick == i )); then
+    if [[ -e "$gen" ]]; then
+      note "$gen already exists; using it."
+    else
+      mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+      ssh-keygen -t ed25519 -N '' -f "$gen" -C 'tethys signing'
+    fi
+    CHOSEN_KEY="$gen"
+  else
+    CHOSEN_KEY="${keys[pick - 1]}"
+  fi
+}
+
 stage_signing() {
   stage "Commit signing"
   say "Agent commits on epic branches must be signed with an SSH key registered on GitHub as a signing key."
-  local fmt gpgsign keyspec pub
+  local fmt gpgsign keyspec pubfile="" pub keypath
   fmt="$(git config --global --get gpg.format || true)"
   gpgsign="$(git config --global --get commit.gpgsign || true)"
   keyspec="$(git config --global --get user.signingkey || true)"
   [[ "$fmt" == "ssh" ]] && ok "gpg.format = ssh" || bad "gpg.format is '${fmt:-unset}'" || true
   [[ "$gpgsign" == "true" ]] && ok "commit.gpgsign = true" || bad "commit.gpgsign is '${gpgsign:-unset}'" || true
   [[ -n "$keyspec" ]] && ok "user.signingkey = $keyspec" || bad "user.signingkey is unset" || true
-  if [[ "$fmt" != "ssh" || "$gpgsign" != "true" || -z "$keyspec" ]]; then
-    if (( DRY_RUN )); then
-      note "dry-run: would offer to set gpg.format, commit.gpgsign and user.signingkey"
-      return 0
-    fi
-    if [[ -z "$keyspec" ]]; then
-      local keys
-      keys="$(ls "$HOME"/.ssh/*.pub 2>/dev/null || true)"
-      [[ -n "$keys" ]] && note "public keys here: $keys"
-      say "No signing key set. Create one if needed:  ssh-keygen -t ed25519 -f ~/.ssh/tethys_signing -C 'tethys signing'"
-      ask keyspec "Path of the public key to sign with:"
-    fi
-    confirm "Set gpg.format=ssh, commit.gpgsign=true and user.signingkey=$keyspec (global)?" \
-      || die "Signing is required. Set the three git settings and run again."
-    git config --global gpg.format ssh
-    git config --global commit.gpgsign true
+  # A usable setting is a key file that exists; SIGNING_KEY overrides it.
+  if [[ -z "${SIGNING_KEY:-}" && -n "$keyspec" ]] && { [[ "$keyspec" == key::* ]] || pub_of "$keyspec" >/dev/null; }; then
+    note "using the configured signing key"
+  elif choose_signing_key; then
+    # Git signs with the private key when it is on disk; otherwise the public key needs ssh-agent.
+    keypath="${CHOSEN_KEY/#\~/$HOME}"; keypath="${keypath%.pub}"
+    [[ -e "$keypath" ]] || keypath="$keypath.pub"
+    keyspec="$keypath"
     git config --global user.signingkey "$keyspec"
-  fi
-  # The key may be a path to the private key or the public key, or 'key::ssh-ed25519 ...'.
-  pub="${keyspec#key::}"
-  if [[ "$keyspec" == key::* ]]; then
-    pub="$(printf '%s' "$pub" | awk '{print $1" "$2}')"
+    ok "user.signingkey = $keyspec"
   else
-    pub="${pub/#\~/$HOME}"
-    [[ "$pub" == *.pub ]] || pub="$pub.pub"
-    [[ -r "$pub" ]] || die "Public key $pub not found."
-    pub="$(awk '{print $1" "$2}' "$pub")"
+    note "dry-run: would set user.signingkey to the chosen key"
+    return 0
+  fi
+  if [[ "$fmt" != "ssh" || "$gpgsign" != "true" ]]; then
+    if (( DRY_RUN )); then note "dry-run: would set gpg.format=ssh and commit.gpgsign=true (global)"
+    else
+      git config --global gpg.format ssh
+      git config --global commit.gpgsign true
+      ok "set gpg.format=ssh and commit.gpgsign=true (global)"
+    fi
+  fi
+  if [[ "$keyspec" == key::* ]]; then
+    pub="$(printf '%s' "${keyspec#key::}" | awk '{print $1" "$2}')"
+  else
+    pubfile="$(pub_of "$keyspec")" || die "Public key for $keyspec not found."
+    pub="$(key_body "$pubfile")"
   fi
   (( DRY_RUN )) && { note "dry-run: would compare $pub with GitHub's signing keys"; return 0; }
   ok "key: ${pub:0:40}..."
-  local registered
-  # The scoped token has no account permissions, so user/ssh_signing_keys usually
-  # fails; the public endpoint lists the same keys.
-  registered="$(env -u GH_TOKEN -u GITHUB_TOKEN gh api user/ssh_signing_keys --jq '.[].key' 2>/dev/null || true)"
-  [[ -n "$registered" ]] || registered="$(curl -fsS "https://api.github.com/users/$GH_USER/ssh_signing_keys" | jq -r '.[].key')"
-  if printf '%s\n' "$registered" | awk '{print $1" "$2}' | grep -qxF "$pub"; then
+  # The scoped token has no account permissions, so the public endpoint is used.
+  if signing_listed "$pub"; then
     ok "the key is registered on GitHub as a signing key"
     return 0
   fi
   warn "This key is not registered as a signing key on $GH_USER's account."
-  say "A plain authentication key does not count. Add it as a signing key:"
-  browse "https://github.com/settings/ssh/new"
-  step "Title: 'tethys signing'. Key type: Signing Key (not Authentication Key)."
-  step "Paste the public key:"
-  printf '  %s\n' "$pub"
-  pause "Press Enter once it is added."
-  registered="$(curl -fsS "https://api.github.com/users/$GH_USER/ssh_signing_keys" | jq -r '.[].key')"
-  printf '%s\n' "$registered" | awk '{print $1" "$2}' | grep -qxF "$pub" \
+  local add_out=""
+  if [[ -n "$pubfile" ]] && add_out="$(gh ssh-key add "$pubfile" --type signing --title "tethys signing" 2>&1)"; then
+    ok "registered with gh ssh-key add"
+  else
+    [[ -z "$add_out" ]] || note "gh: $add_out"
+    say "gh could not add it (a scoped token cannot). On any machine signed in to gh as $GH_USER, run:"
+    printf '\n  gh auth refresh -h github.com -s admin:ssh_signing_key && echo %q | gh ssh-key add - --type signing --title "tethys signing"\n\n' "$(cat "${pubfile:-/dev/null}" 2>/dev/null || printf '%s' "$pub")"
+    pause "Press Enter once it is added."
+  fi
+  signing_listed "$pub" \
     && ok "the key is registered as a signing key" \
-    || die "GitHub does not list the key as a signing key yet."
+    || die "GitHub does not list the key as a signing key yet. Register it and run again."
 }
 
 run_wizard() {

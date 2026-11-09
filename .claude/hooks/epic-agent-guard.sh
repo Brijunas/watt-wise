@@ -6,6 +6,10 @@
 # .github/**, .husky/**, .editorconfig, Directory.Build.*, eslint.config.js,
 # stryker-config.json and lint-staged.config.js.
 #   orchestrator: Edit/Write only under docs/epic-runs/** and docs/epics.md, docs/implemented.md.
+#                 The orchestrator is the main session, so its hooks also fire for its subagents'
+#                 tool calls. Input from a subagent carries agent_id/agent_type; for those the
+#                 path restriction is skipped (only the common rules apply) and the subagent's own
+#                 frontmatter guard adds its role rules.
 #   coder:        also no edits to docs/epic-runs/**, backend/tests/**, *.test.ts(x), e2e/**.
 # Bash commands that write files to protected paths are blocked on a best-effort basis: the
 # command is split on whitespace and only the common writers are recognised (>, >>, tee,
@@ -38,6 +42,13 @@ tool=$(jq -r '.tool_name // empty' <<<"$input")
 cwd=$(jq -r '.cwd // empty' <<<"$input")
 [[ -n "$cwd" && -d "$cwd" ]] || cwd=$PWD
 top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || echo "$cwd")
+agent_id=$(jq -r '.agent_id // empty' <<<"$input")
+agent_type=$(jq -r '.agent_type // empty' <<<"$input")
+# True when an orchestrator-role hook fires for a subagent's call (see header).
+orch_subagent=0
+if [[ "$role" == orchestrator && (-n "$agent_id" || (-n "$agent_type" && "$agent_type" != orchestrator)) ]]; then
+  orch_subagent=1
+fi
 state_dir=${WATTWISE_STATE_DIR:-$HOME/.local/state/wattwise}
 
 block() {
@@ -73,7 +84,7 @@ check_path() {
         [[ "$role" == orchestrator ]] || block "$raw is the epic gate state; only the orchestrator writes it"
         ;;
     esac
-    [[ "$role" == orchestrator && "$tool" != Bash ]] &&
+    [[ "$role" == orchestrator && "$orch_subagent" == 0 && "$tool" != Bash ]] &&
       block "the orchestrator may edit only docs/epic-runs/**, docs/epics.md and docs/implemented.md ($raw is outside the repository)"
     return 0
   fi
@@ -90,6 +101,7 @@ check_path() {
 
   case "$role" in
     orchestrator)
+      ((orch_subagent == 0)) || return 0
       # Edit/Write: only the run records and the epic lists (the finished epic moves from
       # epics.md to implemented.md). Bash targets: same rule, inside the repository.
       [[ "$rel" == docs/epic-runs/* || "$rel" == docs/epics.md || "$rel" == docs/implemented.md ]] ||

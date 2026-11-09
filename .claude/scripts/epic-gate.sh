@@ -3,7 +3,7 @@
 #   epic-gate.sh <story|epic> <base> [--skip-mutation]
 # Runs the 8 checks of docs/development.md#checks, the pending-model-changes check, the API
 # client sync check, a scan for added suppressions, and Stryker on the touched backend
-# projects (story: --since:<base>; epic: a full run). Logs go to stderr; stdout gets exactly one
+# projects (story: --mutate globs of the files changed against <base>; epic: a full run). Logs go to stderr; stdout gets exactly one
 # JSON object:
 #   {pass, mode, base, head, checks:[{name,pass,seconds,tail}],
 #    mutation:[{project,score,target,pass}], suppressions:[{file,line,text}]}
@@ -130,13 +130,20 @@ else
     )
     dotnet tool restore >&2 || true
     for project in Domain Application Infrastructure Api; do
-      git diff --name-only "$ref"...HEAD -- "backend/src/WattWise.$project" | grep -q . || continue
+      # Changed source files of this project (not designer files or migrations), as project-relative paths.
+      mapfile -t changed < <(git diff --name-only "$ref"...HEAD -- "backend/src/WattWise.$project" |
+        grep -E '\.cs$' | grep -vE '\.Designer\.cs$|/Migrations/' |
+        sed "s#^backend/src/WattWise\.$project/##" || true)
+      ((${#changed[@]})) || continue
       echo "== stryker $project ($mode)" >&2
       out="backend/StrykerOutput/$project"
       rm -rf "$out"
       args=(-f backend/stryker-config.json -O "$out" -p "WattWise.$project.csproj")
       for t in ${tests[$project]}; do args+=(-tp "$t"); done
-      [[ "$mode" != story ]] || args+=("--since:$ref")
+      # --since mutates nothing inside a git worktree, so story mode lists the changed files.
+      if [[ "$mode" == story ]]; then
+        for f in "${changed[@]}"; do args+=(--mutate "**/$f"); done
+      fi
       status=0
       dotnet stryker "${args[@]}" || status=$?
       report=$(find "$out" -name mutation-report.json -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -n 1 | cut -d' ' -f2- || true)
@@ -151,8 +158,10 @@ else
       fi
       target=${targets[$project]}
       if [[ "$score" == null ]]; then
-        # No mutants (nothing to mutate under --since) passes; a failed run with no report does not.
-        if [[ -n "$report" || $status -eq 0 ]]; then pass=true; else pass=false; fi
+        # Changed source files that yield no tested mutants fail in story mode: an empty run proves nothing.
+        # An epic's full run with a report but no score keeps passing; a failed run with no report does not.
+        if [[ "$mode" == story ]]; then pass=false
+        elif [[ -n "$report" || $status -eq 0 ]]; then pass=true; else pass=false; fi
       else
         pass=$(jq -n --argjson s "$score" --argjson t "$target" '$s >= $t')
       fi

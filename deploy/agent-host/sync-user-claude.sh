@@ -13,10 +13,13 @@
 #
 # What it syncs:
 #   - ~/.claude/CLAUDE.md, copied verbatim.
-#   - extraKnownMarketplaces and enabledPlugins: marketplaces are added and plugins
-#     installed, enabled or disabled with the remote `claude plugin` CLI.
+#   - Marketplaces from ~/.claude/plugins/known_marketplaces.json, mirrored with the same
+#     source (a remote one of the same name with another source is removed and re-added),
+#     and every user-scope plugin in installed_plugins.json, enabled or disabled as
+#     enabledPlugins says. Remote user-scope plugins not installed here are uninstalled.
 #   - Orca's skills (orca-cli, orchestration, orca-computer-use; herdr only if herdr
-#     exists remotely), installed with the remote `orca skills install`.
+#     exists remotely), installed with the remote `orca skills install ... --agent claude`
+#     (orca is looked up on PATH, then in ~/.orca/cli/bin).
 #   - These keys of settings.json, merged with jq: permissions.defaultMode, model,
 #     modelSettings, remoteControlAtStartup, agentPushNotifEnabled,
 #     inputNeededNotifEnabled, crossSessionInbound, worktree, enabledPlugins,
@@ -143,47 +146,76 @@ else
 fi
 
 # --- Marketplaces and plugins -----------------------------------------------
+# A marketplace is identified by its name and its source; the same name with a different
+# source (github vs git) can hold different plugins, so a differing remote one is replaced.
+LOCAL_MARKETS="$LOCAL_CLAUDE/plugins/known_marketplaces.json"
+LOCAL_INSTALLED="$LOCAL_CLAUDE/plugins/installed_plugins.json"
+LOCAL_MARKETS_TSV=""
+if [[ -f "$LOCAL_MARKETS" ]]; then
+  LOCAL_MARKETS_TSV=$(jq -r 'to_entries[] | [.key, .value.source.source, (.value.source.url // .value.source.repo // .value.source.path)] | @tsv' "$LOCAL_MARKETS")
+else
+  LOCAL_MARKETS_TSV=$(jq -r '.extraKnownMarketplaces // {} | to_entries[] | [.key, .value.source.source, (.value.source.url // .value.source.repo // .value.source.path)] | @tsv' "$LOCAL_SETTINGS")
+fi
+
 if rsh 'command -v claude >/dev/null 2>&1'; then
   log "Marketplaces"
-  remote_markets=$(rsh 'claude plugin marketplace list --json 2>/dev/null' | jq -r '.[].name' || true)
-  while IFS=$'\t' read -r name src; do
+  remote_markets=$(rsh 'claude plugin marketplace list --json 2>/dev/null' \
+    | jq -r '.[] | [.name, .source, (.url // .repo // .path)] | @tsv' || true)
+  while IFS=$'\t' read -r name kind src; do
     [[ -n "$name" ]] || continue
-    if grep -qx "$name" <<<"$remote_markets"; then note "$name: present"; continue; fi
-    mutate "add marketplace $name ($src)" rsh "claude plugin marketplace add '$src'" || warn "could not add marketplace $name"
-  done < <(jq -r '.extraKnownMarketplaces // {} | to_entries[]
-    | [.key, (.value.source | if .source == "github" then .repo else (.url // .path // .repo) end)] | @tsv' "$LOCAL_SETTINGS")
+    have=$(awk -F'\t' -v n="$name" '$1 == n {print $2 "\t" $3}' <<<"$remote_markets")
+    if [[ "$have" == "$kind"$'\t'"$src" ]]; then note "$name: present ($kind)"; continue; fi
+    if [[ -n "$have" ]]; then
+      mutate "remove marketplace $name (remote source '${have/$'\t'/ }' differs from '$kind $src')" \
+        rsh "claude plugin marketplace remove '$name'" || warn "could not remove marketplace $name"
+    fi
+    mutate "add marketplace $name ($kind $src)" rsh "claude plugin marketplace add '$src'" || warn "could not add marketplace $name"
+  done <<<"$LOCAL_MARKETS_TSV"
 
   log "Plugins"
+  # Local user-scope plugins: id and wanted state (enabledPlugins; installed means enabled unless it says false).
+  wanted=$(jq -r --slurpfile st "$LOCAL_SETTINGS" '
+    ($st[0].enabledPlugins // {}) as $en
+    | .plugins | to_entries[]
+    | select(.value | any(.scope == "user"))
+    | [.key, (if $en[.key] == false then "false" else "true" end)] | @tsv' "$LOCAL_INSTALLED")
   remote_plugins=$(rsh 'claude plugin list --json 2>/dev/null' | jq -r '.[] | select(.scope == "user") | "\(.id) \(.enabled)"' || true)
   while IFS=$'\t' read -r id want; do
     [[ -n "$id" ]] || continue
     have=$(awk -v id="$id" '$1 == id {print $2}' <<<"$remote_plugins")
-    if [[ "$want" == "true" ]]; then
-      if [[ -z "$have" ]]; then
-        # -y is needed without a TTY; these are plugins this machine already trusts.
-        mutate "install $id" rsh "claude plugin install '$id' --scope user -y" || warn "could not install $id"
-      elif [[ "$have" != "true" ]]; then
-        mutate "enable $id" rsh "claude plugin enable '$id' --scope user" || warn "could not enable $id"
-      else note "$id: enabled"; fi
-    else
-      if [[ "$have" == "true" ]]; then
-        mutate "disable $id" rsh "claude plugin disable '$id' --scope user" || warn "could not disable $id"
-      else note "$id: stays disabled"; fi
+    if [[ -z "$have" ]]; then
+      # -y is needed without a TTY; these are plugins this machine already trusts.
+      mutate "install $id" rsh "claude plugin install '$id' --scope user -y" || warn "could not install $id"
+      have=true
     fi
-  done < <(jq -r '.enabledPlugins // {} | to_entries[] | [.key, (.value | tostring)] | @tsv' "$LOCAL_SETTINGS")
+    if [[ "$want" == "true" && "$have" != "true" ]]; then
+      mutate "enable $id" rsh "claude plugin enable '$id' --scope user" || warn "could not enable $id"
+    elif [[ "$want" != "true" && "$have" == "true" ]]; then
+      mutate "disable $id" rsh "claude plugin disable '$id' --scope user" || warn "could not disable $id"
+    else note "$id: $([[ "$want" == true ]] && echo enabled || echo 'stays disabled')"; fi
+  done <<<"$wanted"
+  # Remote user-scope plugins that this machine has not installed (name@marketplace differs).
+  while read -r id _; do
+    [[ -n "$id" ]] || continue
+    grep -qxF "$id" <<<"$(cut -f1 <<<"$wanted")" && continue
+    mutate "uninstall $id (not installed on this machine)" rsh "claude plugin uninstall '$id' --scope user" || warn "could not uninstall $id"
+  done <<<"$remote_plugins"
 else
   warn "claude is not installed on $HOST; skipping marketplaces and plugins."
 fi
 
 # --- Orca skills ------------------------------------------------------------
+# The Orca CLI is at ~/.orca/cli/bin/orca on the remote and not on PATH over non-interactive ssh.
 log "Orca skills"
-if rsh 'command -v orca >/dev/null 2>&1'; then
+ORCA_FIND='orca_bin=$(command -v orca 2>/dev/null || true); [ -n "$orca_bin" ] || { [ -x "$HOME/.orca/cli/bin/orca" ] && orca_bin="$HOME/.orca/cli/bin/orca"; }'
+if rsh "$ORCA_FIND"'; [ -n "${orca_bin:-}" ]'; then
   flags=""
   for sk in "${ORCA_SKILLS[@]}"; do flags+=" --skill $sk"; done
   (( remote_has_herdr )) && flags+=" --skill herdr"
-  mutate "orca skills install$flags" rsh "orca skills install$flags" || warn "orca skills install failed"
+  flags+=" --agent claude"
+  mutate "orca skills install$flags" rsh "$ORCA_FIND"'; "$orca_bin" skills install'"$flags" || warn "orca skills install failed"
 else
-  warn "orca is not installed on $HOST; skipping skills."
+  warn "orca is not installed on $HOST (not on PATH, no ~/.orca/cli/bin/orca); skipping skills."
 fi
 
 # --- settings.json ----------------------------------------------------------

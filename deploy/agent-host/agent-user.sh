@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Non-sudo setup of the agent user (corvus) on tethys. Run after setup-tethys.sh,
-# from a login where the docker group is active. Safe to rerun: every step checks first.
+# (docker works through `sg docker -c` while the login lacks the group). Safe to rerun: every step checks first.
 #
 # Usage: deploy/agent-host/agent-user.sh [--dry-run] [--repo DIR]
 #   --dry-run  prints each step and changes nothing.
@@ -36,7 +36,9 @@ WW_CONFIG_DIR="${WW_CONFIG_DIR:-$HOME/.config/wattwise}"
 OP_TOKEN_FILE="$WW_CONFIG_DIR/op-token"
 ENV_FILE="$WW_CONFIG_DIR/env"
 OP_VAULT="${OP_VAULT:-Watt Wise Development}"
-COMPOSE=(docker compose -f deploy/docker-compose.development.yml)
+COMPOSE_FILE=deploy/docker-compose.development.yml
+USE_SG=0   # 1 when docker only works through `sg docker -c` (group added, not yet in this login)
+CMD=()
 BASHRC="$HOME/.bashrc"
 BASHRC_LINE='[ -f "$HOME/.config/wattwise/env" ] && . "$HOME/.config/wattwise/env" # wattwise'
 
@@ -45,6 +47,12 @@ ok()   { printf '   ok: %s\n' "$*"; }
 die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
 # run CMD... runs the command, or only prints it in a dry run.
 run()  { if (( DRY_RUN )); then printf '   dry-run: %s\n' "$*"; else "$@"; fi; }
+
+# compose_cmd ARGS...: sets CMD to the compose command line, wrapped in `sg docker -c` when needed.
+compose_cmd() {
+  local base=(docker compose -f "$COMPOSE_FILE" "$@")
+  if (( USE_SG )); then CMD=(sg docker -c "$(printf '%q ' "${base[@]}")"); else CMD=("${base[@]}"); fi
+}
 
 # Everything below runs in the repo, with mise's tools on PATH.
 [[ -e "$REPO_DIR/.git" ]] || die "$REPO_DIR is not a git checkout; set REPO_DIR or pass --repo."
@@ -60,13 +68,37 @@ else
   run git -C "$REPO_DIR" pull --ff-only
 fi
 
+log "Git remote and credential helper"
+# Pushes go over HTTPS with the fine-grained token (no Workflows permission), so GitHub rejects
+# changes to .github/workflows server-side. An SSH remote would bypass the token's scope.
+HTTPS_URL=https://github.com/Brijunas/watt-wise.git
+if [[ "$(git -C "$REPO_DIR" remote get-url origin 2>/dev/null)" == "$HTTPS_URL" ]]; then
+  ok "origin is already $HTTPS_URL"
+else
+  run git -C "$REPO_DIR" remote set-url origin "$HTTPS_URL"
+fi
+if (( DRY_RUN )); then
+  echo "   dry-run: would run 'gh auth setup-git'"
+elif gh auth status >/dev/null 2>&1; then
+  gh auth setup-git
+  ok "git uses gh's token for github.com (commit signing stays SSH)"
+else
+  echo "   warning: gh is not signed in; run setup-tethys.sh, then rerun this script"
+fi
+
 log "Preconditions"
 [[ -s "$OP_TOKEN_FILE" ]] || die "$OP_TOKEN_FILE is missing; run setup-tethys.sh first."
 [[ "$(stat -c %a "$OP_TOKEN_FILE")" == "600" ]] || die "$OP_TOKEN_FILE must be mode 600."
 command -v docker >/dev/null 2>&1 || die "docker is not installed; run setup-tethys.sh first."
 if ! docker info >/dev/null 2>&1; then
-  if (( DRY_RUN )); then echo "   dry-run: docker is not usable from this shell (group not active?)"
-  else die "docker is not usable without sudo. Log out and back in so the docker group applies."; fi
+  if id -nG | tr ' ' '\n' | grep -qx docker || id -nG "$(id -un)" | tr ' ' '\n' | grep -qx docker; then
+    if sg docker -c 'docker info' >/dev/null 2>&1; then
+      USE_SG=1
+      echo "   docker works through 'sg docker -c' (this login lacks the docker group); using that"
+    elif (( DRY_RUN )); then echo "   dry-run: docker is not usable from this shell"
+    else die "docker is not usable, not even through 'sg docker -c'. Is the docker service running?"; fi
+  elif (( DRY_RUN )); then echo "   dry-run: docker is not usable and the user is not in the docker group"
+  else die "the user is not in the docker group; run setup-tethys.sh first."; fi
 fi
 command -v op >/dev/null 2>&1 || die "op (1Password CLI) is not installed; run setup-tethys.sh first."
 ok "token file, docker and op are in place"
@@ -124,24 +156,28 @@ run op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
 
 log "Compose stack"
 if (( DRY_RUN )); then
-  echo "   dry-run: first start via 'op run --env-file deploy/development/compose.env -- ${COMPOSE[*]} up -d --wait'"
-  echo "   dry-run: then bootstrap.sql, role passwords from 1Password (first time only), and ${COMPOSE[*]} up -d --wait"
+  compose_cmd up -d --wait
+  echo "   dry-run: first start via 'op run --env-file deploy/development/compose.env -- ${CMD[*]}'"
+  echo "   dry-run: then bootstrap.sql and role passwords from 1Password (first time only)"
 else
   # The images read the admin and pgAdmin passwords only to initialize empty volumes,
   # so the first start goes through op run (docs/setup.md step 5).
-  op run --env-file deploy/development/compose.env -- "${COMPOSE[@]}" up -d --wait
+  compose_cmd up -d --wait
+  op run --env-file deploy/development/compose.env -- "${CMD[@]}"
   ok "stack is up"
   roles_missing=1
-  if "${COMPOSE[@]}" exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_roles WHERE rolname = '"'"'api'"'"'"' | grep -q 1; then
+  compose_cmd exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_roles WHERE rolname = '"'"'api'"'"'"'
+  if "${CMD[@]}" | grep -q 1; then
     roles_missing=0
   fi
-  "${COMPOSE[@]}" exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < deploy/postgres/bootstrap.sql >/dev/null
+  compose_cmd exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+  "${CMD[@]}" < deploy/postgres/bootstrap.sql >/dev/null
   ok "bootstrap.sql applied (idempotent)"
   if (( roles_missing )); then
     for role in api cli jobs backup reader; do
       pw="$(op read "op://$OP_VAULT/postgres-$role/password")"
-      printf "ALTER ROLE %s PASSWORD :'pw';\n" "$role" \
-        | "${COMPOSE[@]}" exec -T -e PW="$pw" postgres sh -c 'psql -v ON_ERROR_STOP=1 -v pw="$PW" -U "$POSTGRES_USER" -d "$POSTGRES_DB"' >/dev/null
+      compose_cmd exec -T -e PW="$pw" postgres sh -c 'psql -v ON_ERROR_STOP=1 -v pw="$PW" -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+      printf "ALTER ROLE %s PASSWORD :'pw';\n" "$role" | "${CMD[@]}" >/dev/null
       ok "password set for role $role"
     done
     unset pw

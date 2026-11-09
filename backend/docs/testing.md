@@ -117,8 +117,8 @@ Stryker.NET (`dotnet-stryker`, a local tool: `dotnet tool restore`) changes the 
   Start Stryker from the repo root: started in `backend/`, it finds the `.slnx`, switches to solution mode and also runs the Docker integration tests.
 
 - **Rules.**
-  - A change that adds production code: add `--since:main` (files changed against `main`) or `--mutate "**/Pricing/*.cs"` (a glob, repeatable) to a run.
-  - A test-only change (a rewrite) mutates nothing under `--since:main`: use a full run or `--mutate`, never `--since:main`.
+  - A change that adds production code: add `--mutate "**/Pricing/*.cs"` (a glob, repeatable; one per changed file) to a run. Not `--since`: it mutates nothing inside a git worktree. The epic gate builds these globs from `git diff --name-only`.
+  - A test-only change (a rewrite) changes no source file: use a full run or `--mutate` with the baseline's glob.
   - Kill every killable survivor. Record accepted survivors, each with its reason, in the commit.
   - A change must not lower a project's score. The targets are the scores of 2026-11-02: Domain 88.46 %, Application 78.12 %, Infrastructure 57.42 %, Api 51.24 %.
   - `high`, `low` and `break` go under `stryker-config` in `stryker-config.json`; `high` 80 and `low` 60 are Stryker's defaults and only colour the report. A run exits with code 1 below `break`, the floor all four runs must meet: the lowest of their scores rounded down to a multiple of 5. Raise it when killed survivors lift the lowest score past the next multiple.

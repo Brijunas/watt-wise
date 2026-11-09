@@ -170,6 +170,15 @@ expect block "orchestrator outside the repo" "$(file_json Write /etc/hosts "$rep
 expect block "orchestrator ~/.claude" "$(file_json Edit "$HOME/.claude/settings.json" "$repo")" epic-agent-guard.sh --role orchestrator
 expect allow "orchestrator memory" "$(file_json Write "$HOME/.claude/projects/-x-y/memory/note.md" "$repo")" epic-agent-guard.sh --role orchestrator
 
+# Orchestrator-role hooks also fire for subagent calls; those carry agent_id/agent_type.
+sub_json() { jq -c --arg t "$1" '. + {agent_id:"a1b2c3", agent_type:$t}' <<<"$2"; }
+expect allow "orchestrator hook, subagent writes backend/src" "$(sub_json backend-coder "$(file_json Write "$repo/backend/src/WattWise.Domain/Probe.cs" "$repo")")" epic-agent-guard.sh --role orchestrator
+expect block "orchestrator hook, subagent writes .claude/settings.json" "$(sub_json backend-coder "$(file_json Write "$repo/.claude/settings.json" "$repo")")" epic-agent-guard.sh --role orchestrator
+expect block "orchestrator hook, subagent pushes main" "$(sub_json backend-coder "$(bash_json 'git push origin main' "$repo")")" epic-agent-guard.sh --role orchestrator
+expect allow "orchestrator hook, subagent bash write backend/src" "$(sub_json backend-coder "$(bash_json 'echo x > backend/src/X.cs' "$repo")")" epic-agent-guard.sh --role orchestrator
+expect block "orchestrator hook, no agent_id writes backend/src" "$(file_json Write "$repo/backend/src/WattWise.Domain/Probe.cs" "$repo")" epic-agent-guard.sh --role orchestrator
+expect block "orchestrator hook, agent_type orchestrator writes backend/src" "$(jq -c '. + {agent_type:"orchestrator"}' <<<"$(file_json Write "$repo/backend/src/X.cs" "$repo")")" epic-agent-guard.sh --role orchestrator
+
 # --- epic-agent-guard: coder -----------------------------------------------------------------
 echo "# epic-agent-guard coder"
 agent_file coder block Write docs/epic-runs/E4/plan.md

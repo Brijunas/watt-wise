@@ -2,12 +2,13 @@
 # Start (or reattach to) an epic run:
 #   start-epic.sh <E> [--dry-run]
 # 1. checks the prerequisites (gh auth, 1Password, docker, tmux; the user-level Claude parity
-#    check and the memory sync only warn)
+#    check and the memory sync only warn, and only run from another machine than AGENT_HOST,
+#    default tethys, while it is reachable: on tethys itself the timer on vidar does them)
 # 2. creates epic/<E> from origin/main if it does not exist, and pushes it
 # 3. creates the epic checkout (Orca worktree `epic-<E>`, falling back to `git worktree add`)
 # 4. links the checkout's Claude project memory to ~/.claude/wattwise-memory
 # 5. starts or attaches the tmux session `epic-<E>` running `claude --agent orchestrator`
-# 6. prints the /goal line to paste
+# 6. the orchestrator starts with the /goal line as its first prompt; the line is printed too
 # --dry-run prints what would happen and changes nothing.
 set -euo pipefail
 
@@ -76,24 +77,40 @@ else
   }
 fi
 
-if [[ -x "$top/deploy/agent-host/sync-user-claude.sh" ]]; then
-  if ((dry)); then
-    say "would run deploy/agent-host/sync-user-claude.sh --check (warn only)"
-  else
-    "$top/deploy/agent-host/sync-user-claude.sh" --check >&2 ||
-      warn "user-level Claude config differs from the other machine (parity check failed)"
-  fi
+# The parity check and the memory sync compare vidar with the agent host; they only make sense
+# from another machine while the host is reachable.
+agent_host=${AGENT_HOST:-tethys}
+local_host=$(hostname -s 2>/dev/null || hostname)
+run_sync=0
+if [[ "$local_host" == "$agent_host" ]]; then
+  say "on $agent_host: the Claude parity check and the memory sync run from vidar (the timer)"
+elif ((dry)); then
+  run_sync=1
+elif ssh -o BatchMode=yes -o ConnectTimeout=5 "$agent_host" true >/dev/null 2>&1; then
+  run_sync=1
 else
-  say "no deploy/agent-host/sync-user-claude.sh; skipping the parity check"
+  say "$agent_host is not reachable; the Claude parity check and the memory sync run from vidar (the timer)"
 fi
-if [[ -x "$top/deploy/agent-host/sync-memory.sh" ]]; then
-  if ((dry)); then
-    say "would run deploy/agent-host/sync-memory.sh (warn only)"
+if ((run_sync)); then
+  if [[ -x "$top/deploy/agent-host/sync-user-claude.sh" ]]; then
+    if ((dry)); then
+      say "would run deploy/agent-host/sync-user-claude.sh --check (warn only)"
+    else
+      "$top/deploy/agent-host/sync-user-claude.sh" --check >&2 ||
+        warn "user-level Claude config differs from the other machine (parity check failed)"
+    fi
   else
-    "$top/deploy/agent-host/sync-memory.sh" >&2 || warn "memory sync failed; continuing"
+    say "no deploy/agent-host/sync-user-claude.sh; skipping the parity check"
   fi
-else
-  say "no deploy/agent-host/sync-memory.sh; skipping the memory sync"
+  if [[ -x "$top/deploy/agent-host/sync-memory.sh" ]]; then
+    if ((dry)); then
+      say "would run deploy/agent-host/sync-memory.sh (warn only)"
+    else
+      "$top/deploy/agent-host/sync-memory.sh" >&2 || warn "memory sync failed; continuing"
+    fi
+  else
+    say "no deploy/agent-host/sync-memory.sh; skipping the memory sync"
+  fi
 fi
 
 # --- 2. the epic branch -----------------------------------------------------
@@ -161,22 +178,22 @@ else
     'mkdir -p "$(dirname "$1")" && ln -s "$2" "$1"' _ "$memory_link" "$canonical_memory"
 fi
 
-# --- 5. tmux session ---------------------------------------------------------
+# --- 5. the /goal line and the tmux session ---------------------------------
+goal="/goal Every story in docs/epic-runs/$epic/state.json is merged or parked with a brief, the epic gate has passed or every remaining story is parked, and report.md exists. Otherwise stop after 200 turns."
 if ((dry)); then
-  say "would: tmux new-session -d -s $session -c $checkout 'claude --agent orchestrator' (if $session does not exist), then attach"
+  say "would: tmux new-session -d -s $session -c $checkout 'claude --agent orchestrator \"<goal>\"' (if $session does not exist), then attach"
 else
   if tmux has-session -t "$session" 2>/dev/null; then
     say "tmux session $session already exists"
   else
     say "starting tmux session $session in $checkout"
-    tmux new-session -d -s "$session" -c "$checkout" "claude --agent orchestrator"
+    tmux new-session -d -s "$session" -c "$checkout" "claude --agent orchestrator $(printf '%q' "$goal")"
   fi
 fi
 
-# --- 6. the /goal line -------------------------------------------------------
 echo
-say "paste this into the orchestrator session:"
-echo "/goal Every story in docs/epic-runs/$epic/state.json is merged or parked with a brief, the epic gate has passed or every remaining story is parked, and report.md exists. Otherwise stop after 200 turns."
+say "the orchestrator starts with this goal (paste it if the session was already running):"
+echo "$goal"
 echo
 
 if ((dry)); then
