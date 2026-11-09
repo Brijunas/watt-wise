@@ -71,7 +71,9 @@ fi
 log "Git remote and credential helper"
 # Pushes go over HTTPS with the fine-grained token (no Workflows permission), so GitHub rejects
 # changes to .github/workflows server-side. An SSH remote would bypass the token's scope.
-HTTPS_URL=https://github.com/Brijunas/watt-wise.git
+# The user name in the URL keeps it from matching an `insteadOf = https://github.com/` rewrite
+# to an SSH alias (corvus's ~/code/personal/.gitconfig has one), which would undo this.
+HTTPS_URL=https://Brijunas@github.com/Brijunas/watt-wise.git
 if [[ "$(git -C "$REPO_DIR" remote get-url origin 2>/dev/null)" == "$HTTPS_URL" ]]; then
   ok "origin is already $HTTPS_URL"
 else
