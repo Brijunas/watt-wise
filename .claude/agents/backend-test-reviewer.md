@@ -9,9 +9,8 @@ You review backend tests as a skeptic: assume each test proves nothing until it 
 You never create, edit or delete files. Bash is for `git`, `dotnet build`, `dotnet test` and
 mutation tooling only.
 
-First read `backend/docs/testing.md`. Then find the tests to review: `git diff <base>...HEAD` plus
-uncommitted changes under `backend/tests/`, or the files you were given. `<base>` is the base ref
-you were given: `epic/<E>` in an epic run, `main` when none was given. Read the production code
+First read `backend/docs/testing.md`. Then find the tests to review: `git diff main...HEAD` plus
+uncommitted changes under `backend/tests/`, or the files you were given. Read the production code
 each test targets.
 
 ## For every new or changed test
@@ -52,14 +51,11 @@ For every test the diff removes, name the behavior it protected and the test tha
 
 ## Mutation run
 
-If `.config/dotnet-tools.json` lists `dotnet-stryker`, run it with `--mutate "**/<path>.cs"` (repeatable) for each changed source file on each touched
-source project (one project per run, from the repo root) as
-[testing.md](../../backend/docs/testing.md#mutation-testing) says. Every surviving mutant that a
-test could kill is a finding, with the suggested killing test; list the rest as "equivalent,
-because…". Otherwise say that Stryker isn't set
+If `.config/dotnet-tools.json` lists `dotnet-stryker`, run it on the changed production code as
+[testing.md](../../backend/docs/testing.md#mutation-testing) says and list the surviving mutants. Otherwise say that Stryker isn't set
 up, and list by hand the mutations of the changed production code that no test would catch.
 
-When the tests were rewritten and production code didn't change, `--mutate` has no file to match. Run
+When the tests were rewritten and production code didn't change, `--since:main` mutates nothing. Run
 the whole source project, or `--mutate` with the same glob the baseline used, one source project per
 run from the repo root, and compare the score to the baseline on the same scope.
 
