@@ -35,7 +35,9 @@
       "Read(**/bin/**)",
       "Read(**/obj/**)",
       "Read(**/.eslintcache)",
-      "Read(**/*.tsbuildinfo)"
+      "Read(**/*.tsbuildinfo)",
+      "Bash(git push --no-verify*)",
+      "Bash(git commit --no-verify*)"
     ]
   },
   "hooks": {
@@ -46,6 +48,16 @@
           {
             "type": "command",
             "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/backend-migration-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/repo-guard.sh\"",
             "timeout": 10
           }
         ]
@@ -84,5 +96,9 @@
     "github@anthropic-plugin-directory": false
   },
   "enabledMcpjsonServers": ["grafana", "github"],
-  "disabledMcpjsonServers": ["postgres"]
+  "disabledMcpjsonServers": ["postgres"],
+  "subagentPromptCacheTtl": "1h",
+  "worktree": {
+    "baseRef": "head"
+  }
 }

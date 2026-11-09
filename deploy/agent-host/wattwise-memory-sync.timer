@@ -1,0 +1,12 @@
+# systemd user timer: runs wattwise-memory-sync.service every 15 minutes while the
+# machine is awake. Install and enable instructions are in wattwise-memory-sync.service.
+[Unit]
+Description=Sync Watt-Wise Claude memory with tethys every 15 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

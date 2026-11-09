@@ -113,7 +113,7 @@ dotnet ef migrations has-pending-model-changes --project backend/src/WattWise.In
 
 ## 8. Report
 
-Leave everything uncommitted on the branch. Don't commit or open a PR unless the user asks; ship-pr does that.
+Leave everything uncommitted on the branch. Don't commit or open a PR unless the user asks; merge-to-main does that.
 
 Report as:
 

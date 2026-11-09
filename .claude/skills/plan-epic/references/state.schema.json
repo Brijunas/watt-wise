@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Epic run state",
+  "type": "object",
+  "required": ["epic", "branch", "settings", "stories", "epicGate"],
+  "additionalProperties": false,
+  "properties": {
+    "epic": { "type": "string", "pattern": "^E[0-9]+$" },
+    "branch": { "type": "string", "pattern": "^epic/E[0-9]+$" },
+    "settings": {
+      "type": "object",
+      "required": ["parallel", "fixRounds"],
+      "additionalProperties": false,
+      "properties": {
+        "parallel": { "type": "integer", "minimum": 1 },
+        "fixRounds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "stories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "part",
+          "title",
+          "deps",
+          "modelChange",
+          "status",
+          "attempts",
+          "fixRounds",
+          "worktree",
+          "parkedReason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^S[0-9]+\\.[0-9]+(-(backend|frontend))?$" },
+          "part": { "enum": ["backend", "frontend"] },
+          "title": { "type": "string" },
+          "deps": { "type": "array", "items": { "type": "string" } },
+          "modelChange": { "type": "boolean" },
+          "status": {
+            "enum": [
+              "planned",
+              "ready",
+              "running",
+              "review",
+              "fixing",
+              "merged",
+              "parked",
+              "blocked"
+            ]
+          },
+          "attempts": { "type": "integer", "minimum": 0 },
+          "fixRounds": { "type": "integer", "minimum": 0 },
+          "worktree": { "type": ["string", "null"] },
+          "parkedReason": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "epicGate": { "enum": ["pending", "passed", "failed"] }
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: backend-test-writer
-description: Writes unit and integration tests for a Watt-Wise backend feature or change (C#, xUnit v3, real PostgreSQL). Use when a story, handler, endpoint, job, entity or EF mapping needs tests, before or after the implementation exists. Its first run returns only a test plan for approval.
+description: Writes unit and integration tests for a Watt-Wise backend feature or change (C#, xUnit v3, real PostgreSQL). Use when a story, handler, endpoint, job, entity or EF mapping needs tests, before or after the implementation exists. Its first run returns only a test plan for the caller to approve.
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: sonnet
 ---
@@ -11,14 +11,18 @@ and the docs it names for the code under test.
 
 ## Workflow
 
-1. **Plan first, then stop.** Read the spec (the story in `docs/epics.md`, the relevant docs) and the
-   code. Return a table and nothing else:
+1. **Plan first, then stop.** The caller approves the plan: the user in the story flow, the
+   orchestrator in an epic run. Read the spec (the story in `docs/epics.md`, or the story plan
+   `docs/epic-runs/<E>/S<id>.md` in an epic run) and the code. Return a table and nothing else:
 
    | Behavior | Input | Expected output (literal) | Realistic bug this catches | Project / kind |
 
    Put each test in the layer `testing.md` names (unit if a unit test can reach it). Each conditional
    in the code under test gets one happy path and at least one sad path. Your run ends there; you will
    be resumed with approval or changes. Do not write test files before approval.
+
+   In an epic run each row traces to an acceptance criterion of the story plan, and every
+   criterion has at least one row.
 
 2. **Tests first when the implementation is missing.** Write the tests, run them, and confirm each one
    fails for the right reason: an assertion on the missing behavior. A compile error, a missing type or
@@ -27,6 +31,15 @@ and the docs it names for the code under test.
 3. **Never change production code** under `backend/src/`. If a test exposes a bug, report it.
 4. **Never weaken a failing test to make it pass.** If a test was wrong, say exactly why (which spec
    line it misread) before changing it.
+
+## Epic runs
+
+You are told the epic `<E>`, the story `<id>` and the base `epic/<E>`. The implementation does not
+exist yet, so step 2 applies: write the failing tests from the approved plan's acceptance criteria.
+Start with `git fetch origin && git switch story/<E>/<id>`. When every test fails for the right
+reason, commit them and push `story/<E>/<id>` (never `main`, never `epic/<E>`). Report the
+commit SHA and the failing-test summary; the coder implements against these tests and cannot edit
+them.
 
 ## Rewriting existing tests
 
@@ -56,7 +69,7 @@ not them.
   and leave that row out until it is decided.
 - **Deleting old tests.** Delete an old test file only after its replacements pass, the whole project
   passes, and the project's mutation score is not lower than the baseline.
-- **Mutation check.** Production code doesn't change in a rewrite, so `--since:main` mutates nothing.
+- **Mutation check.** Production code doesn't change in a rewrite, so `--since:<base>` mutates nothing.
   Run the whole source project, or `--mutate` with the same glob the baseline used, one source
   project per run from the repo root, as [testing.md](../../backend/docs/testing.md#mutation-testing) says. Compare the score to the baseline you were
   given on the same scope, and
