@@ -22,7 +22,7 @@ The backend hosts send it their traces, metrics and logs over OTLP. What the hos
 
 ## Access
 
-Grafana runs with anonymous Admin access (`GF_AUTH_ANONYMOUS_ENABLED`, which is also the image's default), like pgAdmin's desktop mode. The image also has a built-in `admin`/`admin` login. Neither is a risk while the ports are bound to a loopback address. A remote Development machine is reached through an SSH tunnel, as with PostgreSQL. No password goes through compose or 1Password.
+Grafana runs with anonymous Admin access (`GF_AUTH_ANONYMOUS_ENABLED`, which is also the image's default). The image also has a built-in `admin`/`admin` login. Neither is a risk while the ports are bound to a loopback address. A remote Development machine is reached through an SSH tunnel, as with PostgreSQL. No password goes through compose or 1Password.
 
 ## Data
 

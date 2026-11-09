@@ -95,17 +95,19 @@ The listen address in the log shows as `<concealed by 1Password>` (see "Troubles
 
 First-time setup (roles, passwords, first start) is "Development database" in [setup.md](setup.md#5-development-database); the roles and the stack's settings are explained in [deploy/docs/postgres.md](../deploy/docs/postgres.md). Compose reads its settings from the rendered `deploy/.env`, so everyday compose commands need no `op run`.
 
-| Command                                                                                                              | What it does                                                                                                                |
-| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env`                                             | Renders the stack's settings again after one of them changes in 1Password.                                                  |
-| `docker compose -f deploy/docker-compose.development.yml up -d --wait`                                               | Starts PostgreSQL, pgAdmin, Grafana LGTM and Mailpit and waits until they are healthy.                                      |
-| `docker compose -f deploy/docker-compose.development.yml down`                                                       | Stops and removes the containers. The data stays in the volumes.                                                            |
-| `docker compose -f deploy/docker-compose.development.yml ps`                                                         | Shows the containers and their health.                                                                                      |
-| `docker compose -f deploy/docker-compose.development.yml logs -f postgres`                                           | Follows one service's log.                                                                                                  |
-| `docker compose -f deploy/docker-compose.development.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d wattwise'` | Opens psql as `admin` in the `wattwise` database.                                                                           |
-| `docker compose -f deploy/docker-compose.development.yml down -v`                                                    | Also deletes the volumes: the database, pgAdmin's state and Grafana's data. Afterwards redo setup.md step 5 from the start. |
+| Command                                                                                                              | What it does                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env`                                             | Renders the stack's settings again after one of them changes in 1Password.                                 |
+| `docker compose -f deploy/docker-compose.development.yml up -d --wait --remove-orphans`                              | Starts PostgreSQL, Grafana LGTM and Mailpit and waits until they are healthy.                              |
+| `docker compose -f deploy/docker-compose.development.yml down`                                                       | Stops and removes the containers. The data stays in the volumes.                                           |
+| `docker compose -f deploy/docker-compose.development.yml ps`                                                         | Shows the containers and their health.                                                                     |
+| `docker compose -f deploy/docker-compose.development.yml logs -f postgres`                                           | Follows one service's log.                                                                                 |
+| `docker compose -f deploy/docker-compose.development.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d wattwise'` | Opens psql as `admin` in the `wattwise` database.                                                          |
+| `docker compose -f deploy/docker-compose.development.yml down -v`                                                    | Also deletes the volumes: the database and Grafana's data. Afterwards redo setup.md step 5 from the start. |
 
-pgAdmin is at the `pgadmin` item's address and port, and asks for the `postgres-admin` password the first time ([postgres.md](../deploy/docs/postgres.md#pgadmin)). Grafana is at the `grafana` item's `url` ([lgtm.md](../deploy/docs/lgtm.md)). Mailpit's web UI is at the `mailpit` item's `url`, and every email the Development Api sends shows up there ([mailpit.md](../deploy/docs/mailpit.md)).
+Machines that previously ran pgAdmin can remove its leftover volume: run `docker volume ls`, then `docker volume rm <volume-name>` for the volume ending in `pgadmin-data`.
+
+Grafana is at the `grafana` item's `url` ([lgtm.md](../deploy/docs/lgtm.md)). Mailpit's web UI is at the `mailpit` item's `url`, and every email the Development Api sends shows up there ([mailpit.md](../deploy/docs/mailpit.md)).
 
 ## Migrations
 

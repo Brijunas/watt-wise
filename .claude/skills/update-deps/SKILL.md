@@ -58,7 +58,7 @@ Work through the sources in this order. The SDK goes first because the NuGet cho
 **Docker images**
 
 - postgres: the survey's tag (same major), changed in both files named in the hard rules.
-- pgAdmin and Grafana LGTM: the survey's tag in `deploy/docker-compose.development.yml`.
+- Grafana LGTM and Mailpit: the survey's tag in `deploy/docker-compose.development.yml`.
 
 ## 4. Fix what the majors broke
 
