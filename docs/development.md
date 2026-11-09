@@ -17,6 +17,8 @@ dotnet test --solution backend/WattWise.slnx
 
 Run all eight before committing; CI enforces the same from E5. `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
 
+Stories are shipped with the `/merge-to-main` skill; whole epics are delivered by epic runs on tethys ([agentic-delivery.md](agentic-delivery.md)).
+
 ## Workspace (JS)
 
 The rules behind these (lint rules, the shared Vitest and TypeScript configs, where tests go) are in [frontend/docs/conventions.md](../frontend/docs/conventions.md), [frontend/docs/architecture.md](../frontend/docs/architecture.md#shared-packages) and [frontend/docs/testing.md](../frontend/docs/testing.md).
