@@ -69,7 +69,7 @@ not them.
   and leave that row out until it is decided.
 - **Deleting old tests.** Delete an old test file only after its replacements pass, the whole project
   passes, and the project's mutation score is not lower than the baseline.
-- **Mutation check.** Production code doesn't change in a rewrite, so `--since:<base>` mutates nothing.
+- **Mutation check.** Production code doesn't change in a rewrite, so no changed source file gives `--mutate` anything to match.
   Run the whole source project, or `--mutate` with the same glob the baseline used, one source
   project per run from the repo root, as [testing.md](../../backend/docs/testing.md#mutation-testing) says. Compare the score to the baseline you were
   given on the same scope, and

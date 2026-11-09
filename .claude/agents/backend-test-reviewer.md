@@ -52,14 +52,14 @@ For every test the diff removes, name the behavior it protected and the test tha
 
 ## Mutation run
 
-If `.config/dotnet-tools.json` lists `dotnet-stryker`, run it with `--since:<base>` on each touched
+If `.config/dotnet-tools.json` lists `dotnet-stryker`, run it with `--mutate "**/<path>.cs"` (repeatable) for each changed source file on each touched
 source project (one project per run, from the repo root) as
 [testing.md](../../backend/docs/testing.md#mutation-testing) says. Every surviving mutant that a
 test could kill is a finding, with the suggested killing test; list the rest as "equivalent,
 because…". Otherwise say that Stryker isn't set
 up, and list by hand the mutations of the changed production code that no test would catch.
 
-When the tests were rewritten and production code didn't change, `--since:<base>` mutates nothing. Run
+When the tests were rewritten and production code didn't change, `--mutate` has no file to match. Run
 the whole source project, or `--mutate` with the same glob the baseline used, one source project per
 run from the repo root, and compare the score to the baseline on the same scope.
 
