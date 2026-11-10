@@ -1,4 +1,4 @@
-# Development environment: PostgreSQL, pgAdmin, Grafana LGTM (traces, metrics and logs
+# Development environment: PostgreSQL, Grafana LGTM (traces, metrics and logs
 # over OTLP) and Mailpit (catches every email the Api sends). Bind addresses, ports and
 # user names come from 1Password, rendered into deploy/.env (read by compose automatically):
 #   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
@@ -39,31 +39,11 @@ services:
       timeout: 5s
       retries: 10
 
-  pgadmin:
-    image: dpage/pgadmin4:9.18.0
-    restart: unless-stopped
-    environment:
-      # The image refuses to start without these, even in desktop mode (no login screen).
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?render deploy/.env, see deploy/development/compose.settings.tpl}
-      # Read only on first start (empty volume); comes from op run, see compose.env.
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
-      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
-    ports:
-      - '${PGADMIN_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${PGADMIN_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:80'
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   lgtm:
     image: grafana/otel-lgtm:0.36.0
     restart: unless-stopped
     environment:
-      # Grafana without a login (anonymous Admin), like pgAdmin's desktop mode; published on loopback only.
+      # Grafana without a login (anonymous Admin); published on loopback only.
       GF_AUTH_ANONYMOUS_ENABLED: 'true'
     ports:
       - '${GRAFANA_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${GRAFANA_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:3000'
@@ -88,5 +68,4 @@ services:
 
 volumes:
   postgres-data:
-  pgadmin-data:
   lgtm-data:

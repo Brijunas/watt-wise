@@ -6,13 +6,13 @@ How to get a working Watt-Wise checkout on a new machine. This guide covers what
 
 Install these yourself. Everything else comes from the repository.
 
-| Tool                                                                                                                              | Why                                                                                   | Notes                                                                                                                                                                  |
-| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| git                                                                                                                               | Version control                                                                       | Any recent version                                                                                                                                                     |
-| [mise](https://mise.jdx.dev/getting-started.html)                                                                                 | Installs Node, pnpm, .NET and Betterleaks at the versions the repo asks for           | Must be [activated in your shell](https://mise.jdx.dev/getting-started.html#activate-mise) so the tools are on `PATH` in every terminal, including when git runs hooks |
-| [Docker Engine](https://docs.docker.com/engine/install/) with the Compose plugin                                                  | Runs PostgreSQL and pgAdmin for Development, and the Testcontainers integration tests | `docker compose version` must work without `sudo` (add yourself to the `docker` group)                                                                                 |
-| [1Password](https://1password.com/downloads/) desktop app and [CLI](https://developer.1password.com/docs/cli/get-started/) (`op`) | Database passwords and other secrets, injected with `op run`                          | Turn on the CLI integration in the desktop app (Settings → Developer). You need access to the `Watt Wise Development` vault                                            |
-| [gh](https://cli.github.com/) (optional)                                                                                          | Pull requests from the command line                                                   | Run `gh auth login` once                                                                                                                                               |
+| Tool                                                                                                                              | Why                                                                         | Notes                                                                                                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| git                                                                                                                               | Version control                                                             | Any recent version                                                                                                                                                     |
+| [mise](https://mise.jdx.dev/getting-started.html)                                                                                 | Installs Node, pnpm, .NET and Betterleaks at the versions the repo asks for | Must be [activated in your shell](https://mise.jdx.dev/getting-started.html#activate-mise) so the tools are on `PATH` in every terminal, including when git runs hooks |
+| [Docker Engine](https://docs.docker.com/engine/install/) with the Compose plugin                                                  | Runs PostgreSQL, Grafana LGTM and Mailpit                                   | `docker compose version` must work without `sudo` (add yourself to the `docker` group)                                                                                 |
+| [1Password](https://1password.com/downloads/) desktop app and [CLI](https://developer.1password.com/docs/cli/get-started/) (`op`) | Database passwords and other secrets, injected with `op run`                | Turn on the CLI integration in the desktop app (Settings → Developer). You need access to the `Watt Wise Development` vault                                            |
+| [gh](https://cli.github.com/) (optional)                                                                                          | Pull requests from the command line                                         | Run `gh auth login` once                                                                                                                                               |
 
 Don't install Node, pnpm or .NET globally for this project. mise provides them per directory, and a global copy can shadow the right one.
 
@@ -74,7 +74,7 @@ One-time setup of the Development PostgreSQL. The roles and why they exist are i
    op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
    ```
 
-2. Start the stack for the first time. The images read the `admin` and pgAdmin passwords only to initialize empty volumes, so only this first start goes through `op run`. Every later compose command (`up`, `down`, `logs`, `exec`) runs without it.
+2. Start the stack for the first time. The PostgreSQL image reads the `admin` password only to initialize an empty volume, so only this first start goes through `op run`. Every later compose command (`up`, `down`, `logs`, `exec`) runs without it.
 
    ```bash
    op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait
@@ -114,7 +114,7 @@ One-time setup of the Development PostgreSQL. The roles and why they exist are i
    op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs
    ```
 
-pgAdmin listens on the address and port in the `pgadmin` item (http://127.0.0.1:5050 today). The first time you open the server, it asks for the `postgres-admin` password.
+For an optional GUI client, see [Connecting with pgAdmin](../deploy/docs/postgres.md#connecting-with-pgadmin).
 
 The stack also runs Grafana LGTM, which receives the apps' traces, metrics and logs. Grafana is at the `grafana` item's `url` (http://127.0.0.1:3000 today), without a login; see [deploy/docs/lgtm.md](../deploy/docs/lgtm.md). On a machine set up before S2.8, render `deploy/.env` again (step 1) and run `docker compose -f deploy/docker-compose.development.yml up -d --wait` to add it.
 
