@@ -40,6 +40,7 @@ Each doc has one job. Read or update the one that matches the task:
 - Each fact lives in one doc; other docs link to it instead of repeating it.
 - Technical details that belong to one project go in that project's `docs/` folder; for `admin/` and `packages/`, that is `frontend/docs/`. Root `docs/technical.md` keeps only whole-system architecture and links to the project docs.
 - Keep every doc at 200 lines or fewer. Split a doc before it goes over.
+- When a story ships, remove its bullet from `docs/epics.md` in the same change; its facts live in the docs.
 - When an epic's last story ships, move the epic from `docs/epics.md` to `docs/implemented.md` in the same change.
 
 ## Claude Code setup
@@ -51,6 +52,10 @@ Sessions may start at the repo root or inside a project (`backend/`), and both m
 - `settings.json` is not inherited from the root. A project Claude may be started in has its own `.claude/settings.json`, registering the same hooks, MCP servers and deny rules; change both together. Hook scripts live once, in the root `.claude/hooks/`. Today only `backend/` has one; start frontend sessions at the root.
 - Concurrent sessions each work in their own worktree. Don't start a branch in a checkout another session is using: it branches from that session's HEAD and carries its commits into your PR.
 - Agent briefs that write code against a library tell the agent to check the library's API in Context7 first. Every Agent call passes `model: "sonnet"`, research and report writers included.
+- Parallel agents in one checkout: a foundation agent first lands the contracts, stubs and every DI registration; after it, each agent owns its own files. Tests written ahead may only call members that exist. The build is red between agents and `backend-build-check` says so at each stop; the owning agent fixes it, not the orchestrator. Backend production code goes to the `backend-developer` agent, tests to `backend-test-writer`.
+- `op` needs an approval on the 1Password desktop app. Tell the user before a step that runs `op` (hosts, `migrate`, `op item`); unattended it fails with `authorization prompt dismissed`.
+- Read and edit `backend/src/*/.env.development` with the Read and Edit tools; `cat` on them in Bash is denied.
+- An agent that ended while its own background command was running still counts as running. Stop it with TaskStop once its work is in.
 - Hook and MCP scripts find the repo with `git rev-parse --show-toplevel`, never with `$CLAUDE_PROJECT_DIR` alone, which is the folder the session started in.
 - `prettier-write` (PostToolUse) runs Prettier on every repo file Claude writes or edits, so a Markdown table or JSON may be reformatted right after an edit. That is expected; don't undo it.
 - A hook that takes a `flock` closes the lock's fd for `dotnet` children (`9>&-`): MSBuild's reused nodes and the compiler server outlive the build and would hold the lock for minutes.
