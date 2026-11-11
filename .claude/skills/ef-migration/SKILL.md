@@ -11,8 +11,8 @@ disable-model-invocation: true
 
 1. **Check there is a change.** `dotnet ef migrations has-pending-model-changes <infra>`. If it
    reports none, stop.
-2. **Ask the user** whether to regenerate `Initial` or add a new migration. Ask every time:
-   until the user says the "single Initial migration" period is over, don't assume.
+2. **Pick the path without asking.** Until the MVP is in Production, regenerate `Initial` (step 3).
+   After that, only add a new migration (step 4).
 3. **Regenerate Initial:**
    1. Delete `backend/src/WattWise.Infrastructure/Persistence/Migrations/*` (the migration, its Designer and the snapshot).
    2. `dotnet ef migrations add Initial <infra> --output-dir Persistence/Migrations`

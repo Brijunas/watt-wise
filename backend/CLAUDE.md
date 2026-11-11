@@ -1,6 +1,6 @@
 # CLAUDE.md (backend)
 
-Notes for Claude Code when working in `backend/`. The rules themselves live in [docs/](docs/): read [docs/architecture.md](docs/architecture.md) and [docs/conventions.md](docs/conventions.md) before writing C#, [docs/domain-model.md](docs/domain-model.md) before writing Domain or Application code, and [docs/testing.md](docs/testing.md) before writing tests. When a change touches errors, logging or jobs, read [docs/error-handling.md](docs/error-handling.md), [docs/observability.md](docs/observability.md) or [docs/jobs.md](docs/jobs.md) first. When a change touches accounts, sign-in or permissions, read [docs/features/accounts.md](docs/features/accounts.md) and the root [security.md](../docs/security.md) first.
+Notes for Claude Code when working in `backend/`. The rules themselves live in [docs/](docs/): read [docs/architecture.md](docs/architecture.md) and [docs/conventions.md](docs/conventions.md) before writing C#, [docs/domain-model.md](docs/domain-model.md) before writing Domain or Application code, and [docs/testing.md](docs/testing.md) before writing tests. When a change touches errors, logging, jobs or email, read [docs/error-handling.md](docs/error-handling.md), [docs/observability.md](docs/observability.md), [docs/jobs.md](docs/jobs.md), or [docs/email.md](docs/email.md) and [docs/email-outbox.md](docs/email-outbox.md) first. When a change touches accounts, sign-in or permissions, read [docs/features/accounts.md](docs/features/accounts.md) and the root [security.md](../docs/security.md) first.
 
 ## C# files
 
@@ -16,7 +16,8 @@ Hook scripts are in the root `.claude/hooks/`, registered in both `.claude/setti
 - `backend-unused-usings` runs after every edit of a `backend/**/*.cs` file and reports unused usings (IDE0005). Remove them before moving on.
 - `backend-migration-guard` blocks `dotnet ef database update` and edits to a migration's `*.Designer.cs` or `AppDbContextModelSnapshot.cs`. Change the model instead; only a migration's `Up`/`Down` take hand edits.
 - `backend-build-check` builds the solution (in its own output folder under `~/.cache`, so it never races other builds) when a session stops with changed C# or project files, and blocks the stop once on any warning or error. Fix them before stopping.
-- `/ef-migration` holds the steps that turn a model change into a migration. Run those steps yourself after asking whether to regenerate `Initial` or add a migration; never hand migration commands to the user.
+- `/ef-migration` holds the steps that turn a model change into a migration. Until the MVP is in Production, regenerate `Initial` without asking; after that, only add migrations. Run the steps yourself; never hand migration commands to the user.
+- The `backend-developer` agent writes production code under `backend/src/`; its brief names the files it owns. Don't use a general-purpose agent for backend code.
 - Run the `backend-reviewer` agent before opening a PR that touches `backend/`. The test agents are under "Testing rules".
 - To inspect the Development stack, use the `postgres` MCP (read-only `reader` role; writes fail with SQLSTATE 25006) and the `grafana` MCP (Loki logs, Tempo traces, Mimir metrics). Both need the stack running. `postgres` is off by default (it needs `op` signed in); ask the user to turn it on with `/mcp` when you need the database.
 
@@ -32,6 +33,11 @@ The rules are in "Writing tests that catch bugs" in [docs/testing.md](docs/testi
 - Fake only boundaries (`IClock` → `FakeClock`, external HTTP, SMTP, ports in Application tests). Integration tests use the real PostgreSQL fixture: `IClassFixture<DatabaseFixture>`, the role the code uses, unique data per test, state read back in a new scope. Never InMemory or SQLite.
 - Sentence-style names, one behavior and one logical assert per test, plain xUnit `Assert`.
 - The `backend-test-writer` agent writes tests (plan first); `backend-test-reviewer` reviews them.
+- `Assert.Equal` on a tuple that holds an array or list compares the collection by reference and fails with identical printed values. Assert the collection on its own, or `string.Join` it inside the tuple.
+- One `AddMediator` call per assembly (the generator fails with MSG0007). Application.Tests builds every host on `Pipeline/PipelineHost` and its `configure` hook.
+- Stryker runs Application with Application.Tests and Infrastructure with its two test projects, never Api.IntegrationTests. New handlers, validators and adapters need tests in those projects, or they count as no coverage.
+- Run Stryker alone: with other builds or Docker test runs going, its scores are wrong.
+- A test of code that acts on every row of a table (the outbox claim, a purge, a count) goes in its own test class, so it gets its own database clone.
 
 | Run                                | Command                                                                                                                                                                     |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
