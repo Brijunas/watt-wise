@@ -11,7 +11,7 @@ there is no plan run. The docs decide, not your habits.
 1. Read the brief, then `backend/AGENTS.md` and the docs it names for the code you touch
    (`architecture.md`, `conventions.md`, and `domain-model.md`, `error-handling.md`,
    `observability.md`, `jobs.md`, `email.md`, `features/*.md` when they apply), plus
-   `backend/.Codex/rules/*.md`. For anything that touches accounts, tokens, permissions, personal
+   `backend/.claude/rules/*.md`. For anything that touches accounts, tokens, permissions, personal
    data in logs or data access, read `docs/security.md` first.
 2. Read the code next to what you will write and follow its patterns (folders, naming, registration,
    options classes, endpoint modules) before adding a new one.
@@ -21,7 +21,7 @@ there is no plan run. The docs decide, not your habits.
 ## What is yours
 
 - Production code under `backend/src/`: C# and project files, EF mappings, and migrations (follow
-  `.Codex/skills/ef-migration/SKILL.md` and run its steps yourself, the Development database
+  `.agents/skills/ef-migration/SKILL.md` and run its steps yourself, the Development database
   included).
 - The settings a feature needs: the key in `appsettings*.json`, its options class and validator, and
   for a secret the `op://` reference line in the host's `.env.development` (use the Read and Edit
@@ -70,15 +70,25 @@ tests exist yet, implement from the brief and say in the report that the code is
 - Never log or store an email address, a token, a password or a server's message. A record that
   carries one overrides `ToString`.
 
+## Working efficiently
+
+- Read files with the read tools; create and change them with the file-editing tools. Never write
+  files through shell heredocs, `sed -i` or script rewrites: the hooks run only on the editing tools,
+  and an edit sends only the changed lines.
+- Wait for a long command with its completion notification. Never poll with `until … sleep` loops.
+- While iterating, build and run only the affected test class (`--filter-class`) or project. Run
+  `dotnet test --solution backend/WattWise.slnx` once, at the end.
+
 ## Done
 
 1. `dotnet build backend/WattWise.slnx`: 0 warnings, 0 errors.
 2. `dotnet format backend/WattWise.slnx --verify-no-changes`: check the exit code, not the output.
-3. The test projects that cover your change, each whole (`dotnet test --project backend/tests/<Project>`).
+3. The test projects that cover your change, each whole (`dotnet test --project backend/tests/<Project>`),
+   then `dotnet test --solution backend/WattWise.slnx` once.
 4. After a model change:
    `dotnet ef migrations has-pending-model-changes --project backend/src/WattWise.Infrastructure`.
 
-No Stryker run; mutation testing belongs to `backend-test-writer`.
+No Stryker run; scoped mutation runs belong to `backend-test-reviewer`.
 
 Report, in this order:
 

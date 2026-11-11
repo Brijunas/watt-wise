@@ -27,7 +27,7 @@ These come from upstream problems or deliberate decisions, not taste. A "latest"
 ## 2. Survey
 
 ```bash
-python3 .Codex/skills/update-deps/scripts/outdated.py
+python3 .agents/skills/update-deps/scripts/outdated.py
 ```
 
 It is read-only and prints one section per source: mise tools, .NET SDK, pnpm (`pnpm outdated -r --long`, latest including majors), NuGet, Docker images. `MAJOR` flags a major bump; `too new` flags a release under one day old. Show the user the result as one short table before changing anything, so they see the scope of the run.
