@@ -40,4 +40,4 @@ Use the root [development commands](../docs/development.md) for build, formattin
 
 Model changes use the [migration skill](../.agents/skills/ef-migration/SKILL.md). Endpoint changes require `pnpm generate:api`; include the OpenAPI document and generated client together.
 
-Use [.codex/agents](../.codex/agents/) briefs when delegating production code, tests, and reviews; [Claude briefs](../.claude/agents/) serve Claude tooling. Run `backend-reviewer` before backend PRs and `backend-test-reviewer` for test reviews. Report unavailable roles explicitly. Give workers this guide and exact file ownership; resolve stale brief paths against the verified links above.
+Use [.codex/agents](../.codex/agents/) briefs when delegating production code, tests, and reviews; [Claude briefs](../.claude/agents/) serve Claude tooling. Run `backend-reviewer` before backend PRs and `backend-test-reviewer` for test reviews; as a Codex review worker, follow [Codex Review](../AGENTS.md#codex-review) instead. Report unavailable roles explicitly. Give workers this guide and exact file ownership; resolve stale brief paths against the verified links above.

@@ -18,7 +18,7 @@ Hook scripts are in the root `.claude/hooks/`, registered in both `.claude/setti
 - `backend-build-check` builds the solution (in its own output folder under `~/.cache`, so it never races other builds) when a session stops with changed C# or project files, and blocks the stop once on any warning or error. Fix them before stopping.
 - `/ef-migration` holds the steps that turn a model change into a migration. Until the MVP is in Production, regenerate `Initial` without asking; after that, only add migrations. Run the steps yourself; never hand migration commands to the user.
 - The `backend-developer` agent writes production code under `backend/src/`; its brief names the files it owns. Don't use a general-purpose agent for backend code.
-- Run the `backend-reviewer` agent before opening a PR that touches `backend/`. The test agents are under "Testing rules".
+- Run the `backend-reviewer` agent before opening a PR that touches `backend/`, or Codex's in a Codex review (root `CLAUDE.md`, "Claude Code setup"). The test agents are under "Testing rules".
 - To inspect the Development stack, use the `postgres` MCP (read-only `reader` role; writes fail with SQLSTATE 25006) and the `grafana` MCP (Loki logs, Tempo traces, Mimir metrics). Both need the stack running. `postgres` is off by default (it needs `op` signed in); ask the user to turn it on with `/mcp` when you need the database.
 
 ## Before committing
