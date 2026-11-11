@@ -12,7 +12,10 @@ using WattWise.Application.Email;
 using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Email;
 using WattWise.Infrastructure.Persistence;
+using WattWise.Infrastructure.Persistence.Queries;
+using WattWise.Infrastructure.Persistence.Repositories;
 using WattWise.Infrastructure.Persistence.Schema;
+using WattWise.Infrastructure.Time;
 
 namespace WattWise.Infrastructure;
 
@@ -37,6 +40,8 @@ public static class DependencyInjection
         });
 
         services.AddSingleton<IClock>(SystemClock.Instance);
+        // One clock for everything: ASP.NET Core Identity's lockout and the Api's token validation read the time through it.
+        services.Replace(ServiceDescriptor.Singleton<TimeProvider, ClockTimeProvider>());
         services.AddSchemaSteps();
         services.AddIdentity();
         services.AddEmail();
@@ -94,9 +99,20 @@ public static class DependencyInjection
         return services;
     }
 
-    /// <summary>Registers the account ports (registration and confirmation).</summary>
+    /// <summary>Registers the account ports: registration, confirmation, sign-in and sessions. The Api validates the Jwt settings at start; the other hosts don't need them.</summary>
     private static IServiceCollection AddAccounts(this IServiceCollection services)
     {
+        services.AddOptions<JwtSettings>()
+            .Configure<IConfiguration>((settings, configuration) => settings.ReadFrom(configuration));
+        services.AddSingleton<IValidateOptions<JwtSettings>, JwtSettingsValidator>();
+        services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
+        services.AddSingleton<IRefreshTokenFactory, RefreshTokenFactory>();
+        services.AddSingleton<IDeviceLabels, UserAgentDeviceLabels>();
+        services.AddScoped<IPasswordSignIn, IdentityPasswordSignIn>();
+        services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped<IAccountsQueries, AccountsQueries>();
+        services.AddScoped<IExpiredSessions, ExpiredSessions>();
+
         services.AddSingleton<IEmailAddressNormalizer, IdentityEmailAddressNormalizer>();
         services.AddScoped<IPasswordPolicy, IdentityPasswordPolicy>();
         services.AddScoped<IAccountRegistration, IdentityAccountRegistration>();

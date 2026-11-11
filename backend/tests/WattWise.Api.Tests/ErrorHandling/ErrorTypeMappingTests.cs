@@ -9,6 +9,8 @@ public class ErrorTypeMappingTests
     [InlineData(ErrorType.Validation, 400)]
     [InlineData(ErrorType.NotFound, 404)]
     [InlineData(ErrorType.Unauthorized, 401)]
+    [InlineData(ErrorType.Forbidden, 403)]
+    [InlineData(ErrorType.Locked, 423)]
     [InlineData(ErrorType.BadRequest, 400)]
     public void Each_error_type_maps_to_its_status(ErrorType type, int expected)
     {

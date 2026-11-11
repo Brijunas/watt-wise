@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -172,6 +174,71 @@ public sealed class AccountsApiFixture(PostgresContainerFixture postgres) : IAsy
         AccountIdentity identity = (await users.FindByIdAsync(identityId.ToString()))!;
         return await users.GeneratePasswordResetTokenAsync(identity);
     }
+
+    /// <summary>A new account with an AccountIdentity (email confirmed unless <paramref name="confirmed"/> is false), made directly in the database.</summary>
+    public Task<AccountSeeder.Ids> CreateAccountAsync(string email, string password, bool confirmed = true) =>
+        AccountSeeder.CreateAccountAsync(issuer!, email, password, confirmed);
+
+    /// <summary>Creates a role and a permission per name, and gives the role to the account.</summary>
+    public Task GrantAsync(Guid accountId, string roleName, params string[] permissionNames) =>
+        AccountSeeder.GrantAsync(issuer!, accountId, roleName, permissionNames);
+
+    /// <summary>Signs in through the endpoint and returns the access token, its expiry text and the refresh cookie.</summary>
+    public async Task<SignedInSession> SignInAsync(string email, string password, string? userAgent = null)
+    {
+        using HttpResponseMessage response = await SendAsync(HttpMethod.Post, "/api/v1/auth/sign-in", body: new { email, password }, userAgent: userAgent);
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        return new SignedInSession(
+            body.RootElement.GetProperty("accessToken").GetString()!,
+            body.RootElement.GetProperty("accessTokenExpiresAt").GetString()!,
+            SetCookieHeader.RefreshCookieOf(response)!.NameAndValue);
+    }
+
+    /// <summary>One request on a client of its own; the cookie is sent as given (<c>name=value</c>), the token as a bearer token.</summary>
+    public Task<HttpResponseMessage> SendAsync(
+        HttpMethod method, string path, string? cookie = null, string? bearer = null, object? body = null, string? userAgent = null)
+    {
+        HttpClient client = factory!.CreateClient();
+        HttpRequestMessage request = new(method, path);
+        if (cookie is not null)
+        {
+            request.Headers.Add("Cookie", cookie);
+        }
+
+        if (bearer is not null)
+        {
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", bearer);
+        }
+
+        if (userAgent is not null)
+        {
+            request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+        }
+
+        if (body is not null)
+        {
+            request.Content = JsonContent.Create(body);
+        }
+
+        return client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
+    /// <summary>The sessions of an account as <c>device|signed_in = now|last_used = now|tokens</c> per row, newest sign-in last.</summary>
+    public Task<string[]> SessionRowsAsync(Guid accountId) =>
+        QueryAsync($"""
+            SELECT s.device_label || '|' || (s.signed_in_at = {Clock.GetCurrentInstant()})::text || '|' || (s.last_used_at = {Clock.GetCurrentInstant()})::text
+                || '|' || (SELECT count(*) FROM app.refresh_tokens t WHERE t.session_id = s.id) AS "Value"
+            FROM app.sessions s WHERE s.account_id = {accountId} ORDER BY s.signed_in_at, s.id
+            """);
+
+    /// <summary>The refresh tokens of an account as <c>used</c> or <c>unused</c>, in the order they were issued.</summary>
+    public Task<string[]> RefreshTokenStatesAsync(Guid accountId) =>
+        QueryAsync($"""
+            SELECT CASE WHEN t.used_at IS NULL THEN 'unused' ELSE 'used' END AS "Value"
+            FROM app.refresh_tokens t JOIN app.sessions s ON s.id = t.session_id
+            WHERE s.account_id = {accountId} ORDER BY t.issued_at, t.used_at NULLS LAST
+            """);
 
     private async Task<string[]> QueryAsync(FormattableString sql)
     {

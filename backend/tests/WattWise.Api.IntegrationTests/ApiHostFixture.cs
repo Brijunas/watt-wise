@@ -42,6 +42,8 @@ public sealed class ApiHostFixture(PostgresContainerFixture postgres) : IAsyncLi
             services =>
             {
                 services.TryAddEnumerable(ServiceDescriptor.Singleton<IEndpointModule, TestErrorsEndpointModule>());
+                services.TryAddEnumerable(ServiceDescriptor.Singleton<IEndpointModule, TestProbeEndpointModule>());
+                services.AddSingleton<ProbeCalls>();
                 services.AddSingleton<ILogEventSink>(Logs);
                 services.ConfigureOpenTelemetryTracerProvider(tracer => tracer.AddProcessor(Spans));
             });

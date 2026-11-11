@@ -72,11 +72,22 @@ tests exist yet, implement from the brief and say in the report that the code is
 - Never log or store an email address, a token, a password or a server's message. A record that
   carries one overrides `ToString`.
 
+## Working efficiently
+
+- Read files with Read; create files with Write and change them with Edit. Never write files through
+  Bash heredocs, `sed -i` or script rewrites: the hooks run only on Write/Edit, and an Edit sends
+  only the changed lines.
+- Wait for a long command with Bash `run_in_background` and its completion notification. Never poll
+  with `until … sleep` loops.
+- While iterating, build and run only the affected test class (`--filter-class`) or project. Run
+  `dotnet test --solution backend/WattWise.slnx` once, at the end.
+
 ## Done
 
 1. `dotnet build backend/WattWise.slnx`: 0 warnings, 0 errors.
 2. `dotnet format backend/WattWise.slnx --verify-no-changes`: check the exit code, not the output.
-3. The test projects that cover your change, each whole (`dotnet test --project backend/tests/<Project>`).
+3. The test projects that cover your change, each whole (`dotnet test --project backend/tests/<Project>`),
+   then `dotnet test --solution backend/WattWise.slnx` once.
 4. After a model change:
    `dotnet ef migrations has-pending-model-changes --project backend/src/WattWise.Infrastructure`.
 

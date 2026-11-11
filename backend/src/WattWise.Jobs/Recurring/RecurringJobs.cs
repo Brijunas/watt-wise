@@ -11,5 +11,6 @@ public static class RecurringJobs
         manager.AddOrUpdate<NoOpJob>(NoOpJob.RecurringJobId, job => job.ExecuteAsync(CancellationToken.None), Hangfire.Cron.Hourly());
         manager.AddOrUpdate<SendEmailsJob>(SendEmailsJob.RecurringJobId, job => job.ExecuteAsync(CancellationToken.None), SendEmailsJob.Cron, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
         manager.AddOrUpdate<PurgeEmailRequestsJob>(PurgeEmailRequestsJob.RecurringJobId, job => job.ExecuteAsync(CancellationToken.None), PurgeEmailRequestsJob.Cron, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+        manager.AddOrUpdate<PurgeSessionsJob>(PurgeSessionsJob.RecurringJobId, job => job.ExecuteAsync(CancellationToken.None), PurgeSessionsJob.Cron, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }

@@ -83,7 +83,7 @@ Assertions:
 - Every reachable branch gets a happy and a sad path, argument guards included. A branch only a production change can reach is named as unreachable.
 - An expected value that only the code gives is marked `// characterization: <file:line>` and needs the user's approval.
 - No test that can only fail on a rename.
-- **Faking time.** Our code takes `IClock` (`FakeClock` in tests). ASP.NET Core Identity has its own clock (lockout, token lifetimes): a `TimeProvider` that `UserManager` reads from DI, faked with the hand-written `FixedTimeProvider` (Infrastructure.IntegrationTests).
+- **Faking time.** Our code takes `IClock` (`FakeClock` in tests). ASP.NET Core Identity's lockout and the Api's JWT lifetime check read a `TimeProvider` from DI; `AddInfrastructure()` registers `ClockTimeProvider` (over `IClock`) for it, so one `FakeClock` drives our code, Identity and the JWT. The hand-written `FixedTimeProvider` (Infrastructure.IntegrationTests) still replaces it in `LockoutTests`.
 
 PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-postgresql-fixture)):
 

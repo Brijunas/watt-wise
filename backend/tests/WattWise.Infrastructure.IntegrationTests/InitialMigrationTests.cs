@@ -11,6 +11,7 @@ public class InitialMigrationTests(DatabaseFixture fixture) : IClassFixture<Data
     [
         "accounts", "identity_users", "identity_user_logins", "identity_user_tokens",
         "roles", "permissions", "account_roles", "role_permissions", "email_link_tokens", "email_requests",
+        "sessions", "refresh_tokens",
     ];
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;

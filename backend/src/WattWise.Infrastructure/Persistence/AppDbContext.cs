@@ -22,6 +22,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Permission> Permissions => Set<Permission>();
 
+    public DbSet<Session> Sessions => Set<Session>();
+
     public DbSet<EmailLinkToken> EmailLinkTokens => Set<EmailLinkToken>();
 
     public DbSet<EmailRequest> EmailRequests => Set<EmailRequest>();

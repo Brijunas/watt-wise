@@ -7,4 +7,6 @@ public enum ErrorType
     NotFound,
     Unauthorized,
     BadRequest,
+    Forbidden,
+    Locked,
 }
