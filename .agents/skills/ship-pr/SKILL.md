@@ -83,7 +83,7 @@ Report the PR URL. In create-only mode, stop here.
 Run the bundled script from the repo root:
 
 ```bash
-.Codex/skills/ship-pr/scripts/finish-pr.sh <pr-number-or-branch>
+.agents/skills/ship-pr/scripts/finish-pr.sh <pr-number-or-branch>
 ```
 
 With no argument, it uses the current branch. It does the fiddly checks so they're the same every time:

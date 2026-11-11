@@ -91,7 +91,7 @@ tests exist yet, implement from the brief and say in the report that the code is
 4. After a model change:
    `dotnet ef migrations has-pending-model-changes --project backend/src/WattWise.Infrastructure`.
 
-No Stryker run; mutation testing belongs to `backend-test-writer`.
+No Stryker run; scoped mutation runs belong to `backend-test-reviewer`.
 
 Report, in this order:
 

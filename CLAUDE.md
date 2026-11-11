@@ -48,6 +48,7 @@ Each doc has one job. Read or update the one that matches the task:
 Sessions may start at the repo root or inside a project (`backend/`), and both must work.
 
 - Agents and skills live in the root `.claude/agents/` and `.claude/skills/`, named `<project>-…` when they belong to one project. Claude Code finds them from a subfolder by walking up.
+- Codex has a parallel setup derived from this one: `AGENTS.md` in the root and each project, `.codex/` (config, agents, hooks) and `.agents/skills/`. A change to `.claude/agents/*.md`, `.claude/skills/` or `.claude/hooks/` updates its twin (`.codex/agents/*.toml`, `.agents/skills/`, `.codex/hooks/`) in the same change; the Claude file is the source.
 - Path-scoped rules and notes for one project go in `<project>/.claude/rules/` and `<project>/CLAUDE.md`.
 - `settings.json` is not inherited from the root. A project Claude may be started in has its own `.claude/settings.json`, registering the same hooks, MCP servers and deny rules; change both together. Hook scripts live once, in the root `.claude/hooks/`. Today only `backend/` has one; start frontend sessions at the root.
 - Concurrent sessions each work in their own worktree. Don't start a branch in a checkout another session is using: it branches from that session's HEAD and carries its commits into your PR.
