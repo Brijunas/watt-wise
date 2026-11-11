@@ -37,6 +37,26 @@ public class OpenApiDocumentTests(ApiHostFixture fixture) : IClassFixture<ApiHos
     }
 
     [Fact]
+    public async Task The_openapi_document_defines_a_Bearer_JWT_security_scheme()
+    {
+        OpenApiDocument document = (await LoadAsync()).Document!;
+
+        OpenApiSecurityScheme scheme = Assert.IsType<OpenApiSecurityScheme>(document.Components!.SecuritySchemes!["Bearer"]);
+        Assert.Equal((SecuritySchemeType.Http, "bearer", "JWT"), (scheme.Type, scheme.Scheme, scheme.BearerFormat));
+    }
+
+    [Fact]
+    public async Task The_me_operation_requires_the_Bearer_scheme_and_sign_in_requires_nothing()
+    {
+        OpenApiDocument document = (await LoadAsync()).Document!;
+
+        Assert.Equal(
+            (1, 0),
+            (document.Paths["/api/v1/me"].Operations![HttpMethod.Get].Security!.Count,
+             document.Paths["/api/v1/auth/sign-in"].Operations![HttpMethod.Post].Security?.Count ?? 0));
+    }
+
+    [Fact]
     public async Task Scalar_is_served_as_html_outside_production()
     {
         using HttpClient client = fixture.Factory.CreateClient();

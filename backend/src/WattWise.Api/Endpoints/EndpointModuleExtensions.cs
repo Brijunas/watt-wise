@@ -24,10 +24,11 @@ public static class EndpointModuleExtensions
     /// <summary>
     /// Maps every <see cref="IEndpointModule"/> registered in DI (so tests can add modules too) under
     /// <see cref="ApiRoutes.V1Prefix"/>, with the CORS policy applied to the whole group.
+    /// The group requires an authenticated caller; an endpoint opts out with <c>AllowAnonymous()</c>.
     /// </summary>
     public static WebApplication MapEndpointModules(this WebApplication app)
     {
-        RouteGroupBuilder api = app.MapGroup(ApiRoutes.V1Prefix).RequireCors(CorsPolicy.Name);
+        RouteGroupBuilder api = app.MapGroup(ApiRoutes.V1Prefix).RequireCors(CorsPolicy.Name).RequireAuthorization();
         foreach (IEndpointModule module in app.Services.GetServices<IEndpointModule>())
         {
             module.MapEndpoints(api);

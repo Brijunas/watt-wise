@@ -28,6 +28,18 @@ public sealed record Error(
         return new Error(code, description, ErrorType.Unauthorized);
     }
 
+    /// <summary>The caller is known but not allowed to do this.</summary>
+    public static Error Forbidden(string code, string description)
+    {
+        return new Error(code, description, ErrorType.Forbidden);
+    }
+
+    /// <summary>The resource is locked for now, e.g. an account locked out after failed sign-ins.</summary>
+    public static Error Locked(string code, string description)
+    {
+        return new Error(code, description, ErrorType.Locked);
+    }
+
     /// <summary>A well-formed request that cannot be carried out and is not a field validation error.</summary>
     public static Error BadRequest(string code, string description)
     {

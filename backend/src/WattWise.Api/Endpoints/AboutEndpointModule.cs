@@ -13,7 +13,8 @@ public sealed class AboutEndpointModule : IEndpointModule
     {
         group.MapGet("/about", GetAbout)
             .WithName("GetAbout")
-            .WithTags("About");
+            .WithTags("About")
+            .AllowAnonymous();
     }
 
     private static async Task<Results<Ok<AboutResponse>, ProblemHttpResult, ValidationProblem>> GetAbout(ISender sender, CancellationToken cancellationToken)

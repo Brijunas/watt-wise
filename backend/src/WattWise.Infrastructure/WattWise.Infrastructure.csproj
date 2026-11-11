@@ -5,6 +5,8 @@
     <PackageReference Include="Fluid.Core" />
     <PackageReference Include="Hangfire.PostgreSql" />
     <PackageReference Include="MailKit" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+    <PackageReference Include="MyCSharp.HttpUserAgentParser" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />

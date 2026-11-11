@@ -16,7 +16,7 @@ public sealed class TestErrorsEndpointModule : IEndpointModule
 
     public void MapEndpoints(IEndpointRouteBuilder group)
     {
-        RouteGroupBuilder errors = group.MapGroup("/test/errors");
+        RouteGroupBuilder errors = group.MapGroup("/test/errors").AllowAnonymous();
 
         errors.MapGet("/validation", () => Result<string>
             .Failure(Error.Validation(new Dictionary<string, string[]> { ["Email"] = ["'Email' must not be empty."] }))

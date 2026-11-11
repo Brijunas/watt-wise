@@ -46,6 +46,46 @@ public class ProblemDetailsCustomizationTests
         Assert.Equal("General.NotFound", CodeAfterApply(status: null, responseStatus: 404));
     }
 
+    [Fact]
+    public void A_423_without_type_and_title_gets_the_WebDAV_Locked_ones()
+    {
+        ProblemDetails details = Apply(new ProblemDetails { Status = 423 }, responseStatus: 200);
+
+        Assert.Equal(("https://www.rfc-editor.org/rfc/rfc4918#section-11.3", "Locked"), (details.Type, details.Title));
+    }
+
+    [Fact]
+    public void A_423_found_only_in_the_response_status_gets_them_too()
+    {
+        ProblemDetails details = Apply(new ProblemDetails(), responseStatus: 423);
+
+        Assert.Equal(("https://www.rfc-editor.org/rfc/rfc4918#section-11.3", "Locked"), (details.Type, details.Title));
+    }
+
+    [Fact]
+    public void A_423_keeps_a_type_and_title_that_are_already_set()
+    {
+        ProblemDetails details = Apply(new ProblemDetails { Status = 423, Type = "urn:own", Title = "Own title" }, responseStatus: 200);
+
+        Assert.Equal(("urn:own", "Own title"), (details.Type, details.Title));
+    }
+
+    [Fact]
+    public void A_status_other_than_423_gets_no_type_or_title()
+    {
+        ProblemDetails details = Apply(new ProblemDetails { Status = 404 }, responseStatus: 200);
+
+        Assert.Equal((null, null), (details.Type, details.Title));
+    }
+
+    private static ProblemDetails Apply(ProblemDetails details, int responseStatus)
+    {
+        DefaultHttpContext http = new();
+        http.Response.StatusCode = responseStatus;
+        ProblemDetailsCustomization.Apply(new ProblemDetailsContext { HttpContext = http, ProblemDetails = details });
+        return details;
+    }
+
     private static object? CodeAfterApply(int? status, int responseStatus, string? existingCode = null)
     {
         DefaultHttpContext http = new();

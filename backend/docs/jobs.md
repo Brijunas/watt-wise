@@ -44,12 +44,13 @@ Jobs live in `WattWise.Jobs/Recurring/`. A job class is thin: it takes its depen
 
 `NoOpJob` is the smallest example; it only logs one line and stays until a later story replaces it.
 
-| Job                     | Cron (UTC)      | Sends                       |
-| ----------------------- | --------------- | --------------------------- |
-| `SendEmailsJob`         | `*/5 * * * * *` | `SendDueEmailsCommand`      |
-| `PurgeEmailRequestsJob` | `0 3 * * *`     | `PurgeEmailRequestsCommand` |
+| Job                     | Cron (UTC)      | Sends                         |
+| ----------------------- | --------------- | ----------------------------- |
+| `SendEmailsJob`         | `*/5 * * * * *` | `SendDueEmailsCommand`        |
+| `PurgeEmailRequestsJob` | `0 3 * * *`     | `PurgeEmailRequestsCommand`   |
+| `PurgeSessionsJob`      | `30 3 * * *`    | `PurgeExpiredSessionsCommand` |
 
-Both run the email outbox ([email-outbox.md](email-outbox.md)), the host's first real work. A six-part cron includes seconds (Hangfire reads it as `CronFormat.IncludeSeconds`). `SendEmailsJob` has `[AutomaticRetry(Attempts = 0)]`, because a row keeps its own retries and Hangfire's would stack on them, and `[DisableConcurrentExecution(5)]`, which only saves work: the outbox's claim is what prevents a double send.
+The first two run the email outbox ([email-outbox.md](email-outbox.md)), the host's first real work. `PurgeSessionsJob` deletes sessions with no unexpired refresh token and expired token rows; a used but unexpired token stays, so its reuse is detected ([accounts.md](features/accounts.md#sign-in-refresh-and-sign-out)). A six-part cron includes seconds (Hangfire reads it as `CronFormat.IncludeSeconds`). `SendEmailsJob` has `[AutomaticRetry(Attempts = 0)]`, because a row keeps its own retries and Hangfire's would stack on them, and `[DisableConcurrentExecution(5)]`, which only saves work: the outbox's claim is what prevents a double send.
 
 An overlapping tick waits 5 seconds for the lock and then fails; with no Hangfire retries it shows as a failed job, which is harmless because the next tick does the work.
 

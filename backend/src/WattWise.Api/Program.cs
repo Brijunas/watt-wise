@@ -6,12 +6,14 @@ using Microsoft.Extensions.Options;
 
 using Scalar.AspNetCore;
 
+using WattWise.Api.Authentication;
 using WattWise.Api.Cors;
 using WattWise.Api.Endpoints;
 using WattWise.Api.ErrorHandling;
 using WattWise.Api.Health;
 using WattWise.Api.Observability;
 using WattWise.Api.OpenApi;
+using WattWise.Api.Security;
 using WattWise.Application;
 using WattWise.Application.Behaviors;
 using WattWise.Infrastructure;
@@ -31,6 +33,7 @@ builder.Services.AddMediator((MediatorOptions options) =>
 });
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = ProblemDetailsCustomization.Apply);
 builder.Services.AddApiCors();
+builder.Services.AddApiAuthentication();
 builder.Services.AddApiOpenApi();
 builder.Services.AddEndpointModules();
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
@@ -52,6 +55,10 @@ app.UseApiRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors();
+// After CORS (a preflight is answered there) and before authentication, so a foreign origin is refused with 403 whatever the token.
+app.UseOriginCheck();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = HealthResponseWriter.WriteAsync });
 
 // The OpenAPI document and Scalar UI are only served outside Production.

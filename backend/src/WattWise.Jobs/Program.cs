@@ -41,6 +41,7 @@ builder.Services.AddHangfireServer((BackgroundJobServerOptions options) =>
 builder.Services.AddTransient<NoOpJob>();
 builder.Services.AddTransient<SendEmailsJob>();
 builder.Services.AddTransient<PurgeEmailRequestsJob>();
+builder.Services.AddTransient<PurgeSessionsJob>();
 
 var app = builder.Build();
 

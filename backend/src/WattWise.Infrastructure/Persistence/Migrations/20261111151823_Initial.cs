@@ -7,7 +7,7 @@ using NodaTime;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 /// <inheritdoc />
-public partial class _20261111114319_Initial : Migration
+public partial class _20261111151823_Initial : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -114,6 +114,29 @@ public partial class _20261111114319_Initial : Migration
                 table.PrimaryKey("pk_identity_users", x => x.id);
                 table.ForeignKey(
                     name: "fk_identity_users_accounts_account_id",
+                    column: x => x.account_id,
+                    principalSchema: "app",
+                    principalTable: "accounts",
+                    principalColumn: "id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "sessions",
+            schema: "app",
+            columns: table => new
+            {
+                id = table.Column<Guid>(type: "uuid", nullable: false),
+                account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                device_label = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                signed_in_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
+                last_used_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("pk_sessions", x => x.id);
+                table.ForeignKey(
+                    name: "fk_sessions_accounts_account_id",
                     column: x => x.account_id,
                     principalSchema: "app",
                     principalTable: "accounts",
@@ -242,6 +265,31 @@ public partial class _20261111114319_Initial : Migration
                     onDelete: ReferentialAction.Cascade);
             });
 
+        migrationBuilder.CreateTable(
+            name: "refresh_tokens",
+            schema: "app",
+            columns: table => new
+            {
+                id = table.Column<Guid>(type: "uuid", nullable: false),
+                session_id = table.Column<Guid>(type: "uuid", nullable: false),
+                token_hash = table.Column<byte[]>(type: "bytea", nullable: false),
+                issued_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
+                expires_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
+                used_at = table.Column<Instant>(type: "timestamp with time zone", nullable: true),
+                xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("pk_refresh_tokens", x => x.id);
+                table.ForeignKey(
+                    name: "fk_refresh_tokens_sessions_session_id",
+                    column: x => x.session_id,
+                    principalSchema: "app",
+                    principalTable: "sessions",
+                    principalColumn: "id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
         migrationBuilder.CreateIndex(
             name: "ix_account_roles_role_id",
             schema: "app",
@@ -296,6 +344,25 @@ public partial class _20261111114319_Initial : Migration
             unique: true);
 
         migrationBuilder.CreateIndex(
+            name: "ix_refresh_tokens_expires_at",
+            schema: "app",
+            table: "refresh_tokens",
+            column: "expires_at");
+
+        migrationBuilder.CreateIndex(
+            name: "ix_refresh_tokens_session_id",
+            schema: "app",
+            table: "refresh_tokens",
+            column: "session_id");
+
+        migrationBuilder.CreateIndex(
+            name: "ix_refresh_tokens_token_hash",
+            schema: "app",
+            table: "refresh_tokens",
+            column: "token_hash",
+            unique: true);
+
+        migrationBuilder.CreateIndex(
             name: "ix_role_permissions_permission_id",
             schema: "app",
             table: "role_permissions",
@@ -307,6 +374,12 @@ public partial class _20261111114319_Initial : Migration
             table: "roles",
             column: "name",
             unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "ix_sessions_account_id",
+            schema: "app",
+            table: "sessions",
+            column: "account_id");
     }
 
     /// <inheritdoc />
@@ -333,11 +406,19 @@ public partial class _20261111114319_Initial : Migration
             schema: "app");
 
         migrationBuilder.DropTable(
+            name: "refresh_tokens",
+            schema: "app");
+
+        migrationBuilder.DropTable(
             name: "role_permissions",
             schema: "app");
 
         migrationBuilder.DropTable(
             name: "identity_users",
+            schema: "app");
+
+        migrationBuilder.DropTable(
+            name: "sessions",
             schema: "app");
 
         migrationBuilder.DropTable(

@@ -16,6 +16,8 @@ public static class ErrorTypeMapping
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
             ErrorType.BadRequest => StatusCodes.Status400BadRequest,
+            ErrorType.Forbidden => StatusCodes.Status403Forbidden,
+            ErrorType.Locked => StatusCodes.Status423Locked,
         };
     }
 }

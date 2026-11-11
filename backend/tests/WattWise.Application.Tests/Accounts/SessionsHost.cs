@@ -1,0 +1,68 @@
+using Mediator;
+
+using Microsoft.Extensions.DependencyInjection;
+
+using NodaTime;
+using NodaTime.Testing;
+
+using WattWise.Application.Accounts;
+using WattWise.Application.Tests.Pipeline;
+
+namespace WattWise.Application.Tests.Accounts;
+
+/// <summary>
+/// The real generated mediator and production behaviors with the sign-in ports faked, time fixed at
+/// 2026-11-11T12:00Z. Every port call that changes anything goes to <see cref="Calls"/>.
+/// </summary>
+internal sealed class SessionsHost : IDisposable
+{
+    public static readonly Instant Now = Instant.FromUtc(2026, 11, 11, 12, 0);
+
+    private readonly PipelineHost _host;
+
+    /// <param name="passwordCheck">What the password check answers.</param>
+    public SessionsHost(PasswordCheck? passwordCheck = null)
+    {
+        Clock = new FakeClock(Now);
+        Calls = [];
+        Sessions = new InMemorySessions(Calls);
+        UnitOfWork = new ConflictingUnitOfWork(Calls, Sessions);
+        Queries = new FakeAccountsQueries();
+        AccessTokens = new RecordingAccessTokenIssuer(Calls);
+        ExpiredSessions = new RecordingExpiredSessions();
+        _host = new PipelineHost(services =>
+        {
+            services.AddSingleton<IClock>(Clock);
+            services.AddSingleton<IEmailAddressNormalizer, PrefixingEmailNormalizer>();
+            services.AddSingleton<IPasswordSignIn>(new RecordingPasswordSignIn(Calls, passwordCheck ?? PasswordCheck.InvalidCredentials()));
+            services.AddSingleton<IAccountsQueries>(Queries);
+            services.AddSingleton<IRefreshTokenFactory>(new CountingRefreshTokenFactory());
+            services.AddSingleton<IDeviceLabels, FixedDeviceLabels>();
+            services.AddSingleton<ISessionRepository>(Sessions);
+            services.AddSingleton<IAccessTokenIssuer>(AccessTokens);
+            services.AddSingleton<IExpiredSessions>(ExpiredSessions);
+            services.AddSingleton<IUnitOfWork>(UnitOfWork);
+        });
+    }
+
+    public FakeClock Clock { get; }
+
+    public List<string> Calls { get; }
+
+    public InMemorySessions Sessions { get; }
+
+    public ConflictingUnitOfWork UnitOfWork { get; }
+
+    /// <summary>The next <paramref name="count"/> saves lose a race with another request.</summary>
+    public void ConflictNextSaves(int count) => UnitOfWork.ConflictNext(count);
+
+    public FakeAccountsQueries Queries { get; }
+
+    public RecordingAccessTokenIssuer AccessTokens { get; }
+
+    public RecordingExpiredSessions ExpiredSessions { get; }
+
+    public IMediator Mediator => _host.Mediator;
+
+    public void Dispose() => _host.Dispose();
+}

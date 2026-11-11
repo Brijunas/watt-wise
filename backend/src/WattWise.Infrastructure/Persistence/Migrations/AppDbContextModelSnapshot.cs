@@ -17,7 +17,7 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261111114319_Initial";
+    public override string LastMigrationId => "20261111151823_Initial";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -146,6 +146,55 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("permissions", "app");
             });
 
+        modelBuilder.Entity("WattWise.Domain.Accounts.RefreshToken", b =>
+            {
+                b.Property<Guid>("Id")
+                    .HasColumnType("uuid")
+                    .HasColumnName("id");
+
+                b.Property<Instant>("ExpiresAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("expires_at");
+
+                b.Property<Instant>("IssuedAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("issued_at");
+
+                b.Property<Guid>("SessionId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("session_id");
+
+                b.Property<byte[]>("TokenHash")
+                    .IsRequired()
+                    .HasColumnType("bytea")
+                    .HasColumnName("token_hash");
+
+                b.Property<Instant?>("UsedAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("used_at");
+
+                b.Property<uint>("xmin")
+                    .IsConcurrencyToken()
+                    .ValueGeneratedOnAddOrUpdate()
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin");
+
+                b.HasKey("Id")
+                    .HasName("pk_refresh_tokens");
+
+                b.HasIndex("ExpiresAt")
+                    .HasDatabaseName("ix_refresh_tokens_expires_at");
+
+                b.HasIndex("SessionId")
+                    .HasDatabaseName("ix_refresh_tokens_session_id");
+
+                b.HasIndex("TokenHash")
+                    .IsUnique()
+                    .HasDatabaseName("ix_refresh_tokens_token_hash");
+
+                b.ToTable("refresh_tokens", "app");
+            });
+
         modelBuilder.Entity("WattWise.Domain.Accounts.Role", b =>
             {
                 b.Property<Guid>("Id")
@@ -184,6 +233,39 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasDatabaseName("ix_role_permissions_permission_id");
 
                 b.ToTable("role_permissions", "app");
+            });
+
+        modelBuilder.Entity("WattWise.Domain.Accounts.Session", b =>
+            {
+                b.Property<Guid>("Id")
+                    .HasColumnType("uuid")
+                    .HasColumnName("id");
+
+                b.Property<Guid>("AccountId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("account_id");
+
+                b.Property<string>("DeviceLabel")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)")
+                    .HasColumnName("device_label");
+
+                b.Property<Instant>("LastUsedAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("last_used_at");
+
+                b.Property<Instant>("SignedInAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("signed_in_at");
+
+                b.HasKey("Id")
+                    .HasName("pk_sessions");
+
+                b.HasIndex("AccountId")
+                    .HasDatabaseName("ix_sessions_account_id");
+
+                b.ToTable("sessions", "app");
             });
 
         modelBuilder.Entity("WattWise.Infrastructure.Accounts.AccountIdentity", b =>
@@ -411,6 +493,16 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasConstraintName("fk_account_roles_roles_role_id");
             });
 
+        modelBuilder.Entity("WattWise.Domain.Accounts.RefreshToken", b =>
+            {
+                b.HasOne("WattWise.Domain.Accounts.Session", null)
+                    .WithMany("_refreshTokens")
+                    .HasForeignKey("SessionId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired()
+                    .HasConstraintName("fk_refresh_tokens_sessions_session_id");
+            });
+
         modelBuilder.Entity("WattWise.Domain.Accounts.RolePermission", b =>
             {
                 b.HasOne("WattWise.Domain.Accounts.Permission", null)
@@ -426,6 +518,16 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired()
                     .HasConstraintName("fk_role_permissions_roles_role_id");
+            });
+
+        modelBuilder.Entity("WattWise.Domain.Accounts.Session", b =>
+            {
+                b.HasOne("WattWise.Domain.Accounts.Account", null)
+                    .WithMany()
+                    .HasForeignKey("AccountId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired()
+                    .HasConstraintName("fk_sessions_accounts_account_id");
             });
 
         modelBuilder.Entity("WattWise.Infrastructure.Accounts.AccountIdentity", b =>
@@ -465,6 +567,11 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
         modelBuilder.Entity("WattWise.Domain.Accounts.Role", b =>
             {
                 b.Navigation("_permissions");
+            });
+
+        modelBuilder.Entity("WattWise.Domain.Accounts.Session", b =>
+            {
+                b.Navigation("_refreshTokens");
             });
 #pragma warning restore 612, 618
     }

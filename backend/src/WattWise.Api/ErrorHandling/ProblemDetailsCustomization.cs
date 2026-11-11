@@ -8,8 +8,17 @@ namespace WattWise.Api.ErrorHandling;
 /// </summary>
 public static class ProblemDetailsCustomization
 {
+    private const string LockedType = "https://www.rfc-editor.org/rfc/rfc4918#section-11.3";
+
     public static void Apply(ProblemDetailsContext context)
     {
+        // The framework has no RFC 9110 type and title for 423 (it is WebDAV's), so every 423 gets them here.
+        if ((context.ProblemDetails.Status ?? context.HttpContext.Response.StatusCode) == StatusCodes.Status423Locked)
+        {
+            context.ProblemDetails.Type ??= LockedType;
+            context.ProblemDetails.Title ??= "Locked";
+        }
+
         if (context.ProblemDetails.Extensions.ContainsKey(ProblemDetailsKeys.Code))
         {
             return;
