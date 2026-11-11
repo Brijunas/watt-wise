@@ -41,3 +41,13 @@ Read the matching skill for [migrations](.agents/skills/ef-migration/SKILL.md), 
 Run all eight [development checks](docs/development.md#checks) before committing; keep backend warnings at zero. Notify the user before `op` commands requiring desktop authorization. Preserve secret-scanning hooks.
 
 Use descriptive scope/story commit subjects. PRs explain behavior, reference stories, report validation, and include relevant UI screenshots. Never add AI attribution or Codex session links. Update epics when stories ship; archive completed epics. Give concurrent sessions separate worktrees and delegated workers explicit file ownership.
+
+## Codex Review
+
+A Claude session may start you as an Orca worker to review its backend change (the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). In that task:
+
+- Delegate the review to the [`backend-reviewer`](.codex/agents/backend-reviewer.toml) agent; this is the subagent the task asks for. Don't run `backend-test-reviewer`, because Claude reviews the tests.
+- Review `git diff main` in your current worktree plus the untracked files `git status --short` lists under `backend/`, unless the task names another range.
+- Edit, stage and commit nothing, and run no Stryker. Bash is for `git`, `dotnet build` and `dotnet test` only.
+- Report through `worker_done` in the reviewer's Output format: findings most severe first, then "Questions", then the build and test line. Claude sends each finding to the agent that owns the file.
+- When Claude asks for a re-review after the fixes, review the new diff the same way and report again in the same format. Stay open until Claude releases you.
