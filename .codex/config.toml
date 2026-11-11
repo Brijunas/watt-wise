@@ -1,0 +1,21 @@
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+plan_mode_reasoning_effort = "high"
+
+[agents]
+default_subagent_model = "gpt-6.1-sol"
+default_subagent_reasoning_effort = "medium"
+
+[mcp_servers.github]
+command = "bash"
+args = [
+    "-c",
+    'exec "$(git rev-parse --show-toplevel)/.claude/mcp/github.sh"',
+]
+
+[mcp_servers.grafana]
+command = "bash"
+args = [
+    "-c",
+    'exec "$(git rev-parse --show-toplevel)/.claude/mcp/grafana.sh"',
+]
