@@ -14,7 +14,7 @@ namespace WattWise.Testing;
 /// </summary>
 public sealed class MailpitContainerFixture : IAsyncLifetime
 {
-    private const string Image = "axllent/mailpit:v1.33.0";
+    private const string Image = "axllent/mailpit:v1.33.1";
     private const int SmtpContainerPort = 1025;
     private const int ApiContainerPort = 8025;
     private const int StartAttempts = 5;

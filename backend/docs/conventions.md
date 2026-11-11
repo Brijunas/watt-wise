@@ -5,12 +5,11 @@ Build settings, package management and code style for the .NET solution. The lay
 ## Solution and SDK
 
 - **Solution file:** `backend/WattWise.slnx`, the XML solution format that `dotnet new sln` produces by default since .NET 10. It is shorter than `.sln` and merges cleanly.
-- **SDK version:** the root `mise.toml` installs the .NET SDK. The root `global.json` pins the same version, so the `dotnet` CLI, IDEs and CI agree on it:
+- **SDK version:** the root `mise.toml` installs the latest .NET SDK (`latest`). The root `global.json` pins the GA SDK (11.0.100), so the `dotnet` CLI, IDEs and CI agree on it:
   - `rollForward: latestFeature` accepts newer feature bands and patches of the same major.
-  - `allowPrerelease: true` is needed while .NET 11 is a release candidate.
+  - `allowPrerelease: false`: .NET 11 is GA, so prerelease SDKs are not picked.
   - `test.runner: Microsoft.Testing.Platform` makes `dotnet test` use MTP (see [testing.md](testing.md)).
 - **Why `global.json` is at the repo root:** the SDK looks for `global.json` from the current directory upward, not from the project's folder. Every command runs from the repo root ([development.md](../../docs/development.md)), so a file inside `backend/` would not be found.
-- **At .NET 11 GA:** switch `mise.toml` to `latest` and update `global.json` to the GA SDK with `allowPrerelease: false`, in the same change.
 
 ## Shared build settings
 

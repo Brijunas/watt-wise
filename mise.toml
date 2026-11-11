@@ -2,5 +2,4 @@
 node = "lts"
 pnpm = "latest"
 betterleaks = "latest"
-# .NET 11 is prerelease until GA (Nov 2026) and mise "latest" skips prereleases. Switch to "latest" at GA.
-dotnet = "11.0.100-rc.3.26522.148"
+dotnet = "latest"
