@@ -6,6 +6,8 @@ using Microsoft.Extensions.Options;
 
 using NodaTime;
 
+using WattWise.Application;
+using WattWise.Application.Accounts;
 using WattWise.Application.Email;
 using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Email;
@@ -38,6 +40,8 @@ public static class DependencyInjection
         services.AddSchemaSteps();
         services.AddIdentity();
         services.AddEmail();
+        services.AddEmailOutbox();
+        services.AddAccounts();
         return services;
     }
 
@@ -62,6 +66,42 @@ public static class DependencyInjection
         // Singleton: the parsed templates are cached and the sender holds no per-request state (a client is created per send).
         services.AddSingleton<EmailRenderer>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the email outbox: the write port, the worker's port and the retry and link settings. Like the
+    /// <c>Smtp</c> settings they are read from the built configuration and not validated at start here; the Jobs host,
+    /// the only one that sends, adds <c>ValidateOnStart</c>.
+    /// </summary>
+    private static IServiceCollection AddEmailOutbox(this IServiceCollection services)
+    {
+        foreach (EmailRequestKind kind in Enum.GetValues<EmailRequestKind>())
+        {
+            services.AddOptions<EmailRetrySettings>(kind.ToString())
+                .Configure<IConfiguration>((settings, configuration) => settings.ReadFrom(configuration, kind));
+        }
+
+        services.AddSingleton<IValidateOptions<EmailRetrySettings>, EmailRetrySettingsValidator>();
+
+        services.AddOptions<LinkSettings>()
+            .Configure<IConfiguration>((settings, configuration) => settings.ReadFrom(configuration));
+        services.AddSingleton<IValidateOptions<LinkSettings>, LinkSettingsValidator>();
+
+        services.AddSingleton<IEmailRetrySettings, ConfiguredEmailRetrySettings>();
+        services.AddScoped<IEmailRequests, EmailRequests>();
+        services.AddScoped<IEmailOutbox, EmailOutbox>();
+        return services;
+    }
+
+    /// <summary>Registers the account ports (registration and confirmation).</summary>
+    private static IServiceCollection AddAccounts(this IServiceCollection services)
+    {
+        services.AddSingleton<IEmailAddressNormalizer, IdentityEmailAddressNormalizer>();
+        services.AddScoped<IPasswordPolicy, IdentityPasswordPolicy>();
+        services.AddScoped<IAccountRegistration, IdentityAccountRegistration>();
+        services.AddScoped<IEmailConfirmation, IdentityEmailConfirmation>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         return services;
     }
 

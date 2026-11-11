@@ -1,17 +1,13 @@
 # Email
 
-How the backend sends transactional email: the port, the messages, rendering, the settings and how to try it. Why email is sent directly over SMTP is in [technical.md](../../docs/technical.md#cross-cutting); the rules it follows are in [security.md](../../docs/security.md). Which message each account flow sends is in [features/accounts.md](features/accounts.md#emails).
+How the backend sends transactional email: the port, the messages, rendering, the settings and how to try it. How a request reaches the sender (the outbox, the worker, retries) is in [email-outbox.md](email-outbox.md). Why email is sent directly over SMTP is in [technical.md](../../docs/technical.md#cross-cutting); the rules it follows are in [security.md](../../docs/security.md). Which message each account flow sends is in [features/accounts.md](features/accounts.md#emails).
 
 ## The port and the messages
 
-- **Port:** Application's `Email/IEmailSender` has one method, `SendAsync(EmailMessage, CancellationToken)`. The folder is named for the concept because no single feature owns email.
+- **Port:** Application's `Email/IEmailSender` has one method, `SendAsync(EmailMessage, string messageIdLocalPart, CancellationToken)`, which returns a `SendResult` (below). The folder is named for the concept because no single feature owns email.
 - **Messages:** `EmailMessage(To, Language)` is the abstract record in `Email/`. Each kind is a record in its feature's folder that adds its own values, such as the link. `Accounts/` has `EmailConfirmationEmail`, `AccountAlreadyExistsEmail` and `PasswordResetEmail`.
 - **Language:** the caller picks the language, normally the account's preferred one. `Language.Lt` and `Language.En` have a template each.
-- **Adapter:** Infrastructure's `Email/SmtpEmailSender` renders the message with `EmailRenderer` and sends it with MailKit, on a new connection per message. `AddInfrastructure()` registers both through a private `AddEmail()`, so every host has them; Jobs and the Cli need no `Smtp` settings unless they send.
-
-## Sending through the outbox (S4.3)
-
-Built in S4.3; S4.2 sends inline until then. The Api will only write a row to an email outbox table (`app.email_requests`) in the same transaction as the account change, and the Jobs host will send from it, so a request never waits on SMTP and an unknown address looks like a known one ([security.md](../../docs/security.md#accounts)). The agreed design is in the temporary [s4.3-plan.md](../../docs/s4.3-plan.md); its facts move here when S4.3 ships.
+- **Adapter:** Infrastructure's `Email/SmtpEmailSender` renders the message with `EmailRenderer` and sends it with MailKit, on a new connection per message. `AddInfrastructure()` registers both through a private `AddEmail()`, so every host has them. Only the Jobs host sends, and only its `Program.cs` validates `Smtp` at start.
 
 ## Rendering
 
@@ -49,21 +45,22 @@ _Layout.mjml.liquid           header and footer shared by every email
 
 ## Settings
 
-The `Smtp` section is deliberately split. The non-secret connection settings are in `appsettings.json` and `appsettings.<Environment>.json`; only the credentials come from 1Password, through the Api's `.env.<environment>` file.
+The `Smtp` section is deliberately split. The non-secret connection settings are in `appsettings.json` and `appsettings.<Environment>.json`; only the credentials come from 1Password, through the Jobs host's `.env.<environment>` file.
 
-| Key                | Comes from                 | Development value             |
-| ------------------ | -------------------------- | ----------------------------- |
-| `Smtp:Host`        | `appsettings.Development`  | `127.0.0.1`                   |
-| `Smtp:Port`        | `appsettings.Development`  | `1025`                        |
-| `Smtp:Security`    | `appsettings.Development`  | `None`                        |
-| `Smtp:FromAddress` | `appsettings.Development`  | `no-reply@wattwise.localhost` |
-| `Smtp:FromName`    | `appsettings.json`         | `Watt-Wise`                   |
-| `Smtp:Username`    | 1Password, `smtp-api` item | any value; Mailpit accepts it |
-| `Smtp:Password`    | 1Password, `smtp-api` item | any value; Mailpit accepts it |
+| Key                | Comes from                  | Development value             |
+| ------------------ | --------------------------- | ----------------------------- |
+| `Smtp:Host`        | `appsettings.Development`   | `127.0.0.1`                   |
+| `Smtp:Port`        | `appsettings.Development`   | `1025`                        |
+| `Smtp:Security`    | `appsettings.Development`   | `None`                        |
+| `Smtp:FromAddress` | `appsettings.Development`   | `no-reply@wattwise.localhost` |
+| `Smtp:FromName`    | `appsettings.json`          | `Watt-Wise`                   |
+| `Smtp:Username`    | 1Password, `smtp-jobs` item | any value; Mailpit accepts it |
+| `Smtp:Password`    | 1Password, `smtp-jobs` item | any value; Mailpit accepts it |
 
 - **Must match:** the SMTP port is in two places in Development: the `mailpit-smtp` item (the port compose publishes) and `appsettings.Development.json`. Change both together ([mailpit.md](../../deploy/docs/mailpit.md)).
-- **Validation:** `SmtpSettings` reads the section and lists the missing or invalid keys. Only the Api's `Program.cs` adds `AddOptions<SmtpSettings>().ValidateOnStart()`, so the Api stops at start with `Smtp configuration is missing or invalid: Smtp:Password, …`. The message holds key names, never values. Jobs and the Cli validate the settings only when they first send.
+- **Validation:** `SmtpSettings` reads the section and lists the missing or invalid keys. Only the Jobs host's `Program.cs` adds `AddOptions<SmtpSettings>().ValidateOnStart()`, so it stops at start with `Smtp configuration is missing or invalid: Smtp:Password, …`. The message holds key names, never values. The Api and the Cli never send and need no `Smtp` settings.
 - **No encryption only in Development:** the validator also reports `Smtp:Security` when it is `None` and the host's environment isn't Development, and a port above 65535 counts as invalid.
+- **Links:** `Links:FrontendBaseUrl`, the frontend's absolute http or https origin without a path or trailing slash, builds the links. It comes from the `frontend` item's `url` through the Jobs `.env.development` and is validated at start.
 - **Credentials everywhere:** the username and password are required in every environment, Development included.
 - **Password:** `SmtpSettings` is a class, not a record, so `ToString` can't print the password.
 
@@ -79,16 +76,22 @@ The default is `StartTls`, so an environment that forgets the key doesn't send i
 
 ## What goes on the wire
 
-- **Message-Id and EHLO:** `MessageId` is generated for the from address's domain and `SmtpClient.LocalDomain` is that domain too, so neither reveals the machine's hostname ([security.md](../../docs/security.md#deployment)).
+- **Message-Id and EHLO:** the caller passes the Message-Id's local part and `SmtpEmailSender` appends `@<from domain>`; `SmtpClient.LocalDomain` is that domain too, so neither reveals the machine's hostname ([security.md](../../docs/security.md#deployment)).
 - **Body:** a `multipart/alternative` with the text and the HTML part.
 
 ## Failure handling
 
-A failed send is logged and doesn't throw, because the user can ask for the email again.
+`SendAsync` returns a `SendResult` with an `Outcome` and an `Error` (the text the outbox stores as `last_error`), so the worker can decide to retry ([email-outbox.md](email-outbox.md#retry-policy)).
 
+| Outcome     | When                                                                                                                                                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Sent`      | the server accepted the message                                                                                                                                                                                                       |
+| `Retryable` | `SmtpCommandException` with a 4xx status; socket, connect, TLS, protocol and timeout failures; rejected credentials and a server that offers no AUTH or STARTTLS (a setting the operator fixes; the row's attempts bound the retries) |
+| `Permanent` | `SmtpCommandException` with a 5xx status                                                                                                                                                                                              |
+
+- **Still throws:** cancellation, and bugs: a broken template, a missing setting, a recipient that isn't an address.
 - **What is logged:** at Error, the email kind, the language and the exception's type name (`SocketException`, `AuthenticationException`, …); a server refusal (`SmtpCommandException`) adds its SMTP status code. Never the recipient and never the exception object or its message: a server's reply often echoes the address (`550 <user@x> unknown`), and a message can name the host or username.
-- **What is caught:** SMTP, TLS, authentication, network and timeout failures, and `NotSupportedException` (the server offers no AUTH or no STARTTLS). Cancellation propagates, and so does a bug such as a broken template, a missing setting or a recipient that isn't an address (callers pass the account's normalized, validated email).
-- **Timeout:** every client operation has a 30-second timeout (`TimeoutMilliseconds` in `SmtpEmailSender`) instead of MailKit's two minutes, so a stalled server doesn't hold a request. A timeout is logged like any failure.
+- **Timeout:** every client operation keeps MailKit's default of 2 minutes. Nothing waits on it but the worker.
 - A success is logged at Debug.
 
 ## Telemetry
@@ -97,7 +100,7 @@ A failed send is logged and doesn't throw, because the user can ask for the emai
 
 ## Testing
 
-- **Unit (Infrastructure.Tests):** the settings and their validator; the renderer for every kind and language (subject, text body, link in both parts with the right escaping, `lang` and footer); and the sender's failure paths against `ScriptedSmtpServer`, a small in-process SMTP server that scripts one behavior (rejects the recipient or the credentials, offers no AUTH or STARTTLS, drops the connection, stalls). They check the log entry, that nothing sensitive is in it, what the client sent (EHLO domain, AUTH before the message, QUIT) and that cancellation propagates.
+- **Unit (Infrastructure.Tests):** the settings and their validator; the renderer for every kind and language (subject, text body, link in both parts with the right escaping, `lang` and footer); and the sender's failure paths against `ScriptedSmtpServer`, a small in-process SMTP server that scripts one behavior (rejects the recipient or the credentials, offers no AUTH or STARTTLS, drops the connection, stalls). They check the log entry, that nothing sensitive is in it, what the client sent (EHLO domain, AUTH before the message, QUIT) and that cancellation propagates, and every `SendResult` outcome and the Message-Id local part against `ScriptedSmtpServer`.
 - **Integration (Infrastructure.IntegrationTests):** `Email/SmtpEmailSenderTests` sends a kind in each language through `IEmailSender` to a Mailpit container and reads it back through Mailpit's API: recipient, subject, the link in both parts and a Message-Id on the from domain. The container is `MailpitContainerFixture` in `WattWise.Testing` ([testing.md](testing.md#shared-mailpit-fixture)).
-- **Api.IntegrationTests:** every host start gets dummy `Smtp` settings, and a blank section stops the host.
-- **By hand:** start the Development stack and the Api, send an email and read it in Mailpit's web UI ([mailpit.md](../../deploy/docs/mailpit.md#reading-caught-emails)).
+- **Jobs.IntegrationTests:** every host start gets dummy `Smtp` settings, and a blank section stops the host.
+- **By hand:** start the Development stack, the Api and the Jobs host, register an account, and read the email in Mailpit's web UI ([mailpit.md](../../deploy/docs/mailpit.md#reading-caught-emails)).

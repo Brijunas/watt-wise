@@ -13,6 +13,8 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
     private const string Insert = "INSERT INTO {table} (note) VALUES ({0})";
     private const string Update = "UPDATE {table} SET note = 'changed' WHERE note = {0}";
     private const string Delete = "DELETE FROM {table} WHERE note = {0}";
+    private const string InsertEmailRequest =
+        "INSERT INTO app.email_requests (id, kind, email, status, attempt_count, next_attempt_at, created_at) VALUES ({0}, 'EmailConfirmation', {1}, 'pending', 0, now(), now())";
     private const string CountByNote = "SELECT count(*) AS \"Value\" FROM {table} WHERE note = {0}";
 
     // Tests in a class run one after another, so the probe tables are created idempotently for each and never raced.
@@ -81,6 +83,28 @@ public class RoleAccessTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
             () => PlatformSql.ExecuteAsync(fixture, role, Sql(statement, schema), "any"));
 
         Assert.Equal(PermissionDenied, exception.SqlState);
+    }
+
+    // The outbox's table itself, not a probe: the Api only inserts requests, the Jobs host reads, updates and deletes them (email-outbox.md "The table").
+    [Fact]
+    public async Task Api_can_insert_an_email_request()
+    {
+        int affected = await PlatformSql.ExecuteAsync(fixture, DatabaseRole.Api, InsertEmailRequest, Guid.CreateVersion7(), "role-" + Guid.NewGuid().ToString("N") + "@example.com");
+
+        Assert.Equal(1, affected);
+    }
+
+    [Fact]
+    public async Task Jobs_can_read_update_and_delete_an_email_request()
+    {
+        Guid id = Guid.CreateVersion7();
+        await PlatformSql.ExecuteAsync(fixture, DatabaseRole.Api, InsertEmailRequest, id, "role-" + Guid.NewGuid().ToString("N") + "@example.com");
+
+        List<long> read = await PlatformSql.QueryAsync<long>(fixture, DatabaseRole.Jobs, "SELECT count(*) AS \"Value\" FROM app.email_requests WHERE id = {0}", id);
+        int updated = await PlatformSql.ExecuteAsync(fixture, DatabaseRole.Jobs, "UPDATE app.email_requests SET status = 'sending' WHERE id = {0}", id);
+        int deleted = await PlatformSql.ExecuteAsync(fixture, DatabaseRole.Jobs, "DELETE FROM app.email_requests WHERE id = {0}", id);
+
+        Assert.Equal(("1", 1, 1), (string.Join(",", read), updated, deleted));
     }
 
     // bootstrap.sql:64 gives reader pg_read_all_data, so it reads migrations too.

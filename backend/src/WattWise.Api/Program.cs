@@ -15,15 +15,12 @@ using WattWise.Api.OpenApi;
 using WattWise.Application;
 using WattWise.Application.Behaviors;
 using WattWise.Infrastructure;
-using WattWise.Infrastructure.Email;
 using WattWise.Infrastructure.Observability;
 using WattWise.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddObservability("wattwise-api");
 builder.Services.AddInfrastructure();
-// The Api sends email, so it stops at start without Smtp settings.
-builder.Services.AddOptions<SmtpSettings>().ValidateOnStart();
 builder.Services.AddApplication();
 // Keep the behavior list identical to PipelineHost in Application.Tests (the generator needs a literal list at each site).
 builder.Services.AddMediator((MediatorOptions options) =>

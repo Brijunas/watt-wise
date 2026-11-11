@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 using WattWise.Api.ErrorHandling;
@@ -13,6 +14,32 @@ public class ResultHttpExtensionsTests
         Ok<string> ok = Assert.IsType<Ok<string>>(Result<string>.Success("x").ToHttpResult().Result);
 
         Assert.Equal("x", ok.Value);
+    }
+
+    [Fact]
+    public void A_success_maps_to_the_result_the_caller_supplies()
+    {
+        Accepted accepted = Assert.IsType<Accepted>(Result<string>.Success("x").ToHttpResult(_ => TypedResults.Accepted((string?)null)).Result);
+
+        Assert.Equal(202, accepted.StatusCode);
+    }
+
+    [Fact]
+    public void A_failure_maps_to_a_problem_without_calling_the_success_callback()
+    {
+        Result<string> failure = Error.BadRequest("Accounts.InvalidEmailLink", "The link is invalid or has expired.");
+        bool called = false;
+
+        ProblemHttpResult problem = Assert.IsType<ProblemHttpResult>(
+            failure.ToHttpResult(_ =>
+            {
+                called = true;
+                return TypedResults.NoContent();
+            }).Result);
+
+        Assert.Equal(
+            (400, "The link is invalid or has expired.", "Accounts.InvalidEmailLink", false),
+            (problem.StatusCode, problem.ProblemDetails.Detail, problem.ProblemDetails.Extensions["code"], called));
     }
 
     [Fact]

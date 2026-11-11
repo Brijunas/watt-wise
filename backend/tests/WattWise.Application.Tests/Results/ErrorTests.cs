@@ -19,6 +19,7 @@ public class ErrorTests
     {
         { Error.NotFound, ErrorType.NotFound },
         { Error.Unauthorized, ErrorType.Unauthorized },
+        { Error.BadRequest, ErrorType.BadRequest },
     };
 
     [Theory]

@@ -17,9 +17,16 @@ public static class ResultHttpExtensions
     /// </summary>
     public static Results<Ok<T>, ProblemHttpResult, ValidationProblem> ToHttpResult<T>(this Result<T> result)
     {
+        return result.ToHttpResult(value => TypedResults.Ok(value));
+    }
+
+    /// <summary>The same as <see cref="ToHttpResult{T}(Result{T})"/>, with the success written by <paramref name="onSuccess"/> (202, 204, …).</summary>
+    public static Results<TSuccess, ProblemHttpResult, ValidationProblem> ToHttpResult<T, TSuccess>(this Result<T> result, Func<T, TSuccess> onSuccess)
+        where TSuccess : IResult
+    {
         if (result.IsSuccess)
         {
-            return TypedResults.Ok(result.Value);
+            return onSuccess(result.Value);
         }
 
         Error error = result.Error;

@@ -16,7 +16,7 @@ public class RequestLoggingTests(DatabaseFixture fixture) : IClassFixture<Databa
     {
         LogEventCollector logs = new();
         await using TestHostFactory<Program> factory = new(
-            fixture.Database.ConfigurationFor(DatabaseRole.Jobs),
+            JobsTestSettings.For(fixture),
             services =>
             {
                 services.AddSingleton<IStartupFilter, LoopbackClient>();

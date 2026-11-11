@@ -47,10 +47,10 @@ public class SmtpEmailSenderTests(MailpitContainerFixture mailpit)
         return services.BuildServiceProvider();
     }
 
-    private async Task<MailpitMessage> SendAsync(EmailMessage email, ListLoggerProvider? logs = null)
+    private async Task<MailpitMessage> SendAsync(EmailMessage email, ListLoggerProvider? logs = null, string localPart = "test.1")
     {
         await using ServiceProvider provider = BuildServices(logs);
-        await provider.GetRequiredService<IEmailSender>().SendAsync(email, Token);
+        await provider.GetRequiredService<IEmailSender>().SendAsync(email, localPart, Token);
         return await mailpit.Client.WaitForMessageToAsync(email.To, Token);
     }
 
@@ -102,11 +102,22 @@ public class SmtpEmailSenderTests(MailpitContainerFixture mailpit)
     }
 
     [Fact]
-    public async Task The_message_id_uses_the_from_domain_not_the_machine_hostname()
+    public async Task The_message_id_is_the_local_part_at_the_from_domain()
     {
-        MailpitMessage message = await SendAsync(new AccountAlreadyExistsEmail(NewRecipient(), Language.En));
+        MailpitMessage message = await SendAsync(new AccountAlreadyExistsEmail(NewRecipient(), Language.En), localPart: "7.1");
 
-        Assert.Matches(@"^[^@\s]+@wattwise\.test$", message.MessageId);
+        Assert.Equal("7.1@wattwise.test", message.MessageId);
+    }
+
+    [Fact]
+    public async Task A_delivered_message_is_reported_as_sent()
+    {
+        await using ServiceProvider provider = BuildServices();
+
+        SendResult result = await provider.GetRequiredService<IEmailSender>()
+            .SendAsync(new AccountAlreadyExistsEmail(NewRecipient(), Language.En), "7.1", Token);
+
+        Assert.Equal(new SendResult(SendOutcome.Sent, null), result);
     }
 
     [Fact]

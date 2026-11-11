@@ -12,9 +12,9 @@ How `WattWise.Jobs` runs background work. Where Jobs sits among the hosts is in 
 
 `Program.cs` wires, in order:
 
-1. `AddObservability("wattwise-jobs")`, `AddInfrastructure()`, `AddApplication()`;
+1. `AddObservability("wattwise-jobs")`, `AddInfrastructure()`, `AddApplication()`, then `AddMediator` with the same behavior list as the Api ([architecture.md](architecture.md#request-handling)), and `ValidateOnStart` for `Smtp`, `Email:Retry` and `Links`;
 2. `AddHangfireStorage()` (`Storage/`), the storage registration. It lives in Jobs, not Infrastructure, because Hangfire.AspNetCore brings in ASP.NET Core and only Jobs uses Hangfire;
-3. `AddHangfireServer` with `WorkerCount` 5;
+3. `AddHangfireServer` with `WorkerCount` 5 and `SchedulePollingInterval` 5 seconds: the recurring-job scheduler polls on it (default 15 s) and would miss the outbox's 5-second ticks;
 4. the job classes, registered in DI;
 5. after `Build`: `UseJobsRequestLogging()` first, then the dashboard, then `RecurringJobs.Register`.
 
@@ -42,7 +42,16 @@ How `WattWise.Jobs` runs background work. Where Jobs sits among the hosts is in 
 
 Jobs live in `WattWise.Jobs/Recurring/`. A job class is thin: it takes its dependencies by constructor, and its `ExecuteAsync(CancellationToken)` only sends an Application use case through the mediator and returns. The logic, validation and logging of the work belong to the use case ([architecture.md](architecture.md#request-handling)).
 
-`NoOpJob` is the template. It only logs one line, since there is no use case yet; real jobs replace that line with a `mediator.Send`.
+`NoOpJob` is the smallest example; it only logs one line and stays until a later story replaces it.
+
+| Job                     | Cron (UTC)      | Sends                       |
+| ----------------------- | --------------- | --------------------------- |
+| `SendEmailsJob`         | `*/5 * * * * *` | `SendDueEmailsCommand`      |
+| `PurgeEmailRequestsJob` | `0 3 * * *`     | `PurgeEmailRequestsCommand` |
+
+Both run the email outbox ([email-outbox.md](email-outbox.md)), the host's first real work. A six-part cron includes seconds (Hangfire reads it as `CronFormat.IncludeSeconds`). `SendEmailsJob` has `[AutomaticRetry(Attempts = 0)]`, because a row keeps its own retries and Hangfire's would stack on them, and `[DisableConcurrentExecution(5)]`, which only saves work: the outbox's claim is what prevents a double send.
+
+An overlapping tick waits 5 seconds for the lock and then fails; with no Hangfire retries it shows as a failed job, which is harmless because the next tick does the work.
 
 To add a recurring job:
 
@@ -71,7 +80,7 @@ To add a recurring job:
 1. Trigger the job: `IRecurringJobManager.Trigger(NoOpJob.RecurringJobId)`.
 2. Wait with `Poll.UntilAsync` until `JobStorage.GetMonitoringApi().SucceededJobs(...)` lists a job of that class.
 
-TestServer leaves the remote address empty, which Hangfire's local-requests-only filter rejects with 401; a test checks exactly that, so a change can't silently open the dashboard. The test that expects 200 registers `LoopbackClient`, a startup filter that sets the address to loopback.
+TestServer leaves the remote address empty, which Hangfire's local-requests-only filter rejects with 401; a test checks exactly that, so a change can't silently open the dashboard. The test that expects 200 registers `LoopbackClient`, a startup filter that sets the address to loopback. A test also checks that both outbox jobs are registered with their cron.
 
 ## Not yet
 

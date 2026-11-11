@@ -8,6 +8,8 @@ public static class RecurringJobs
     public static void Register(IRecurringJobManager manager)
     {
         // Hangfire substitutes its own cancellation token for CancellationToken.None when the job runs.
-        manager.AddOrUpdate<NoOpJob>(NoOpJob.RecurringJobId, job => job.ExecuteAsync(CancellationToken.None), Cron.Hourly());
+        manager.AddOrUpdate<NoOpJob>(NoOpJob.RecurringJobId, job => job.ExecuteAsync(CancellationToken.None), Hangfire.Cron.Hourly());
+        manager.AddOrUpdate<SendEmailsJob>(SendEmailsJob.RecurringJobId, job => job.ExecuteAsync(CancellationToken.None), SendEmailsJob.Cron, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
+        manager.AddOrUpdate<PurgeEmailRequestsJob>(PurgeEmailRequestsJob.RecurringJobId, job => job.ExecuteAsync(CancellationToken.None), PurgeEmailRequestsJob.Cron, new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }

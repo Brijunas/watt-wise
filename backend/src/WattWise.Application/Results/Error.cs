@@ -28,6 +28,12 @@ public sealed record Error(
         return new Error(code, description, ErrorType.Unauthorized);
     }
 
+    /// <summary>A well-formed request that cannot be carried out and is not a field validation error.</summary>
+    public static Error BadRequest(string code, string description)
+    {
+        return new Error(code, description, ErrorType.BadRequest);
+    }
+
     /// <summary>Converts a domain exception a handler expected into an error of the given category.</summary>
     public static Error From(DomainException exception, ErrorType type)
     {

@@ -38,6 +38,7 @@ Why:
 | `Validation`   | 400    | `Error.Validation(fieldErrors)`         | `Validation.Failed`   |
 | `NotFound`     | 404    | `Error.NotFound(code, description)`     | chosen by the handler |
 | `Unauthorized` | 401    | `Error.Unauthorized(code, description)` | chosen by the handler |
+| `BadRequest`   | 400    | `Error.BadRequest(code, description)`   | chosen by the handler |
 | (exception)    | 500    | none: thrown                            | `General.Unexpected`  |
 
 Further categories (Conflict, Forbidden, …) are added by the story that first needs them; see below. `ErrorTypeMapping` is a `switch` with no fallback arm and `CS8509` is a build error ([conventions.md](conventions.md#code-style)), so a new `ErrorType` value doesn't compile until it has a status code. `Validation` is always 400: it is written as `ValidationProblem`, which carries the field errors and can't take another status.

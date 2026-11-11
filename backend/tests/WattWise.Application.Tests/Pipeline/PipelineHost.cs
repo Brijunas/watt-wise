@@ -19,7 +19,8 @@ public sealed class PipelineHost : IDisposable
     private readonly ServiceProvider _provider;
     private readonly IServiceScope _scope;
 
-    public PipelineHost()
+    /// <param name="configure">Adds or replaces services before the provider is built, such as the fake ports of a use case.</param>
+    public PipelineHost(Action<IServiceCollection>? configure = null)
     {
         ServiceCollection services = new();
         services.AddLogging(builder => builder.SetMinimumLevel(LogLevel.Debug).AddFakeLogging());
@@ -33,6 +34,8 @@ public sealed class PipelineHost : IDisposable
             options.PipelineBehaviors = [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>)];
             options.ServiceLifetime = ServiceLifetime.Scoped;
         });
+
+        configure?.Invoke(services);
 
         _provider = services.BuildServiceProvider();
         _scope = _provider.CreateScope();

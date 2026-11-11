@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using WattWise.Domain.Accounts;
 using WattWise.Infrastructure.Accounts;
+using WattWise.Infrastructure.Email;
 using WattWise.Infrastructure.Persistence.Schema;
 
 namespace WattWise.Infrastructure.Persistence;
@@ -22,6 +23,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Permission> Permissions => Set<Permission>();
 
     public DbSet<EmailLinkToken> EmailLinkTokens => Set<EmailLinkToken>();
+
+    public DbSet<EmailRequest> EmailRequests => Set<EmailRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
