@@ -60,7 +60,7 @@ SMTP is never stubbed: email tests send over real SMTP to a Mailpit container an
 - **`MailpitContainerFixture`** (`tests/WattWise.Testing`) starts the same image as the compose file on fixed free loopback ports, with the same start retries as the PostgreSQL fixture (rootless Docker with pasta), and the `wattwise.tests` label.
 - **Settings and client.** It gives the `Smtp:*` keys that point at the container, and a small client over Mailpit's HTTP API that finds a message by its recipient. Tests use a unique recipient each, so they share the container.
 - **Used by** `Email/SmtpEmailSender` tests in Infrastructure.IntegrationTests. The sender's failure paths are unit tests against a scripted in-process SMTP server (`ScriptedSmtpServer` in Infrastructure.Tests), because Mailpit can't be told to refuse or stall.
-- **Api hosts** start with `SmtpTestSettings.Dummy` (StartTls, so it also passes in Production); `TestHostEnvironment` stands in for the host environment in service providers built without a host.
+- **Jobs hosts** start with `SmtpTestSettings.Dummy` (StartTls, so it also passes in Production), plus valid `Links` settings; Api hosts need no `Smtp` settings; `TestHostEnvironment` stands in for the host environment in service providers built without a host.
 
 ## Testing the pipeline and error mapping
 

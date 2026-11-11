@@ -35,4 +35,31 @@ public static class Poll
             await Task.Delay(Delay, cancellationToken);
         }
     }
+
+    /// <summary>Like <see cref="UntilAsync{T}(Func{T?}, string, CancellationToken, TimeSpan?)"/>, for a probe that awaits, such as a database read.</summary>
+    public static async Task<T> UntilAsync<T>(
+        Func<Task<T?>> probe,
+        string description,
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
+        where T : class
+    {
+        TimeSpan limit = timeout ?? DefaultTimeout;
+        DateTime deadline = DateTime.UtcNow + limit;
+        while (true)
+        {
+            T? value = await probe();
+            if (value is not null)
+            {
+                return value;
+            }
+
+            if (DateTime.UtcNow >= deadline)
+            {
+                Assert.Fail($"Timed out after {limit.TotalSeconds:0} s waiting for: {description}.");
+            }
+
+            await Task.Delay(Delay, cancellationToken);
+        }
+    }
 }

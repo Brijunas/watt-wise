@@ -107,7 +107,7 @@ First-time setup (roles, passwords, first start) is "Development database" in [s
 
 Machines that previously ran pgAdmin can remove its leftover volume: run `docker volume ls`, then `docker volume rm <volume-name>` for the volume ending in `pgadmin-data`.
 
-Grafana is at the `grafana` item's `url` ([lgtm.md](../deploy/docs/lgtm.md)). Mailpit's web UI is at the `mailpit` item's `url`, and every email the Development Api sends shows up there ([mailpit.md](../deploy/docs/mailpit.md)).
+Grafana is at the `grafana` item's `url` ([lgtm.md](../deploy/docs/lgtm.md)). Mailpit's web UI is at the `mailpit` item's `url`, and every email the Development Jobs host sends shows up there ([mailpit.md](../deploy/docs/mailpit.md)). Register through the Api and the email arrives within a few seconds, once the Jobs host is running too ([email-outbox.md](../backend/docs/email-outbox.md)).
 
 ## Migrations
 

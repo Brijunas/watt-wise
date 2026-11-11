@@ -13,8 +13,8 @@ using WattWise.Infrastructure.Persistence;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 [DbContext(typeof(AppDbContext))]
-[Migration("20261027073017_Initial")]
-partial class _20261027073017_Initial
+[Migration("20261111114319_Initial")]
+partial class _20261111114319_Initial
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -303,6 +303,75 @@ partial class _20261027073017_Initial
                 b.ToTable("email_link_tokens", "app");
             });
 
+        modelBuilder.Entity("WattWise.Infrastructure.Email.EmailRequest", b =>
+            {
+                b.Property<Guid>("Id")
+                    .HasColumnType("uuid")
+                    .HasColumnName("id");
+
+                b.Property<Guid?>("AccountId")
+                    .HasColumnType("uuid")
+                    .HasColumnName("account_id");
+
+                b.Property<int>("AttemptCount")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("integer")
+                    .HasDefaultValue(0)
+                    .HasColumnName("attempt_count");
+
+                b.Property<Instant>("CreatedAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("created_at");
+
+                b.Property<string>("Email")
+                    .HasColumnType("text")
+                    .HasColumnName("email");
+
+                b.Property<string>("Kind")
+                    .IsRequired()
+                    .HasColumnType("text")
+                    .HasColumnName("kind");
+
+                b.Property<Instant?>("LastAttemptAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("last_attempt_at");
+
+                b.Property<string>("LastError")
+                    .HasMaxLength(100)
+                    .HasColumnType("character varying(100)")
+                    .HasColumnName("last_error");
+
+                b.Property<Instant>("NextAttemptAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("next_attempt_at");
+
+                b.Property<Instant?>("SentAt")
+                    .HasColumnType("timestamp with time zone")
+                    .HasColumnName("sent_at");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasColumnType("text")
+                    .HasColumnName("status");
+
+                b.HasKey("Id")
+                    .HasName("pk_email_requests");
+
+                b.HasIndex("AccountId")
+                    .HasDatabaseName("ix_email_requests_account_id");
+
+                b.HasIndex("Status", "NextAttemptAt")
+                    .HasDatabaseName("ix_email_requests_due")
+                    .HasFilter("status IN ('pending', 'sending')");
+
+                b.ToTable("email_requests", "app", t =>
+                    {
+                        t.HasCheckConstraint("ck_email_requests_status", "status IN ('pending', 'sending', 'sent', 'superseded', 'failed')");
+
+                        t.HasCheckConstraint("ck_email_requests_target", "num_nonnulls(account_id, email) = 1");
+                    });
+            });
+
         modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
             {
                 b.HasOne("WattWise.Infrastructure.Accounts.AccountIdentity", null)
@@ -375,6 +444,15 @@ partial class _20261027073017_Initial
                     .OnDelete(DeleteBehavior.Cascade)
                     .IsRequired()
                     .HasConstraintName("fk_email_link_tokens_identity_users_identity_id");
+            });
+
+        modelBuilder.Entity("WattWise.Infrastructure.Email.EmailRequest", b =>
+            {
+                b.HasOne("WattWise.Domain.Accounts.Account", null)
+                    .WithMany()
+                    .HasForeignKey("AccountId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .HasConstraintName("fk_email_requests_accounts_account_id");
             });
 
         modelBuilder.Entity("WattWise.Domain.Accounts.Account", b =>

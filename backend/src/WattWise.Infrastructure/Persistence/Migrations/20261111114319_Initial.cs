@@ -7,7 +7,7 @@ using NodaTime;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 /// <inheritdoc />
-public partial class _20261027073017_Initial : Migration
+public partial class _20261111114319_Initial : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -54,6 +54,37 @@ public partial class _20261027073017_Initial : Migration
             constraints: table =>
             {
                 table.PrimaryKey("pk_roles", x => x.id);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "email_requests",
+            schema: "app",
+            columns: table => new
+            {
+                id = table.Column<Guid>(type: "uuid", nullable: false),
+                kind = table.Column<string>(type: "text", nullable: false),
+                account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                email = table.Column<string>(type: "text", nullable: true),
+                status = table.Column<string>(type: "text", nullable: false),
+                attempt_count = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                next_attempt_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
+                last_attempt_at = table.Column<Instant>(type: "timestamp with time zone", nullable: true),
+                last_error = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                created_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
+                sent_at = table.Column<Instant>(type: "timestamp with time zone", nullable: true)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("pk_email_requests", x => x.id);
+                table.CheckConstraint("ck_email_requests_status", "status IN ('pending', 'sending', 'sent', 'superseded', 'failed')");
+                table.CheckConstraint("ck_email_requests_target", "num_nonnulls(account_id, email) = 1");
+                table.ForeignKey(
+                    name: "fk_email_requests_accounts_account_id",
+                    column: x => x.account_id,
+                    principalSchema: "app",
+                    principalTable: "accounts",
+                    principalColumn: "id",
+                    onDelete: ReferentialAction.Cascade);
             });
 
         migrationBuilder.CreateTable(
@@ -218,6 +249,19 @@ public partial class _20261027073017_Initial : Migration
             column: "role_id");
 
         migrationBuilder.CreateIndex(
+            name: "ix_email_requests_account_id",
+            schema: "app",
+            table: "email_requests",
+            column: "account_id");
+
+        migrationBuilder.CreateIndex(
+            name: "ix_email_requests_due",
+            schema: "app",
+            table: "email_requests",
+            columns: new[] { "status", "next_attempt_at" },
+            filter: "status IN ('pending', 'sending')");
+
+        migrationBuilder.CreateIndex(
             name: "ix_identity_user_logins_user_id",
             schema: "app",
             table: "identity_user_logins",
@@ -274,6 +318,10 @@ public partial class _20261027073017_Initial : Migration
 
         migrationBuilder.DropTable(
             name: "email_link_tokens",
+            schema: "app");
+
+        migrationBuilder.DropTable(
+            name: "email_requests",
             schema: "app");
 
         migrationBuilder.DropTable(
