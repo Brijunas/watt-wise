@@ -7,7 +7,7 @@ using NodaTime;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 /// <inheritdoc />
-public partial class _20261111151823_Initial : Migration
+public partial class _20261111213533_Initial : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -129,6 +129,7 @@ public partial class _20261111151823_Initial : Migration
                 id = table.Column<Guid>(type: "uuid", nullable: false),
                 account_id = table.Column<Guid>(type: "uuid", nullable: false),
                 device_label = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                security_stamp = table.Column<string>(type: "text", nullable: false),
                 signed_in_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false),
                 last_used_at = table.Column<Instant>(type: "timestamp with time zone", nullable: false)
             },

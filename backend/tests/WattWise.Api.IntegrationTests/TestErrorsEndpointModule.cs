@@ -27,6 +27,9 @@ public sealed class TestErrorsEndpointModule : IEndpointModule
         errors.MapGet("/unauthorized", () => Result<string>
             .Failure(Error.Unauthorized("Test.SignedOut", "Sign in first."))
             .ToHttpResult());
+        errors.MapGet("/conflict", () => Result<string>
+            .Failure(Error.Conflict("Test.Raced", "Another request changed it first."))
+            .ToHttpResult());
         errors.MapGet("/exception", IResult () => throw new InvalidOperationException(ExceptionSecret));
         errors.MapGet("/domain", IResult () => throw new TestDomainException());
         errors.MapGet("/binding", (int number) => TypedResults.Ok(number));

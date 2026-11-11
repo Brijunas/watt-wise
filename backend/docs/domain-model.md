@@ -48,7 +48,7 @@ Domain folders are named for an area in the plural (`Accounts`), each holding th
 
 ## Use cases
 
-- A handler does four things: load through a repository, check what needs I/O, call the domain, save once through `IUnitOfWork.SaveChangesAsync`. Business rules stay in Domain; a long handler is a sign they didn't.
+- A handler does four things: load through a repository, check what needs I/O, call the domain, save once through `IUnitOfWork.SaveChangesAsync`. Business rules stay in Domain; a long handler is a sign they didn't. One exception: a use case that combines an ASP.NET Core Identity call or a bulk statement (`ExecuteDelete`) with other writes runs in `ITransactionRunner` ([below](#persistence-ports)).
 - Expected failures (not found, conflict, a rule the input breaks) are `Result` errors; a `DomainException` the handler expects is converted ([error-handling.md](error-handling.md#failure-model)).
 - Frameworks that live in Infrastructure (ASP.NET Core Identity, SMTP, Hangfire) reach handlers only through Application ports.
 
@@ -57,7 +57,8 @@ Domain folders are named for an area in the plural (`Accounts`), each holding th
 Application defines the ports; Infrastructure implements them. Application has no EF Core reference.
 
 - **Repositories:** one per aggregate root, `I<Root>Repository` in the aggregate's Application folder, implemented in `Infrastructure/Persistence/Repositories/`. Methods return whole aggregates or `null` (`GetAsync(id, ct)`), add (`Add`) and remove (`Remove`); there is no `Update`, since loaded aggregates are tracked. Never a generic `IRepository<T>`, never `IQueryable`, never a repository for a child entity.
-- **`IUnitOfWork`** (`SaveChangesAsync(ct)`), implemented by `AppDbContext`. One call per command, at the end; that is the transaction.
+- **`IUnitOfWork`** (`SaveChangesAsync(ct)`), implemented by `UnitOfWork` over `AppDbContext`. One call per command, at the end; that is the transaction.
+- **`ITransactionRunner`** (`ExecuteAsync(work, ct)` returning a `Result<T>`), for the use case whose steps one save can't cover: ASP.NET Core Identity saves on its own, and a bulk statement runs at once. The handler passes the steps and owns the rules; Infrastructure owns begin, commit and rollback. It commits when the result succeeds and rolls back, then clears the change tracker, on a failed result or an exception. Writes that must survive the failure (the lockout count) stay outside it. Kept apart from `IUnitOfWork` so a handler that only saves can't open a transaction.
 - **Read ports:** queries don't use repositories or entities. `I<Area>Queries` returns DTO records, implemented in Infrastructure with `AsNoTracking()` and `Select` straight into the DTO. A query may join across aggregates.
 - Every port method takes a `CancellationToken`.
 
@@ -66,7 +67,7 @@ Application defines the ports; Infrastructure implements them. Application has n
 Added only when a concrete need shows up, each decided first:
 
 - **Domain events.** When a side effect must cross aggregates, a Domain-owned `IDomainEvent` dispatched before `SaveChanges`; never a Mediator type in Domain.
-- **A transaction behavior**, when a handler needs several saves or raw SQL next to EF.
+- **A transaction behavior** around every command, if many commands need the boundary `ITransactionRunner` gives one handler at a time.
 - **Strongly typed ids, the Specification pattern, a shared `Entity` base class.**
 - **Architecture tests.** The rules here are enforced by project references and review; [architecture.md](architecture.md#layers-and-dependency-direction) says what references allow.
 

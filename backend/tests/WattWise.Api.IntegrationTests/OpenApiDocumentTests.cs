@@ -46,6 +46,16 @@ public class OpenApiDocumentTests(ApiHostFixture fixture) : IClassFixture<ApiHos
     }
 
     [Fact]
+    public async Task The_change_password_operation_declares_its_responses_including_the_409_conflict()
+    {
+        OpenApiDocument document = (await LoadAsync()).Document!;
+
+        Assert.Equal(
+            "200,400,401,404,409,423",
+            string.Join(',', document.Paths["/api/v1/auth/change-password"].Operations![HttpMethod.Post].Responses!.Keys.Order(StringComparer.Ordinal)));
+    }
+
+    [Fact]
     public async Task The_me_operation_requires_the_Bearer_scheme_and_sign_in_requires_nothing()
     {
         OpenApiDocument document = (await LoadAsync()).Document!;

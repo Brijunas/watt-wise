@@ -30,6 +30,14 @@ public sealed class RefreshSessionCommandHandler(
             return AccountErrors.InvalidRefreshToken();
         }
 
+        // A password change or reset replaced the stamp the session was started with: the session is stale, and it ends.
+        string? currentStamp = await queries.GetSecurityStampAsync(session.AccountId, cancellationToken);
+        if (currentStamp is null || !string.Equals(currentStamp, session.SecurityStamp, StringComparison.Ordinal))
+        {
+            await SessionEnding.EndAsync(sessions, unitOfWork, presentedHash, cancellationToken);
+            return AccountErrors.InvalidRefreshToken();
+        }
+
         // A locked-out account can still refresh: the lockout stops password guessing, and a session is proof of an earlier right password.
         Instant now = clock.GetCurrentInstant();
         NewRefreshToken next = refreshTokens.Create();

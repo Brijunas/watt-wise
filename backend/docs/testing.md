@@ -53,6 +53,8 @@ Writing an integration test:
 - Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `jobs` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
 
+Atomicity of `ITransactionRunner` is proven only in Infrastructure.IntegrationTests, with a fault injected into a step (a failing interceptor) and state read back in a new scope; a fake runner in Application.Tests proves call order. If `EnableRetryOnFailure` is ever turned on, every runner delegate has to be re-checked for being safe to run again.
+
 ## Shared Mailpit fixture
 
 SMTP is never stubbed: email tests send over real SMTP to a Mailpit container and read the message back through Mailpit's API ([email.md](email.md#testing)).

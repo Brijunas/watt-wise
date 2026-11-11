@@ -13,8 +13,8 @@ using WattWise.Infrastructure.Persistence;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 [DbContext(typeof(AppDbContext))]
-[Migration("20261111151823_Initial")]
-partial class _20261111151823_Initial
+[Migration("20261111213533_Initial")]
+partial class _20261111213533_Initial
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -252,6 +252,11 @@ partial class _20261111151823_Initial
                 b.Property<Instant>("LastUsedAt")
                     .HasColumnType("timestamp with time zone")
                     .HasColumnName("last_used_at");
+
+                b.Property<string>("SecurityStamp")
+                    .IsRequired()
+                    .HasColumnType("text")
+                    .HasColumnName("security_stamp");
 
                 b.Property<Instant>("SignedInAt")
                     .HasColumnType("timestamp with time zone")

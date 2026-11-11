@@ -17,11 +17,12 @@ public sealed class Session
     {
     }
 
-    private Session(Guid id, Guid accountId, string deviceLabel, Instant signedInAt)
+    private Session(Guid id, Guid accountId, string deviceLabel, string securityStamp, Instant signedInAt)
     {
         Id = id;
         AccountId = accountId;
         DeviceLabel = deviceLabel;
+        SecurityStamp = securityStamp;
         SignedInAt = signedInAt;
         LastUsedAt = signedInAt;
     }
@@ -32,6 +33,12 @@ public sealed class Session
 
     public string DeviceLabel { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// The account's security stamp when the password was checked. An opaque value: the session is stale once it no longer
+    /// matches the account's current stamp, which a password change or reset replaces.
+    /// </summary>
+    public string SecurityStamp { get; private set; } = string.Empty;
+
     public Instant SignedInAt { get; private set; }
 
     public Instant LastUsedAt { get; private set; }
@@ -39,12 +46,13 @@ public sealed class Session
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens;
 
     /// <summary>Starts a session whose first refresh token is <paramref name="tokenHash"/>.</summary>
-    public static Session Start(Guid accountId, string deviceLabel, byte[] tokenHash, Instant now, Instant expiresAt)
+    public static Session Start(Guid accountId, string deviceLabel, string securityStamp, byte[] tokenHash, Instant now, Instant expiresAt)
     {
         ArgumentOutOfRangeException.ThrowIfEqual(accountId, Guid.Empty);
         ArgumentException.ThrowIfNullOrWhiteSpace(deviceLabel);
+        ArgumentException.ThrowIfNullOrWhiteSpace(securityStamp);
 
-        Session session = new(Guid.CreateVersion7(), accountId, deviceLabel, now);
+        Session session = new(Guid.CreateVersion7(), accountId, deviceLabel, securityStamp, now);
         session._refreshTokens.Add(RefreshToken.Create(session.Id, tokenHash, now, expiresAt));
         return session;
     }

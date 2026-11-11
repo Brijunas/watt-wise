@@ -24,6 +24,14 @@ internal sealed class AccountsQueries(AppDbContext context) : IAccountsQueries
         return names;
     }
 
+    public async Task<string?> GetSecurityStampAsync(Guid accountId, CancellationToken cancellationToken)
+    {
+        return await context.Users.AsNoTracking()
+            .Where(identity => identity.AccountId == accountId)
+            .Select(identity => identity.SecurityStamp)
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<Me?> GetMeAsync(Guid accountId, CancellationToken cancellationToken)
     {
         var account = await (

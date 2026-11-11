@@ -33,6 +33,8 @@ public class AuthenticationRequirementTests(ApiHostFixture fixture) : IClassFixt
     [InlineData("/api/v1/auth/register", HttpStatusCode.BadRequest)]
     [InlineData("/api/v1/auth/resend-confirmation", HttpStatusCode.BadRequest)]
     [InlineData("/api/v1/auth/confirm-email", HttpStatusCode.BadRequest)]
+    [InlineData("/api/v1/auth/forgot-password", HttpStatusCode.BadRequest)]
+    [InlineData("/api/v1/auth/reset-password", HttpStatusCode.BadRequest)]
     [InlineData("/api/v1/auth/sign-in", HttpStatusCode.BadRequest)]
     [InlineData("/api/v1/auth/sign-out", HttpStatusCode.NoContent)]
     public async Task The_auth_endpoints_are_reachable_with_no_token(string path, HttpStatusCode expected)

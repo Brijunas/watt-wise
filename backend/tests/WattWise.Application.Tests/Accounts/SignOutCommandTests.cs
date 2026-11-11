@@ -11,7 +11,7 @@ public class SignOutCommandTests
 
     private static async Task<SessionsHost> SignedInHostAsync()
     {
-        SessionsHost host = new(PasswordCheck.Succeeded(Guid.Parse("00000000-0000-0000-0000-0000000000a1")));
+        SessionsHost host = new(PasswordCheck.Succeeded(Guid.Parse("00000000-0000-0000-0000-0000000000a1"), "stamp"));
         await host.Mediator.Send(new SignInCommand("ada@example.com", "pw", "agent"), Token);
         host.Calls.Clear();
         return host;

@@ -14,7 +14,7 @@ public class SessionTests
     private static readonly byte[] SecondHash = [4, 5, 6];
     private static readonly byte[] ThirdHash = [7, 8, 9];
 
-    private static Session NewSession() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", FirstHash, Now, Expiry);
+    private static Session NewSession() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", "stamp", FirstHash, Now, Expiry);
 
     private static string Describe(RefreshToken token) =>
         $"{Convert.ToHexString(token.TokenHash)}|{token.IssuedAt}|{token.ExpiresAt}|{token.UsedAt?.ToString() ?? "unused"}";
@@ -24,7 +24,7 @@ public class SessionTests
     {
         Guid accountId = Guid.CreateVersion7();
 
-        Session session = Session.Start(accountId, "Firefox on Linux", FirstHash, Now, Expiry);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", FirstHash, Now, Expiry);
 
         Assert.Equal((accountId, "Firefox on Linux", Now, Now), (session.AccountId, session.DeviceLabel, session.SignedInAt, session.LastUsedAt));
     }
@@ -49,7 +49,7 @@ public class SessionTests
     [Fact]
     public void Start_rejects_an_empty_account_id()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => Session.Start(Guid.Empty, "Firefox on Linux", FirstHash, Now, Expiry));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Session.Start(Guid.Empty, "Firefox on Linux", "stamp", FirstHash, Now, Expiry));
     }
 
     [Theory]
@@ -58,25 +58,52 @@ public class SessionTests
     [InlineData("  ")]
     public void Start_rejects_a_missing_device_label(string? label)
     {
-        Assert.ThrowsAny<ArgumentException>(() => Session.Start(Guid.CreateVersion7(), label!, FirstHash, Now, Expiry));
+        Assert.ThrowsAny<ArgumentException>(() => Session.Start(Guid.CreateVersion7(), label!, "stamp", FirstHash, Now, Expiry));
+    }
+
+    [Fact]
+    public void Start_keeps_the_security_stamp_it_is_given()
+    {
+        Session session = Session.Start(Guid.CreateVersion7(), "Firefox on Linux", "stamp-1", FirstHash, Now, Expiry);
+
+        Assert.Equal("stamp-1", session.SecurityStamp);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void Start_rejects_a_blank_security_stamp(string? stamp)
+    {
+        Assert.ThrowsAny<ArgumentException>(() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", stamp!, FirstHash, Now, Expiry));
+    }
+
+    [Fact]
+    public void Rotate_keeps_the_security_stamp()
+    {
+        Session session = Session.Start(Guid.CreateVersion7(), "Firefox on Linux", "stamp-1", FirstHash, Now, Expiry);
+
+        session.Rotate(FirstHash, SecondHash, Now + Duration.FromMinutes(20), Expiry + Duration.FromMinutes(20));
+
+        Assert.Equal("stamp-1", session.SecurityStamp);
     }
 
     [Fact]
     public void Start_rejects_an_empty_token_hash()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", [], Now, Expiry));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", "stamp", [], Now, Expiry));
     }
 
     [Fact]
     public void Start_rejects_a_missing_token_hash()
     {
-        Assert.Throws<ArgumentNullException>(() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", null!, Now, Expiry));
+        Assert.Throws<ArgumentNullException>(() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", "stamp", null!, Now, Expiry));
     }
 
     [Fact]
     public void Start_rejects_an_expiry_that_is_not_after_the_sign_in()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", FirstHash, Now, Now));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Session.Start(Guid.CreateVersion7(), "Firefox on Linux", "stamp", FirstHash, Now, Now));
     }
 
     [Fact]
