@@ -40,7 +40,7 @@ services:
       retries: 10
 
   lgtm:
-    image: grafana/otel-lgtm:0.36.0
+    image: grafana/otel-lgtm:0.40.0
     restart: unless-stopped
     environment:
       # Grafana without a login (anonymous Admin); published on loopback only.
@@ -53,7 +53,7 @@ services:
       - lgtm-data:/data
 
   mailpit:
-    image: axllent/mailpit:v1.33.0
+    image: axllent/mailpit:v1.33.1
     restart: unless-stopped
     environment:
       # The Api always authenticates, as against Brevo; Mailpit accepts any credentials over plain SMTP. Published on loopback only.

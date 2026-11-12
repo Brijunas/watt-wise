@@ -5,7 +5,7 @@ paths:
 
 # Use cases
 
-- A handler loads through a repository, checks what needs I/O, calls the domain, and saves once with `IUnitOfWork.SaveChangesAsync`. No business rules in handlers.
+- A handler loads through a repository, checks what needs I/O, calls the domain, and saves once with `IUnitOfWork.SaveChangesAsync`. No business rules in handlers. A use case that mixes an ASP.NET Core Identity call or a bulk statement with other writes runs its steps in `ITransactionRunner.ExecuteAsync` instead; writes that must survive a failure stay outside it.
 - Ports live here: one `I<Root>Repository` per aggregate root (whole aggregates, no `IQueryable`, never generic), `IUnitOfWork`, and `I<Area>Queries` read ports returning DTO records. Queries never return entities.
 - No EF Core types in Application. ASP.NET Core Identity, SMTP and Hangfire are reached through ports.
 - Expected failures are `Result` errors; convert only the `DomainException`s the handler expects.

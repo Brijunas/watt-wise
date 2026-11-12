@@ -22,7 +22,7 @@ public class ExpiredSessionsTests(DatabaseFixture fixture) : IClassFixture<Datab
 
     private static async Task<Session> SeedAsync(ServiceProvider provider, Guid accountId, Instant expiresAt, Action<Session>? change = null)
     {
-        Session session = Session.Start(accountId, "Firefox on Linux", NewHash(), Now - Duration.FromDays(30), expiresAt);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", NewHash(), Now - Duration.FromDays(30), expiresAt);
         change?.Invoke(session);
         await using AsyncServiceScope scope = provider.CreateAsyncScope();
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -76,7 +76,7 @@ public class ExpiredSessionsTests(DatabaseFixture fixture) : IClassFixture<Datab
         await using ServiceProvider jobs = fixture.BuildServices(DatabaseRole.Jobs);
         await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
         byte[] firstHash = NewHash();
-        Session session = Session.Start(await NewAccountAsync(api), "Firefox on Linux", firstHash, Now - Duration.FromDays(9), Now - Duration.FromDays(2));
+        Session session = Session.Start(await NewAccountAsync(api), "Firefox on Linux", "stamp", firstHash, Now - Duration.FromDays(9), Now - Duration.FromDays(2));
         // The first token expired two days ago; the rotated one was issued a day ago and runs six more.
         byte[] liveHash = NewHash();
         session.Rotate(firstHash, liveHash, Now - Duration.FromDays(3) - Duration.FromSeconds(1), Now + Duration.FromDays(6));
@@ -99,7 +99,7 @@ public class ExpiredSessionsTests(DatabaseFixture fixture) : IClassFixture<Datab
         await using ServiceProvider jobs = fixture.BuildServices(DatabaseRole.Jobs);
         await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
         byte[] firstHash = NewHash();
-        Session session = Session.Start(await NewAccountAsync(api), "Firefox on Linux", firstHash, Now - Duration.FromDays(7), Now);
+        Session session = Session.Start(await NewAccountAsync(api), "Firefox on Linux", "stamp", firstHash, Now - Duration.FromDays(7), Now);
         byte[] liveHash = NewHash();
         session.Rotate(firstHash, liveHash, Now - Duration.FromDays(1), Now + Duration.FromDays(6));
         await using (AsyncServiceScope scope = api.CreateAsyncScope())
@@ -121,7 +121,7 @@ public class ExpiredSessionsTests(DatabaseFixture fixture) : IClassFixture<Datab
         await using ServiceProvider jobs = fixture.BuildServices(DatabaseRole.Jobs);
         await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
         byte[] firstHash = NewHash();
-        Session session = Session.Start(await NewAccountAsync(api), "Firefox on Linux", firstHash, Now - Duration.FromDays(20), Now - Duration.FromDays(13));
+        Session session = Session.Start(await NewAccountAsync(api), "Firefox on Linux", "stamp", firstHash, Now - Duration.FromDays(20), Now - Duration.FromDays(13));
         session.Rotate(firstHash, NewHash(), Now - Duration.FromDays(14), Now - Duration.FromDays(7));
         await using (AsyncServiceScope scope = api.CreateAsyncScope())
         {

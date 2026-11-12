@@ -13,6 +13,7 @@ internal sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         builder.HasKey(session => session.Id);
         builder.Property(session => session.Id).ValueGeneratedNever();
         builder.Property(session => session.DeviceLabel).HasMaxLength(100).IsRequired();
+        builder.Property(session => session.SecurityStamp).IsRequired();
         builder.Property(session => session.SignedInAt).IsRequired();
         builder.Property(session => session.LastUsedAt).IsRequired();
 

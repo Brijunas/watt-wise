@@ -27,7 +27,7 @@ public class RefreshTokenConcurrencyTests(DatabaseFixture fixture) : IClassFixtu
         byte[] hash = Guid.NewGuid().ToByteArray();
         await using (AsyncServiceScope seed = provider.CreateAsyncScope())
         {
-            seed.ServiceProvider.GetRequiredService<ISessionRepository>().Add(Session.Start(accountId, "Firefox on Linux", hash, SignedInAt, SignedInAt + Duration.FromDays(7)));
+            seed.ServiceProvider.GetRequiredService<ISessionRepository>().Add(Session.Start(accountId, "Firefox on Linux", "stamp", hash, SignedInAt, SignedInAt + Duration.FromDays(7)));
             await seed.ServiceProvider.GetRequiredService<IUnitOfWork>().SaveChangesAsync(Token);
         }
 
@@ -46,7 +46,7 @@ public class RefreshTokenConcurrencyTests(DatabaseFixture fixture) : IClassFixtu
         await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
         Guid accountId = (await AccountSeeder.CreateAccountAsync(provider, AccountsTestSupport.UniqueEmail(), AccountsTestSupport.ValidPassword())).AccountId;
         byte[] hash = Guid.NewGuid().ToByteArray();
-        Session session = Session.Start(accountId, "Firefox on Linux", hash, SignedInAt, SignedInAt + Duration.FromDays(7));
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", hash, SignedInAt, SignedInAt + Duration.FromDays(7));
         await using (AsyncServiceScope seed = provider.CreateAsyncScope())
         {
             seed.ServiceProvider.GetRequiredService<ISessionRepository>().Add(session);
@@ -69,7 +69,7 @@ public class RefreshTokenConcurrencyTests(DatabaseFixture fixture) : IClassFixtu
         byte[] hash = Guid.NewGuid().ToByteArray();
         await using (AsyncServiceScope seed = provider.CreateAsyncScope())
         {
-            seed.ServiceProvider.GetRequiredService<ISessionRepository>().Add(Session.Start(accountId, "Firefox on Linux", hash, SignedInAt, SignedInAt + Duration.FromDays(7)));
+            seed.ServiceProvider.GetRequiredService<ISessionRepository>().Add(Session.Start(accountId, "Firefox on Linux", "stamp", hash, SignedInAt, SignedInAt + Duration.FromDays(7)));
             await seed.ServiceProvider.GetRequiredService<IUnitOfWork>().SaveChangesAsync(Token);
         }
 

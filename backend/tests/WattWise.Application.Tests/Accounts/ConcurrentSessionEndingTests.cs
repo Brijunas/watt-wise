@@ -14,7 +14,7 @@ public class ConcurrentSessionEndingTests
 
     private static async Task<SessionsHost> SignedInHostAsync()
     {
-        SessionsHost host = new(PasswordCheck.Succeeded(AccountId));
+        SessionsHost host = new(PasswordCheck.Succeeded(AccountId, "stamp"));
         await host.Mediator.Send(new SignInCommand("ada@example.com", "pw", "agent"), Token);
         host.Calls.Clear();
         return host;

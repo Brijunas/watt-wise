@@ -31,6 +31,9 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
     private static Task<int> FailedCountAsync(ServiceProvider provider, Guid identityId) =>
         AccountsTestSupport.InScopeAsync(provider, identityId, (users, identity) => users.GetAccessFailedCountAsync(identity));
 
+    private static Task<string> StampOfAsync(ServiceProvider provider, Guid identityId) =>
+        AccountsTestSupport.InScopeAsync(provider, identityId, (users, identity) => users.GetSecurityStampAsync(identity))!;
+
     private async Task<Seeded> SeedAsync(FakeClock clock, bool confirmed = true)
     {
         ServiceProvider provider = fixture.BuildAccountServices(clock);
@@ -52,7 +55,19 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
 
         PasswordCheck result = await CheckAsync(account.Provider, account.Email, account.Password);
 
-        Assert.Equal(PasswordCheck.Succeeded(account.Ids.AccountId), result);
+        Assert.Equal(PasswordCheck.Succeeded(account.Ids.AccountId, await StampOfAsync(account.Provider, account.Ids.IdentityId)), result);
+    }
+
+    [Fact]
+    public async Task An_account_without_a_password_hash_is_InvalidCredentials_and_counts_one_failure()
+    {
+        await using ServiceProvider provider = fixture.BuildAccountServices(NewClock());
+        string email = AccountsTestSupport.UniqueEmail();
+        AccountSeeder.Ids ids = await AccountSeeder.CreateAccountAsync(provider, email, password: null);
+
+        PasswordCheck result = await CheckAsync(provider, email, AccountsTestSupport.ValidPassword());
+
+        Assert.Equal((PasswordCheck.InvalidCredentials(), 1), (result, await FailedCountAsync(provider, ids.IdentityId)));
     }
 
     [Fact]
@@ -149,7 +164,7 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
 
         PasswordCheck result = await CheckAsync(account.Provider, account.Email, account.Password);
 
-        Assert.Equal(PasswordCheck.Succeeded(account.Ids.AccountId), result);
+        Assert.Equal(PasswordCheck.Succeeded(account.Ids.AccountId, await StampOfAsync(account.Provider, account.Ids.IdentityId)), result);
     }
 
     [Fact]
@@ -179,7 +194,7 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
 
         PasswordCheck result = await CheckAsync(account.Provider, account.Email.ToUpperInvariant(), account.Password);
 
-        Assert.Equal(PasswordCheck.Succeeded(account.Ids.AccountId), result);
+        Assert.Equal(PasswordCheck.Succeeded(account.Ids.AccountId, await StampOfAsync(account.Provider, account.Ids.IdentityId)), result);
     }
 
     [Fact]

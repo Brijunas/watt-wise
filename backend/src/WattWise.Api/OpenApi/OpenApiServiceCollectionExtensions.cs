@@ -31,7 +31,7 @@ public static class OpenApiServiceCollectionExtensions
             });
             options.AddOperationTransformer((operation, context, _) =>
             {
-                // Mark the operations that need a signed-in caller; the anonymous ones (/auth, /about) stay unmarked.
+                // Mark the operations that need a signed-in caller; the operations that opt out with AllowAnonymous() stay unmarked.
                 IList<object> metadata = context.Description.ActionDescriptor.EndpointMetadata;
                 if (metadata.OfType<IAuthorizeData>().Any() && !metadata.OfType<IAllowAnonymous>().Any())
                 {

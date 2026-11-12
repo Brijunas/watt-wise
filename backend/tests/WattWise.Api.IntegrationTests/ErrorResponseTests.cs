@@ -20,7 +20,8 @@ public class ErrorResponseTests(ApiHostFixture fixture) : IClassFixture<ApiHostF
     [Theory]
     [InlineData("not-found", 404, "Test.Missing")]
     [InlineData("unauthorized", 401, "Test.SignedOut")]
-    public async Task A_not_found_or_unauthorized_error_is_a_problem_with_its_status_and_handler_code(
+    [InlineData("conflict", 409, "Test.Raced")]
+    public async Task A_not_found_unauthorized_or_conflict_error_is_a_problem_with_its_status_and_handler_code(
         string endpoint, int status, string code)
     {
         using HttpClient client = fixture.Factory.CreateClient();

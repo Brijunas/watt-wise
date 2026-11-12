@@ -175,9 +175,37 @@ public sealed class AccountsApiFixture(PostgresContainerFixture postgres) : IAsy
         return await users.GeneratePasswordResetTokenAsync(identity);
     }
 
+    /// <summary>Replaces the AccountIdentity's security stamp the way a password change does, but ends no session.</summary>
+    public async Task RotateSecurityStampAsync(Guid identityId)
+    {
+        await using AsyncServiceScope scope = issuer!.CreateAsyncScope();
+        UserManager<AccountIdentity> users = scope.ServiceProvider.GetRequiredService<UserManager<AccountIdentity>>();
+        AccountIdentity identity = (await users.FindByIdAsync(identityId.ToString()))!;
+        Assert.True((await users.UpdateSecurityStampAsync(identity)).Succeeded);
+    }
+
+    /// <summary>The number of sessions of an account.</summary>
+    public async Task<string> SessionCountAsync(Guid accountId) =>
+        await ScalarAsync($"""SELECT count(*)::text AS "Value" FROM app.sessions WHERE account_id = {accountId}""");
+
+    /// <summary>The number of reset-link rows of an AccountIdentity.</summary>
+    public async Task<string> ResetLinkCountAsync(Guid identityId) =>
+        await ScalarAsync($"""SELECT count(*)::text AS "Value" FROM app.email_link_tokens WHERE identity_id = {identityId} AND purpose = 'ResetPassword'""");
+
     /// <summary>A new account with an AccountIdentity (email confirmed unless <paramref name="confirmed"/> is false), made directly in the database.</summary>
     public Task<AccountSeeder.Ids> CreateAccountAsync(string email, string password, bool confirmed = true) =>
         AccountSeeder.CreateAccountAsync(issuer!, email, password, confirmed);
+
+    /// <summary>Stores a hash of the password with 1000 iterations, which the host's options (100000) call old, so the next sign-in rehashes it.</summary>
+    public async Task StoreOldPasswordHashAsync(Guid identityId, string password)
+    {
+        PasswordHasher<AccountIdentity> oldHasher = new(Microsoft.Extensions.Options.Options.Create(new PasswordHasherOptions { IterationCount = 1000 }));
+        await using AsyncServiceScope scope = issuer!.CreateAsyncScope();
+        UserManager<AccountIdentity> users = scope.ServiceProvider.GetRequiredService<UserManager<AccountIdentity>>();
+        AccountIdentity identity = (await users.FindByIdAsync(identityId.ToString()))!;
+        identity.PasswordHash = oldHasher.HashPassword(identity, password);
+        Assert.True((await users.UpdateAsync(identity)).Succeeded);
+    }
 
     /// <summary>Creates a role and a permission per name, and gives the role to the account.</summary>
     public Task GrantAsync(Guid accountId, string roleName, params string[] permissionNames) =>

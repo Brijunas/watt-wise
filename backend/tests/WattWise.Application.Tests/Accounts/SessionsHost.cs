@@ -21,10 +21,13 @@ internal sealed class SessionsHost : IDisposable
     private readonly PipelineHost _host;
 
     /// <param name="passwordCheck">What the password check answers.</param>
-    public SessionsHost(PasswordCheck? passwordCheck = null)
+    /// <param name="passwordMessages">What the password policy rejects every password with; none by default.</param>
+    public SessionsHost(PasswordCheck? passwordCheck = null, params string[] passwordMessages)
     {
         Clock = new FakeClock(Now);
         Calls = [];
+        PasswordChange = new ScriptedPasswordChange(Calls);
+        PasswordReset = new ScriptedPasswordReset(Calls);
         Sessions = new InMemorySessions(Calls);
         UnitOfWork = new ConflictingUnitOfWork(Calls, Sessions);
         Queries = new FakeAccountsQueries();
@@ -42,8 +45,17 @@ internal sealed class SessionsHost : IDisposable
             services.AddSingleton<IAccessTokenIssuer>(AccessTokens);
             services.AddSingleton<IExpiredSessions>(ExpiredSessions);
             services.AddSingleton<IUnitOfWork>(UnitOfWork);
+            services.AddSingleton<IPasswordChange>(PasswordChange);
+            services.AddSingleton<IPasswordReset>(PasswordReset);
+            services.AddSingleton<IAccountSessions>(new RecordingAccountSessions(Calls));
+            services.AddSingleton<ITransactionRunner>(new RecordingTransactionRunner(Calls));
+            services.AddSingleton<IPasswordPolicy>(new FixedPasswordPolicy([], passwordMessages));
         });
     }
+
+    public ScriptedPasswordChange PasswordChange { get; }
+
+    public ScriptedPasswordReset PasswordReset { get; }
 
     public FakeClock Clock { get; }
 

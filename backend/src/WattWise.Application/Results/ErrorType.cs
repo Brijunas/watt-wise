@@ -9,4 +9,5 @@ public enum ErrorType
     BadRequest,
     Forbidden,
     Locked,
+    Conflict,
 }

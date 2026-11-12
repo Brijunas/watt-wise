@@ -16,7 +16,7 @@ public class SessionRotationPropertyTests
         Gen.Int[1, 30].Sample(rotations =>
         {
             byte[] hash = [1];
-            Session session = Session.Start(Guid.CreateVersion7(), "Firefox on Linux", hash, start, start + Duration.FromDays(7));
+            Session session = Session.Start(Guid.CreateVersion7(), "Firefox on Linux", "stamp", hash, start, start + Duration.FromDays(7));
             Instant now = start;
             for (int step = 1; step <= rotations; step++)
             {

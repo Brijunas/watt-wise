@@ -51,7 +51,7 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using ServiceProvider provider = fixture.BuildAccountServices();
         Guid accountId = await NewAccountAsync(provider);
         byte[] hash = NewHash();
-        Session session = Session.Start(accountId, "Firefox on Linux", hash, SignedInAt, ExpiresAt);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", hash, SignedInAt, ExpiresAt);
         await AddAsync(provider, session);
 
         string? found = await DescribeByHashAsync(provider, hash);
@@ -60,6 +60,23 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
             $"{session.Id}|{accountId}|Firefox on Linux|2026-11-11T12:00:00.123000Z|2026-11-11T12:00:00.123000Z|"
                 + $"{Convert.ToHexString(hash)}@2026-11-11T12:00:00.123000Z~2026-11-18T12:00:00.123000Z!unused",
             found);
+    }
+
+    [Fact]
+    public async Task An_added_session_stores_its_security_stamp_in_the_security_stamp_column()
+    {
+        await using ServiceProvider provider = fixture.BuildAccountServices();
+        await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
+        Guid accountId = await NewAccountAsync(provider);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp-from-sign-in", NewHash(), SignedInAt, ExpiresAt);
+        await AddAsync(provider, session);
+
+        await using AsyncServiceScope scope = reader.CreateAsyncScope();
+        string stored = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database
+            .SqlQuery<string>($"""SELECT security_stamp AS "Value" FROM app.sessions WHERE id = {session.Id}""")
+            .SingleAsync(Token);
+
+        Assert.Equal("stamp-from-sign-in", stored);
     }
 
     [Fact]
@@ -77,8 +94,8 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         Guid accountId = await NewAccountAsync(provider);
         byte[] firstHash = NewHash();
         byte[] secondHash = NewHash();
-        Session first = Session.Start(accountId, "Firefox on Linux", firstHash, SignedInAt, ExpiresAt);
-        Session second = Session.Start(accountId, "Chrome on Windows", secondHash, SignedInAt, ExpiresAt);
+        Session first = Session.Start(accountId, "Firefox on Linux", "stamp", firstHash, SignedInAt, ExpiresAt);
+        Session second = Session.Start(accountId, "Chrome on Windows", "stamp", secondHash, SignedInAt, ExpiresAt);
         await AddAsync(provider, first);
         await AddAsync(provider, second);
 
@@ -94,7 +111,7 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         Guid accountId = await NewAccountAsync(provider);
         byte[] oldHash = NewHash();
         byte[] newHash = NewHash();
-        Session session = Session.Start(accountId, "Firefox on Linux", oldHash, SignedInAt, ExpiresAt);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", oldHash, SignedInAt, ExpiresAt);
         Instant later = SignedInAt + Duration.FromMinutes(20);
         session.Rotate(oldHash, newHash, later, later + Duration.FromDays(7));
         await AddAsync(provider, session);
@@ -115,7 +132,7 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         Guid accountId = await NewAccountAsync(provider);
         byte[] oldHash = NewHash();
         byte[] newHash = NewHash();
-        Session session = Session.Start(accountId, "Firefox on Linux", oldHash, SignedInAt, ExpiresAt);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", oldHash, SignedInAt, ExpiresAt);
         await AddAsync(provider, session);
         Instant later = SignedInAt + Duration.FromMinutes(20);
         await using (AsyncServiceScope scope = provider.CreateAsyncScope())
@@ -141,8 +158,8 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
         Guid accountId = await NewAccountAsync(provider);
         byte[] hash = NewHash();
-        Session removed = Session.Start(accountId, "Firefox on Linux", hash, SignedInAt, ExpiresAt);
-        Session kept = Session.Start(accountId, "Chrome on Windows", NewHash(), SignedInAt, ExpiresAt);
+        Session removed = Session.Start(accountId, "Firefox on Linux", "stamp", hash, SignedInAt, ExpiresAt);
+        Session kept = Session.Start(accountId, "Chrome on Windows", "stamp", NewHash(), SignedInAt, ExpiresAt);
         await AddAsync(provider, removed);
         await AddAsync(provider, kept);
         await using (AsyncServiceScope scope = provider.CreateAsyncScope())
@@ -164,7 +181,7 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
         Guid accountId = await NewAccountAsync(provider);
         byte[] oldHash = NewHash();
-        Session session = Session.Start(accountId, "Firefox on Linux", oldHash, SignedInAt, ExpiresAt);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", oldHash, SignedInAt, ExpiresAt);
         session.Rotate(oldHash, NewHash(), SignedInAt + Duration.FromMinutes(20), ExpiresAt);
         await AddAsync(provider, session);
         await using (AsyncServiceScope scope = provider.CreateAsyncScope())
@@ -183,10 +200,10 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using ServiceProvider provider = fixture.BuildAccountServices();
         Guid accountId = await NewAccountAsync(provider);
         byte[] hash = NewHash();
-        await AddAsync(provider, Session.Start(accountId, "Firefox on Linux", hash, SignedInAt, ExpiresAt));
+        await AddAsync(provider, Session.Start(accountId, "Firefox on Linux", "stamp", hash, SignedInAt, ExpiresAt));
 
         Exception? thrown = await Record.ExceptionAsync(
-            () => AddAsync(provider, Session.Start(accountId, "Chrome on Windows", hash, SignedInAt, ExpiresAt)));
+            () => AddAsync(provider, Session.Start(accountId, "Chrome on Windows", "stamp", hash, SignedInAt, ExpiresAt)));
 
         Assert.Equal("23505:ix_refresh_tokens_token_hash", AccountsTestSupport.ViolationOf(thrown));
     }
@@ -197,7 +214,7 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using ServiceProvider provider = fixture.BuildAccountServices();
 
         Exception? thrown = await Record.ExceptionAsync(
-            () => AddAsync(provider, Session.Start(Guid.NewGuid(), "Firefox on Linux", NewHash(), SignedInAt, ExpiresAt)));
+            () => AddAsync(provider, Session.Start(Guid.NewGuid(), "Firefox on Linux", "stamp", NewHash(), SignedInAt, ExpiresAt)));
 
         Assert.Equal("23503:fk_sessions_accounts_account_id", ViolationOf(thrown));
     }
@@ -208,7 +225,7 @@ public class SessionRepositoryTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using ServiceProvider provider = fixture.BuildServices(DatabaseRole.Api);
         await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
         Guid accountId = await NewAccountAsync(provider);
-        Session session = Session.Start(accountId, "Firefox on Linux", NewHash(), SignedInAt, ExpiresAt);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", NewHash(), SignedInAt, ExpiresAt);
         await AddAsync(provider, session);
         await using (AsyncServiceScope scope = provider.CreateAsyncScope())
         {

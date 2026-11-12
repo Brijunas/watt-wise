@@ -15,7 +15,7 @@ public class RefreshSessionCommandTests
     // token-1 is the one the sign-in issued; the handler's next one is token-2.
     private static async Task<SessionsHost> SignedInHostAsync()
     {
-        SessionsHost host = new(PasswordCheck.Succeeded(AccountId));
+        SessionsHost host = new(PasswordCheck.Succeeded(AccountId, "stamp"));
         await host.Mediator.Send(new SignInCommand("ada@example.com", "pw", "agent"), Token);
         host.Calls.Clear();
         return host;
@@ -118,6 +118,22 @@ public class RefreshSessionCommandTests
         Result<SignedIn> result = await host.Mediator.Send(new RefreshSessionCommand("token-1"), Token);
 
         Assert.Equal(("Accounts.InvalidRefreshToken", "RemoveSession, Save", 0), (result.Error.Code, string.Join(", ", host.Calls), host.Sessions.Stored.Count));
+    }
+
+    [Theory]
+    [InlineData("other-stamp")]
+    [InlineData("STAMP")]
+    [InlineData(null)]
+    public async Task A_session_whose_security_stamp_no_longer_matches_is_deleted_and_refused(string? currentStamp)
+    {
+        using SessionsHost host = await SignedInHostAsync();
+        host.Queries.SecurityStamp = currentStamp;
+
+        Result<SignedIn> result = await host.Mediator.Send(new RefreshSessionCommand("token-1"), Token);
+
+        Assert.Equal(
+            ("Accounts.InvalidRefreshToken", "RemoveSession, Save", 0),
+            (result.Error.Code, string.Join(", ", host.Calls), host.Sessions.Stored.Count));
     }
 
     [Fact]

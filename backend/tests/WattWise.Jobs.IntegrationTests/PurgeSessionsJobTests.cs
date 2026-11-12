@@ -65,7 +65,7 @@ public class PurgeSessionsJobTests(DatabaseFixture fixture) : IClassFixture<Data
 
     private static async Task<Guid> SeedAsync(TestHostFactory<Program> factory, Guid accountId, Instant signedInAt, Instant expiresAt)
     {
-        Session session = Session.Start(accountId, "Firefox on Linux", Guid.NewGuid().ToByteArray(), signedInAt, expiresAt);
+        Session session = Session.Start(accountId, "Firefox on Linux", "stamp", Guid.NewGuid().ToByteArray(), signedInAt, expiresAt);
         await using AsyncServiceScope scope = factory.Services.CreateAsyncScope();
         AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Add(session);

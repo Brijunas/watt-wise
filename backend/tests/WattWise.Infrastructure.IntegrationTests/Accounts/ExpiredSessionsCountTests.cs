@@ -22,11 +22,11 @@ public class ExpiredSessionsCountTests(DatabaseFixture fixture) : IClassFixture<
         {
             AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             byte[] hash = Guid.NewGuid().ToByteArray();
-            Session twoTokens = Session.Start(accountId, "Firefox on Linux", hash, now - Duration.FromDays(20), now - Duration.FromDays(13));
+            Session twoTokens = Session.Start(accountId, "Firefox on Linux", "stamp", hash, now - Duration.FromDays(20), now - Duration.FromDays(13));
             twoTokens.Rotate(hash, Guid.NewGuid().ToByteArray(), now - Duration.FromDays(14), now - Duration.FromDays(7));
             db.Add(twoTokens);
-            db.Add(Session.Start(accountId, "Chrome on Windows", Guid.NewGuid().ToByteArray(), now - Duration.FromDays(8), now - Duration.FromDays(1)));
-            db.Add(Session.Start(accountId, "Safari on macOS", Guid.NewGuid().ToByteArray(), now - Duration.FromDays(1), now + Duration.FromDays(6)));
+            db.Add(Session.Start(accountId, "Chrome on Windows", "stamp", Guid.NewGuid().ToByteArray(), now - Duration.FromDays(8), now - Duration.FromDays(1)));
+            db.Add(Session.Start(accountId, "Safari on macOS", "stamp", Guid.NewGuid().ToByteArray(), now - Duration.FromDays(1), now + Duration.FromDays(6)));
             await db.SaveChangesAsync(AccountsTestSupport.Token);
         }
 

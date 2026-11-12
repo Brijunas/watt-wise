@@ -35,10 +35,8 @@ public sealed class SignInCommandHandler(
         IReadOnlyList<string> permissions = await queries.GetPermissionsAsync(accountId, cancellationToken);
 
         Instant now = clock.GetCurrentInstant();
-        NewRefreshToken refreshToken = refreshTokens.Create();
-        Instant refreshExpiresAt = now + TokenLifetimes.RefreshToken;
-        Session session = Session.Start(accountId, deviceLabels.FromUserAgent(command.UserAgent), refreshToken.Hash, now, refreshExpiresAt);
-        sessions.Add(session);
+        StartedSession started = SessionStarting.Start(
+            sessions, refreshTokens, deviceLabels, accountId, command.UserAgent, check.SecurityStamp!, now);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Signing in again on a device ends the session it was in, but only when it was this account's: a cookie of
@@ -53,7 +51,7 @@ public sealed class SignInCommandHandler(
             }
         }
 
-        IssuedAccessToken accessToken = accessTokens.Issue(accountId, session.Id, permissions, now);
-        return new SignedIn(accessToken.Token, accessToken.ExpiresAt, refreshToken.Token, refreshExpiresAt);
+        IssuedAccessToken accessToken = accessTokens.Issue(accountId, started.Session.Id, permissions, now);
+        return new SignedIn(accessToken.Token, accessToken.ExpiresAt, started.RefreshToken.Token, started.RefreshExpiresAt);
     }
 }

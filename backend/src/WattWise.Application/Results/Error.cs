@@ -18,6 +18,12 @@ public sealed record Error(
         return new Error("Validation.Failed", "One or more validation errors occurred.", ErrorType.Validation, fieldErrors);
     }
 
+    /// <summary>A validation error with its own code, for a rule that needs data and so can't be a validator's.</summary>
+    public static Error Validation(string code, string description, IReadOnlyDictionary<string, string[]> fieldErrors)
+    {
+        return new Error(code, description, ErrorType.Validation, fieldErrors);
+    }
+
     public static Error NotFound(string code, string description)
     {
         return new Error(code, description, ErrorType.NotFound);
@@ -38,6 +44,12 @@ public sealed record Error(
     public static Error Locked(string code, string description)
     {
         return new Error(code, description, ErrorType.Locked);
+    }
+
+    /// <summary>The request lost a race: another request changed the same data first, and trying again may succeed.</summary>
+    public static Error Conflict(string code, string description)
+    {
+        return new Error(code, description, ErrorType.Conflict);
     }
 
     /// <summary>A well-formed request that cannot be carried out and is not a field validation error.</summary>

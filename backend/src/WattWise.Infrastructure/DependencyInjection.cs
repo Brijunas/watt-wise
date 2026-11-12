@@ -108,7 +108,12 @@ public static class DependencyInjection
         services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddSingleton<IRefreshTokenFactory, RefreshTokenFactory>();
         services.AddSingleton<IDeviceLabels, UserAgentDeviceLabels>();
+        services.AddScoped<LockoutCounter>();
         services.AddScoped<IPasswordSignIn, IdentityPasswordSignIn>();
+        services.AddScoped<IPasswordReset, IdentityPasswordReset>();
+        services.AddScoped<IPasswordChange, IdentityPasswordChange>();
+        services.AddScoped<IAccountSessions, AccountSessions>();
+        services.AddScoped<ITransactionRunner, TransactionRunner>();
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<IAccountsQueries, AccountsQueries>();
         services.AddScoped<IExpiredSessions, ExpiredSessions>();
