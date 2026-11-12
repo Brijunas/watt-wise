@@ -1,3 +1,5 @@
+using Mediator;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -5,6 +7,8 @@ using Microsoft.Extensions.Options;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
+using WattWise.Application;
+using WattWise.Application.Behaviors;
 using WattWise.Infrastructure;
 using WattWise.Infrastructure.Observability;
 using WattWise.Infrastructure.Persistence;
@@ -22,6 +26,14 @@ internal static class CliHost
             new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory });
         builder.AddObservability("wattwise-cli");
         builder.Services.AddInfrastructure();
+        builder.Services.AddApplication();
+        // Keep the behavior list identical to the Api's Program.cs (the generator needs a literal list at each site).
+        builder.Services.AddMediator((MediatorOptions options) =>
+        {
+            options.Assemblies = [typeof(ApplicationAssembly)];
+            options.PipelineBehaviors = [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>)];
+            options.ServiceLifetime = ServiceLifetime.Scoped;
+        });
         return builder.Build();
     }
 

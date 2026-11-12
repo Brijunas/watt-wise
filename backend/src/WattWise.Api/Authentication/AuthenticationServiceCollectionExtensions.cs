@@ -13,7 +13,7 @@ public static class AuthenticationServiceCollectionExtensions
         services.AddOptions<JwtSettings>().ValidateOnStart();
         services.AddSingleton<IConfigureOptions<JwtBearerOptions>, ConfigureJwtBearerOptions>();
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-        services.AddAuthorization();
+        services.AddAuthorization(PermissionPolicies.AddTo);
         return services;
     }
 }

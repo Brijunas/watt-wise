@@ -113,6 +113,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordReset, IdentityPasswordReset>();
         services.AddScoped<IPasswordChange, IdentityPasswordChange>();
         services.AddScoped<IAccountSessions, AccountSessions>();
+        services.AddScoped<IAccountRoles, AccountRoles>();
         services.AddScoped<ITransactionRunner, TransactionRunner>();
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<IAccountsQueries, AccountsQueries>();

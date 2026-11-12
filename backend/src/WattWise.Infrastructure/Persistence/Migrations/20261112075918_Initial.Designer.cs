@@ -13,8 +13,8 @@ using WattWise.Infrastructure.Persistence;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 [DbContext(typeof(AppDbContext))]
-[Migration("20261111213533_Initial")]
-partial class _20261111213533_Initial
+[Migration("20261112075918_Initial")]
+partial class _20261112075918_Initial
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -22,7 +22,7 @@ partial class _20261111213533_Initial
 #pragma warning disable 612, 618
         modelBuilder
             .HasDefaultSchema("app")
-            .HasAnnotation("ProductVersion", "11.0.0-rc.2.26504.105")
+            .HasAnnotation("ProductVersion", "11.0.0-rc.3.26522.148")
             .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
         NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -142,6 +142,14 @@ partial class _20261111213533_Initial
                     .HasDatabaseName("ix_permissions_name");
 
                 b.ToTable("permissions", "app");
+
+                b.HasData(
+                    new
+                    {
+                        Id = new Guid("0192e5a0-0000-7000-8000-000000000002"),
+                        Description = "Use the admin area.",
+                        Name = "admin.access"
+                    });
             });
 
         modelBuilder.Entity("WattWise.Domain.Accounts.RefreshToken", b =>
@@ -212,6 +220,13 @@ partial class _20261111213533_Initial
                     .HasDatabaseName("ix_roles_name");
 
                 b.ToTable("roles", "app");
+
+                b.HasData(
+                    new
+                    {
+                        Id = new Guid("0192e5a0-0000-7000-8000-000000000001"),
+                        Name = "Admin"
+                    });
             });
 
         modelBuilder.Entity("WattWise.Domain.Accounts.RolePermission", b =>
@@ -231,6 +246,13 @@ partial class _20261111213533_Initial
                     .HasDatabaseName("ix_role_permissions_permission_id");
 
                 b.ToTable("role_permissions", "app");
+
+                b.HasData(
+                    new
+                    {
+                        RoleId = new Guid("0192e5a0-0000-7000-8000-000000000001"),
+                        PermissionId = new Guid("0192e5a0-0000-7000-8000-000000000002")
+                    });
             });
 
         modelBuilder.Entity("WattWise.Domain.Accounts.Session", b =>

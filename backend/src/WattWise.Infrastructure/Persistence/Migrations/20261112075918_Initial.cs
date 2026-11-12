@@ -7,7 +7,7 @@ using NodaTime;
 namespace WattWise.Infrastructure.Persistence.Migrations;
 
 /// <inheritdoc />
-public partial class _20261111213533_Initial : Migration
+public partial class _20261112075918_Initial : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -290,6 +290,24 @@ public partial class _20261111213533_Initial : Migration
                     principalColumn: "id",
                     onDelete: ReferentialAction.Cascade);
             });
+
+        migrationBuilder.InsertData(
+            schema: "app",
+            table: "permissions",
+            columns: new[] { "id", "description", "name" },
+            values: new object[] { new Guid("0192e5a0-0000-7000-8000-000000000002"), "Use the admin area.", "admin.access" });
+
+        migrationBuilder.InsertData(
+            schema: "app",
+            table: "roles",
+            columns: new[] { "id", "name" },
+            values: new object[] { new Guid("0192e5a0-0000-7000-8000-000000000001"), "Admin" });
+
+        migrationBuilder.InsertData(
+            schema: "app",
+            table: "role_permissions",
+            columns: new[] { "permission_id", "role_id" },
+            values: new object[] { new Guid("0192e5a0-0000-7000-8000-000000000002"), new Guid("0192e5a0-0000-7000-8000-000000000001") });
 
         migrationBuilder.CreateIndex(
             name: "ix_account_roles_role_id",

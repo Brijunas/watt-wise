@@ -4,4 +4,7 @@ namespace WattWise.Api.Endpoints;
 public static class ApiRoutes
 {
     public const string V1Prefix = "/api/v1";
+
+    /// <summary>The route group, under <see cref="V1Prefix"/>, that requires the <c>admin.access</c> permission.</summary>
+    public const string AdminPrefix = "/admin";
 }
