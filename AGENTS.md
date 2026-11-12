@@ -46,8 +46,17 @@ Use descriptive scope/story commit subjects. PRs explain behavior, reference sto
 
 A Claude session may start you as an Orca worker to review its backend change (the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). In that task:
 
-- Delegate the review to the [`backend-reviewer`](.codex/agents/backend-reviewer.toml) agent; this is the subagent the task asks for. Don't run `backend-test-reviewer`, because Claude reviews the tests.
+- Delegate the review to the [`backend-reviewer`](.codex/agents/backend-reviewer.toml) agent; this is the subagent the task asks for. Don't run `backend-test-reviewer` or write tests, because Claude reviews the tests and the test writer is a separate worker.
 - Review `git diff main` in your current worktree plus the untracked files `git status --short` lists under `backend/`, unless the task names another range.
 - Edit, stage and commit nothing, and run no Stryker. Bash is for `git`, `dotnet build` and `dotnet test` only.
 - Report through `worker_done` in the reviewer's Output format: findings most severe first, then "Questions", then the build and test line. Claude sends each finding to the agent that owns the file.
 - When Claude asks for a re-review after the fixes, review the new diff the same way and report again in the same format. Stay open until Claude releases you.
+
+## Codex Test Writing
+
+A Claude session may start you as an Orca worker (`gpt-6-astra`, medium effort) to write the backend tests for its story (the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). Claude writes the production code and reviews your tests. In that task:
+
+- Act as the [`backend-test-writer`](.codex/agents/backend-test-writer.toml) agent yourself: follow its instructions without starting a subagent, so the task's model does the work.
+- Write only under `backend/tests/`. Never change `backend/src/` or docs; report a production bug instead. Stage and commit nothing, and run no Stryker (Claude's `backend-test-reviewer` runs it).
+- Report through `worker_done` in the test writer's report format: files added, the case table with its status column, the test output and any production bug found.
+- When Claude sends the test reviewer's findings, fix them the same way and report again in the same format. Stay open until Claude releases you.
