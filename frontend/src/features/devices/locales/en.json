@@ -1,0 +1,11 @@
+{
+  "title": "Devices",
+  "intro": "These are the devices signed in to your account.",
+  "thisDevice": "This device",
+  "signedInAt": "Signed in: {{date}}",
+  "lastUsedAt": "Last used: {{date}}",
+  "endSession": "End session",
+  "endSessionFor": "End session on {{device}}",
+  "signOutEverywhere": "Sign out everywhere",
+  "retry": "Try again"
+}

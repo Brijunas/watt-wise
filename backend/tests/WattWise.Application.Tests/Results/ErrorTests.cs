@@ -6,6 +6,14 @@ namespace WattWise.Application.Tests.Results;
 public class ErrorTests
 {
     [Fact]
+    public void A_locked_error_keeps_the_exact_retry_duration()
+    {
+        Error error = Error.Locked("Test.Locked", "Wait.", NodaTime.Duration.FromMilliseconds(1234));
+
+        Assert.Equal(new Error("Test.Locked", "Wait.", ErrorType.Locked, RetryAfter: NodaTime.Duration.FromMilliseconds(1234)), error);
+    }
+
+    [Fact]
     public void Validation_sets_the_code_the_type_and_the_field_errors()
     {
         Dictionary<string, string[]> fieldErrors = new() { ["name"] = ["Required."] };
@@ -21,7 +29,7 @@ public class ErrorTests
         { Error.Unauthorized, ErrorType.Unauthorized },
         { Error.BadRequest, ErrorType.BadRequest },
         { Error.Forbidden, ErrorType.Forbidden },
-        { Error.Locked, ErrorType.Locked },
+        { (code, description) => Error.Locked(code, description), ErrorType.Locked },
     };
 
     [Theory]

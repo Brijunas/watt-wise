@@ -43,21 +43,24 @@ A feature creates only the subfolders it needs. A subfolder that would hold one 
 - **Worked example (S4.9 sign-in):**
 
 ```
-packages/ui/src/…/sign-in-fields.tsx        props only: values, errors, onSubmit; text from the `auth` namespace
-packages/core/src/…/error-messages.ts       ProblemDetails error code → i18n key; shared by both apps
+packages/ui/src/auth/sign-in-fields.tsx     props only: control, onSubmit, busy, error and link slots; text from the `auth` namespace
+packages/core/src/errors/error-messages.ts  ProblemDetails error code -> `errors` key (errorMessage); shared by both apps
+packages/core/src/validation/sign-in-schema.ts
 frontend/src/
-├── config/routes.ts                        paths.signIn, paths.devices, …
+├── config/routes.ts                        paths.signIn, paths.devices, ...
 ├── app/routes/
-│   ├── protected-layout.tsx                no session → paths.signIn, then back to the requested page
-│   ├── sign-in.tsx                         renders SignInForm
+│   ├── protected-layout.tsx                no session -> paths.signIn with state.from, then back to the requested page
+│   ├── sign-in.tsx                         redirects a signed-in session to `from`, else renders SignInForm
 │   ├── sign-in.test.tsx                    the route's integration test, MSW for the API
-│   └── devices.tsx                         renders DeviceList inside protected-layout
+│   └── change-password.tsx                 renders ChangePasswordForm inside protected-layout
 ├── features/accounts/
-│   ├── api/use-sign-in.ts                  the generated sign-in mutation plus core's session update
-│   ├── components/sign-in-form.tsx         SignInFields wired to use-sign-in, errors via error-messages
-│   ├── components/sign-in-form.test.tsx
-│   └── schemas/sign-up.ts
-├── features/devices/device-list.tsx        one file, so no subfolder yet
+│   ├── components/sign-in-form.tsx         SignInFields wired to the generated signIn mutation; errors via useErrorText
+│   ├── components/account-page.tsx         the narrow column and h1 of every account page
+│   ├── use-error-text.ts                   errorMessage + the `errors` namespace -> text
+│   ├── schemas/sign-up-schema.ts           the other forms' zod schemas sit beside it
+│   ├── utils/read-sign-in-state.ts         router state -> return-to path and notice
+│   └── locales/                            en.json, lt.json: the `accounts` namespace
+├── features/devices/                       the devices page
 └── testing/mocks/handlers/auth.ts          shared by the accounts tests and the route tests
 ```
 

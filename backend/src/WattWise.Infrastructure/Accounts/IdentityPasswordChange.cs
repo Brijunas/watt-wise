@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
+using NodaTime;
+
 using WattWise.Application.Accounts;
 using WattWise.Infrastructure.Persistence;
 
@@ -26,12 +28,12 @@ internal sealed class IdentityPasswordChange(
             .SingleOrDefaultAsync(user => user.AccountId == accountId, cancellationToken);
         if (identity is null)
         {
-            return CurrentPasswordCheck.NotFound;
+            return CurrentPasswordCheck.NotFound();
         }
 
         if (await users.IsLockedOutAsync(identity))
         {
-            return CurrentPasswordCheck.LockedOut;
+            return CurrentPasswordCheck.LockedOut(Instant.FromDateTimeOffset(identity.LockoutEnd!.Value));
         }
 
         PasswordVerificationResult verification = identity.PasswordHash is null
@@ -40,11 +42,11 @@ internal sealed class IdentityPasswordChange(
         if (verification == PasswordVerificationResult.Failed)
         {
             await lockoutCounter.CountFailureAsync(identity.Id, cancellationToken);
-            return CurrentPasswordCheck.WrongPassword;
+            return CurrentPasswordCheck.WrongPassword();
         }
 
         await lockoutCounter.ResetFailureCountAsync(identity.Id, cancellationToken);
-        return CurrentPasswordCheck.Verified;
+        return CurrentPasswordCheck.Verified();
     }
 
     public async Task<PasswordChangeOutcome> ChangeAsync(Guid accountId, string currentPassword, string newPassword, CancellationToken cancellationToken)

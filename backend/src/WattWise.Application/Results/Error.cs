@@ -1,3 +1,5 @@
+using NodaTime;
+
 using WattWise.Domain.Exceptions;
 
 namespace WattWise.Application.Results;
@@ -7,11 +9,13 @@ namespace WattWise.Application.Results;
 /// <param name="Description">Human-readable explanation.</param>
 /// <param name="Type">The failure category.</param>
 /// <param name="FieldErrors">Messages per property name; set for validation errors only.</param>
+/// <param name="RetryAfter">How long until trying again can succeed; set for a locked error that knows it.</param>
 public sealed record Error(
     string Code,
     string Description,
     ErrorType Type,
-    IReadOnlyDictionary<string, string[]>? FieldErrors = null)
+    IReadOnlyDictionary<string, string[]>? FieldErrors = null,
+    Duration? RetryAfter = null)
 {
     public static Error Validation(IReadOnlyDictionary<string, string[]> fieldErrors)
     {
@@ -41,9 +45,9 @@ public sealed record Error(
     }
 
     /// <summary>The resource is locked for now, e.g. an account locked out after failed sign-ins.</summary>
-    public static Error Locked(string code, string description)
+    public static Error Locked(string code, string description, Duration? retryAfter = null)
     {
-        return new Error(code, description, ErrorType.Locked);
+        return new Error(code, description, ErrorType.Locked, RetryAfter: retryAfter);
     }
 
     /// <summary>The request lost a race: another request changed the same data first, and trying again may succeed.</summary>

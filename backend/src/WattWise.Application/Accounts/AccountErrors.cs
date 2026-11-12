@@ -1,3 +1,5 @@
+using NodaTime;
+
 using WattWise.Application.Results;
 
 namespace WattWise.Application.Accounts;
@@ -46,9 +48,9 @@ public static class AccountErrors
         return Error.Forbidden(EmailNotConfirmedCode, "The email address is not confirmed.");
     }
 
-    public static Error LockedOut()
+    public static Error LockedOut(Duration retryAfter)
     {
-        return Error.Locked(LockedOutCode, "Too many failed sign-ins; try again later.");
+        return Error.Locked(LockedOutCode, "Too many failed sign-ins; try again later.", retryAfter);
     }
 
     public static Error InvalidRefreshToken()

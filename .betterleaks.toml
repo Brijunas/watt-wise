@@ -12,9 +12,16 @@ regexTarget = "line"
 regexes = ['''^\s*[A-Za-z_][A-Za-z0-9_]*\s*=\s*"?op://[^"\s]+(\s[^"\s]+)*"?\s*$''']
 
 # The generic-password rule flags UI labels (form.showPassword, form.hidePassword) in the
-# locale files and password literals in test fixtures. They are not secrets.
+# locale files, route paths and error-code-to-i18n-key maps whose names contain "password",
+# and password literals in test fixtures (TypeScript and C#). They are not secrets.
 # Only that one rule is skipped, and only for these paths; every other rule still scans them.
 [[allowlists]]
-description = "Password labels in locale files and password fixtures in tests"
+description = "Password labels, route paths, error keys and test password fixtures"
 targetRules = ["generic-password"]
-paths = ['''(^|/)locales/.+\.json$''', '''\.test\.tsx?$''']
+paths = [
+  '''(^|/)locales/.+\.json$''',
+  '''\.test\.tsx?$''',
+  '''(^|/)backend/tests/.+\.cs$''',
+  '''(^|/)frontend/src/config/routes\.ts$''',
+  '''(^|/)packages/core/src/errors/error-messages\.ts$''',
+]

@@ -5,7 +5,7 @@ namespace WattWise.Application.Tests.Accounts;
 /// <summary>The password change port: answers what it is told and records the account and passwords it got.</summary>
 internal sealed class ScriptedPasswordChange(List<string> calls) : IPasswordChange
 {
-    public CurrentPasswordCheck CheckAnswer { get; set; } = CurrentPasswordCheck.Verified;
+    public CurrentPasswordCheck CheckAnswer { get; set; } = CurrentPasswordCheck.Verified();
 
     public PasswordChangeOutcome ChangeAnswer { get; set; } = PasswordChangeOutcome.Changed("new-stamp");
 

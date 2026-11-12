@@ -10,6 +10,17 @@ public class SignInCommandTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task Lockout_answers_the_time_remaining_at_the_time_of_the_check()
+    {
+        using SessionsHost host = new(PasswordCheck.LockedOut(NodaTime.Instant.FromUtc(2026, 11, 11, 12, 15)));
+        host.Clock.Advance(NodaTime.Duration.FromMilliseconds(1250));
+
+        Result<SignedIn> result = await host.Mediator.Send(new SignInCommand("ada@example.com", "pw", "agent"), Token);
+
+        Assert.Equal(NodaTime.Duration.FromMilliseconds(898750), result.Error.RetryAfter);
+    }
+
+    [Fact]
     public async Task A_successful_sign_in_checks_the_normalized_address_stores_one_session_and_issues_the_token_after_saving()
     {
         using SessionsHost host = new(PasswordCheck.Succeeded(AccountId, "stamp"));
@@ -113,7 +124,7 @@ public class SignInCommandTests
     {
         { PasswordCheck.InvalidCredentials(), new Error("Accounts.InvalidCredentials", "The email or password is wrong.", ErrorType.Unauthorized) },
         { PasswordCheck.EmailNotConfirmed(), new Error("Accounts.EmailNotConfirmed", "The email address is not confirmed.", ErrorType.Forbidden) },
-        { PasswordCheck.LockedOut(), new Error("Accounts.LockedOut", "Too many failed sign-ins; try again later.", ErrorType.Locked) },
+        { PasswordCheck.LockedOut(SessionsHost.Now + NodaTime.Duration.FromMinutes(15)), new Error("Accounts.LockedOut", "Too many failed sign-ins; try again later.", ErrorType.Locked, RetryAfter: NodaTime.Duration.FromMinutes(15)) },
     };
 
     [Theory]

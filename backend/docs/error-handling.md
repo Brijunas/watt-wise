@@ -44,6 +44,8 @@ Why:
 | `Conflict`     | 409    | `Error.Conflict(code, description)`     | chosen by the handler |
 | (exception)    | 500    | none: thrown                            | `General.Unexpected`  |
 
+An `Error` may carry `RetryAfter` (`Error.Locked`'s optional third argument); the endpoint writes it as the `Retry-After` header (`ErrorHandling/RetryAfterHeader`). Today only `Accounts.LockedOut` does.
+
 Further categories are added by the story that first needs them; see below. `ErrorTypeMapping` is a `switch` with no fallback arm and `CS8509` is a build error ([conventions.md](conventions.md#code-style)), so a new `ErrorType` value doesn't compile until it has a status code. `Validation` is always 400: it is written as `ValidationProblem`, which carries the field errors and can't take another status.
 
 ## The contract clients see

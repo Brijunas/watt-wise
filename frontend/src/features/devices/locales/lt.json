@@ -1,0 +1,11 @@
+{
+  "title": "Įrenginiai",
+  "intro": "Šiuose įrenginiuose esate prisijungę prie savo paskyros.",
+  "thisDevice": "Šis įrenginys",
+  "signedInAt": "Prisijungta: {{date}}",
+  "lastUsedAt": "Paskutinį kartą naudota: {{date}}",
+  "endSession": "Užbaigti seansą",
+  "endSessionFor": "Užbaigti seansą įrenginyje {{device}}",
+  "signOutEverywhere": "Atsijungti visur",
+  "retry": "Bandyti dar kartą"
+}

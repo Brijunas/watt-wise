@@ -1,1 +1,10 @@
-{ "nav": { "home": "Home", "placeholder": "Placeholder", "about": "About" } }
+{
+  "nav": { "home": "Home", "placeholder": "Placeholder", "about": "About" },
+  "accountMenu": {
+    "label": "Account",
+    "devices": "Devices",
+    "changePassword": "Change password",
+    "signIn": "Sign in",
+    "signUp": "Sign up"
+  }
+}

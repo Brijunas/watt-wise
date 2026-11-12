@@ -66,7 +66,7 @@ public class IdentityPasswordChangeTests(DatabaseFixture fixture) : IClassFixtur
     {
         await using Seeded account = await SeedAsync();
 
-        Assert.Equal(CurrentPasswordCheck.Verified, await CheckAsync(account.Provider, account.Ids.AccountId, account.Password));
+        Assert.Equal(new CurrentPasswordCheck(CurrentPasswordCheckOutcome.Verified), await CheckAsync(account.Provider, account.Ids.AccountId, account.Password));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public class IdentityPasswordChangeTests(DatabaseFixture fixture) : IClassFixtur
         CurrentPasswordCheck check = await CheckAsync(account.Provider, account.Ids.AccountId, "wrong-password");
 
         Assert.Equal(
-            (CurrentPasswordCheck.WrongPassword, 1),
+            (new CurrentPasswordCheck(CurrentPasswordCheckOutcome.WrongPassword), 1),
             (check, (await LockoutOfAsync(account.Provider, account.Ids.IdentityId)).Failed));
     }
 
@@ -86,7 +86,7 @@ public class IdentityPasswordChangeTests(DatabaseFixture fixture) : IClassFixtur
     {
         await using Seeded account = await SeedAsync(withPassword: false);
 
-        Assert.Equal(CurrentPasswordCheck.WrongPassword, await CheckAsync(account.Provider, account.Ids.AccountId, "any-password"));
+        Assert.Equal(new CurrentPasswordCheck(CurrentPasswordCheckOutcome.WrongPassword), await CheckAsync(account.Provider, account.Ids.AccountId, "any-password"));
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class IdentityPasswordChangeTests(DatabaseFixture fixture) : IClassFixtur
     {
         await using Seeded account = await SeedAsync();
 
-        Assert.Equal(CurrentPasswordCheck.NotFound, await CheckAsync(account.Provider, Guid.NewGuid(), account.Password));
+        Assert.Equal(new CurrentPasswordCheck(CurrentPasswordCheckOutcome.NotFound), await CheckAsync(account.Provider, Guid.NewGuid(), account.Password));
     }
 
     [Fact]
@@ -127,7 +127,9 @@ public class IdentityPasswordChangeTests(DatabaseFixture fixture) : IClassFixtur
 
         CurrentPasswordCheck check = await CheckAsync(account.Provider, account.Ids.AccountId, account.Password);
 
-        Assert.Equal((CurrentPasswordCheck.LockedOut, 0), (check, (await LockoutOfAsync(account.Provider, account.Ids.IdentityId)).Failed));
+        Assert.Equal(
+            (new CurrentPasswordCheck(CurrentPasswordCheckOutcome.LockedOut, NodaTime.Instant.FromUtc(2026, 10, 26, 12, 15)), 0),
+            (check, (await LockoutOfAsync(account.Provider, account.Ids.IdentityId)).Failed));
     }
 
     [Fact]

@@ -1,0 +1,15 @@
+{
+  "invalidCredentials": "The email or password is wrong.",
+  "emailNotConfirmed": "Confirm your email address first. We sent you a link when you signed up.",
+  "lockedOut": "Too many failed attempts. Try again in {{count}} min.",
+  "lockedOutNoTime": "Too many failed attempts. Try again later.",
+  "invalidEmailLink": "This link is invalid or has expired. Request a new one.",
+  "invalidCurrentPassword": "The current password is wrong.",
+  "accountNotFound": "We could not find this account.",
+  "passwordChangeConflict": "Your account was changed at the same time. Try again.",
+  "sessionNotFound": "This device is no longer signed in.",
+  "validationFailed": "Some of the entered values are not valid. Check them and try again.",
+  "unexpected": "Something went wrong on our side. Try again in a moment.",
+  "network": "Could not reach the server. Check your connection and try again.",
+  "generic": "Something went wrong. Try again."
+}

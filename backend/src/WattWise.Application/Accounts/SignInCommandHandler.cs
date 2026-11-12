@@ -28,7 +28,7 @@ public sealed class SignInCommandHandler(
             case PasswordCheckOutcome.EmailNotConfirmed:
                 return AccountErrors.EmailNotConfirmed();
             case PasswordCheckOutcome.LockedOut:
-                return AccountErrors.LockedOut();
+                return AccountErrors.LockedOut(check.LockoutEnd!.Value - clock.GetCurrentInstant());
         }
 
         Guid accountId = check.AccountId!.Value;
