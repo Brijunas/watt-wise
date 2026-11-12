@@ -1,12 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/query'
 import type { Middleware, Reducer, UnknownAction } from '@reduxjs/toolkit'
-import type { StoreExtra } from './base-query'
+import type { StoreExtra } from './store-extra'
 
 export interface CreateStoreOptions<State, PreloadedState = State> {
   reducer: Reducer<State, UnknownAction, PreloadedState>
-  /** The API slice; its middleware is added to the store. */
-  api: { middleware: Middleware }
+  /** The API slice; its middleware is added to the store and its cache is cleared when the session ends. */
+  api: { middleware: Middleware; util: { resetApiState: () => UnknownAction } }
   /** The API base URL, handed to the base query as the thunk extra argument. */
   baseUrl: string
   /** Whether Redux DevTools may connect. Apps pass `import.meta.env.DEV`: the state will hold the token. */
@@ -25,7 +25,11 @@ const createStore = <State, PreloadedState = State>({
   devTools,
   preloadedState,
 }: CreateStoreOptions<State, PreloadedState>) => {
-  const extra: StoreExtra = { baseUrl }
+  const extra: StoreExtra = {
+    baseUrl,
+    refresh: { inFlight: null },
+    resetApiState: () => api.util.resetApiState(),
+  }
   const store = configureStore({
     reducer,
     preloadedState,

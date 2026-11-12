@@ -369,6 +369,9 @@ importers:
       '@reduxjs/toolkit':
         specifier: 'catalog:'
         version: 2.14.0(@types/react@19.3.0)(react-redux@9.3.1(@types/react@19.3.0)(react@19.3.1)(redux@5.0.1))(react@19.3.1)
+      jsdom:
+        specifier: 'catalog:'
+        version: 31.0.0
       msw:
         specifier: 'catalog:'
         version: 3.0.4(@types/node@26.6.6)(typescript@6.0.3)(vite@8.3.7(@types/node@26.6.6)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))

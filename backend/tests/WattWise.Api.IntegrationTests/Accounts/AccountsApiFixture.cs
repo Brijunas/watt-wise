@@ -23,6 +23,10 @@ namespace WattWise.Api.IntegrationTests.Accounts;
 /// </summary>
 public sealed class AccountsApiFixture(PostgresContainerFixture postgres) : IAsyncLifetime
 {
+    public const string FrontendOrigin = "https://app.example.test";
+
+    public const string AdminOrigin = "https://admin.example.test";
+
     private readonly DatabaseFixture database = new(postgres);
     private TestHostFactory<Program>? factory;
     private ServiceProvider? reader;
@@ -34,7 +38,12 @@ public sealed class AccountsApiFixture(PostgresContainerFixture postgres) : IAsy
     {
         await database.InitializeAsync();
         factory = new TestHostFactory<Program>(
-            ApiTestSettings.For(database.Database),
+            new Dictionary<string, string?>(ApiTestSettings.For(database.Database))
+            {
+                ["Cors:AllowedOrigins:0"] = FrontendOrigin,
+                ["Cors:AllowedOrigins:1"] = AdminOrigin,
+                ["Cors:AdminOrigin"] = AdminOrigin,
+            },
             services => services.Replace(ServiceDescriptor.Singleton<IClock>(Clock)));
         reader = database.BuildServices(DatabaseRole.Cli);
         issuer = database.BuildServices(DatabaseRole.Api, services => services.Replace(ServiceDescriptor.Singleton<IClock>(Clock)));
@@ -230,20 +239,21 @@ public sealed class AccountsApiFixture(PostgresContainerFixture postgres) : IAsy
     }
 
     /// <summary>Signs in through the endpoint and returns the access token, its expiry text and the refresh cookie.</summary>
-    public async Task<SignedInSession> SignInAsync(string email, string password, string? userAgent = null)
+    public async Task<SignedInSession> SignInAsync(string email, string password, string? userAgent = null, string? origin = null)
     {
-        using HttpResponseMessage response = await SendAsync(HttpMethod.Post, "/api/v1/auth/sign-in", body: new { email, password }, userAgent: userAgent);
+        using HttpResponseMessage response = await SendAsync(HttpMethod.Post, "/api/v1/auth/sign-in", body: new { email, password }, userAgent: userAgent, origin: origin);
         Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         return new SignedInSession(
             body.RootElement.GetProperty("accessToken").GetString()!,
             body.RootElement.GetProperty("accessTokenExpiresAt").GetString()!,
-            SetCookieHeader.RefreshCookieOf(response)!.NameAndValue);
+            SetCookieHeader.RefreshCookieOf(
+                response, origin == AdminOrigin ? SetCookieHeader.AdminRefreshCookieName : SetCookieHeader.RefreshCookieName)!.NameAndValue);
     }
 
     /// <summary>One request on a client of its own; the cookie is sent as given (<c>name=value</c>), the token as a bearer token.</summary>
     public Task<HttpResponseMessage> SendAsync(
-        HttpMethod method, string path, string? cookie = null, string? bearer = null, object? body = null, string? userAgent = null)
+        HttpMethod method, string path, string? cookie = null, string? bearer = null, object? body = null, string? userAgent = null, string? origin = null)
     {
         HttpClient client = factory!.CreateClient();
         HttpRequestMessage request = new(method, path);
@@ -260,6 +270,11 @@ public sealed class AccountsApiFixture(PostgresContainerFixture postgres) : IAsy
         if (userAgent is not null)
         {
             request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+        }
+
+        if (origin is not null)
+        {
+            request.Headers.Add("Origin", origin);
         }
 
         if (body is not null)

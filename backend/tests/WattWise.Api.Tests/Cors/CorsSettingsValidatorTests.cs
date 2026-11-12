@@ -58,6 +58,58 @@ public class CorsSettingsValidatorTests
             result.FailureMessage);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void A_blank_admin_origin_passes(string? adminOrigin)
+    {
+        ValidateOptionsResult result = ValidateAdmin(adminOrigin, "https://app.example");
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public void An_admin_origin_in_the_allowed_list_passes()
+    {
+        ValidateOptionsResult result = ValidateAdmin("https://admin.example", "https://app.example", "https://admin.example");
+
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public void A_malformed_admin_origin_fails_naming_the_setting_and_value()
+    {
+        ValidateOptionsResult result = ValidateAdmin("https://admin.example/path", "https://app.example");
+
+        Assert.Equal(
+            "Cors:AdminOrigin ('https://admin.example/path') must be an absolute http or https origin without path, query or fragment.",
+            result.FailureMessage);
+    }
+
+    [Fact]
+    public void An_admin_origin_missing_from_the_allowed_list_fails_naming_the_setting_and_value()
+    {
+        ValidateOptionsResult result = ValidateAdmin("https://admin.example", "https://app.example");
+
+        Assert.Equal(
+            "Cors:AdminOrigin ('https://admin.example') must be one of Cors:AllowedOrigins.",
+            result.FailureMessage);
+    }
+
+    [Fact]
+    public void The_admin_origin_is_matched_to_the_allowed_list_case_sensitively()
+    {
+        ValidateOptionsResult result = ValidateAdmin("https://admin.example", "https://ADMIN.example");
+
+        Assert.True(result.Failed);
+    }
+
+    private static ValidateOptionsResult ValidateAdmin(string? adminOrigin, params string[] allowed)
+    {
+        return new CorsSettingsValidator().Validate(null, new CorsSettings { AllowedOrigins = allowed, AdminOrigin = adminOrigin });
+    }
+
     private static ValidateOptionsResult Validate(params string[] origins)
     {
         return new CorsSettingsValidator().Validate(null, new CorsSettings { AllowedOrigins = origins });

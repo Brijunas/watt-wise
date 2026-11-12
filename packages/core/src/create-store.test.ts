@@ -1,7 +1,7 @@
 import { combineReducers, createSlice } from '@reduxjs/toolkit'
 import type { Middleware } from '@reduxjs/toolkit'
 import { describe, expect, it, vi } from 'vitest'
-import type { StoreExtra } from './base-query'
+import type { StoreExtra } from './store-extra'
 import createStore from './create-store'
 
 const counter = createSlice({
@@ -11,7 +11,8 @@ const counter = createSlice({
 })
 const reducer = combineReducers({ counter: counter.reducer })
 const noopMiddleware: Middleware = () => (next) => (action) => next(action)
-const api = { middleware: noopMiddleware }
+const resetApiState = () => ({ type: 'api/resetApiState' })
+const api = { middleware: noopMiddleware, util: { resetApiState } }
 
 describe('createStore', () => {
   it('hands the base URL to thunks as the extra argument', () => {
@@ -20,7 +21,25 @@ describe('createStore', () => {
     store.dispatch((_dispatch, _getState, extra) => {
       seen = extra
     })
-    expect(seen).toEqual({ baseUrl: 'http://api.test' } satisfies StoreExtra)
+    expect(seen).toEqual({
+      baseUrl: 'http://api.test',
+      refresh: { inFlight: null },
+      resetApiState: expect.any(Function) as unknown,
+    } satisfies Record<keyof StoreExtra, unknown>)
+  })
+
+  it("gives each store its own refresh state and the API slice's reset action", () => {
+    const first = createStore({ reducer, api, baseUrl: 'http://a.test', devTools: false })
+    const second = createStore({ reducer, api, baseUrl: 'http://b.test', devTools: false })
+    let extras: StoreExtra[] = []
+    first.dispatch((_d, _g, extra) => {
+      extras = [...extras, extra]
+    })
+    second.dispatch((_d, _g, extra) => {
+      extras = [...extras, extra]
+    })
+    expect(extras[0]?.refresh).not.toBe(extras[1]?.refresh)
+    expect(extras[0]?.resetApiState()).toEqual(resetApiState())
   })
 
   it('adds the API middleware', () => {
@@ -31,7 +50,7 @@ describe('createStore', () => {
     }
     const store = createStore({
       reducer,
-      api: { middleware },
+      api: { middleware, util: { resetApiState } },
       baseUrl: 'http://api.test',
       devTools: false,
     })
