@@ -1,0 +1,8 @@
+{
+  "noAccess": {
+    "title": "Nėra prieigos",
+    "text": "Ši paskyra negali naudotis administravimo programa, todėl esate atjungti. Prisijunkite su administratoriaus paskyra.",
+    "signIn": "Prisijungti"
+  },
+  "access": { "retry": "Bandyti dar kartą" }
+}

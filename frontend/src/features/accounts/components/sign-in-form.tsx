@@ -10,11 +10,8 @@ import { Link as RouterLink } from 'react-router'
 import { useResendConfirmationMutation, useSignInMutation } from '@wattwise/api-client'
 import { errorCode, signInSchema } from '@wattwise/core'
 import type { SignInInput, SignInValues } from '@wattwise/core'
-import { SignInFields } from '@wattwise/ui'
+import { AccountPage, SignInFields, useErrorText, useMounted } from '@wattwise/ui'
 import { paths } from '@/config/routes'
-import useErrorText from '../use-error-text'
-import useMounted from '@/hooks/use-mounted'
-import AccountPage from './account-page'
 
 /**
  * The sign-in page's form. A successful answer stores the session (api-client does that); the

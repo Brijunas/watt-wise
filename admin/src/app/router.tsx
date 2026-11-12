@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router'
 import type { RouteObject } from 'react-router'
 import { PageLoading } from '@wattwise/ui'
 import { paths } from '@/config/routes'
+import AdminLayout from './routes/admin-layout'
 import NotFoundRoute from './routes/not-found'
 import RootLayout from './routes/root-layout'
 
@@ -15,21 +16,36 @@ export const routes: RouteObject[] = [
     Component: RootLayout,
     children: [
       {
-        index: true,
+        path: paths.signIn,
         HydrateFallback: PageLoading,
-        lazy: async () => ({ Component: (await import('./routes/home')).default }),
+        lazy: async () => ({ Component: (await import('./routes/sign-in')).default }),
       },
       {
-        path: paths.catalogReview,
+        path: paths.noAccess,
         HydrateFallback: PageLoading,
-        lazy: async () => ({ Component: (await import('./routes/catalog-review')).default }),
+        lazy: async () => ({ Component: (await import('./routes/no-access')).default }),
       },
       {
-        path: paths.about,
-        HydrateFallback: PageLoading,
-        lazy: async () => ({ Component: (await import('./routes/about')).default }),
+        Component: AdminLayout,
+        children: [
+          {
+            index: true,
+            HydrateFallback: PageLoading,
+            lazy: async () => ({ Component: (await import('./routes/home')).default }),
+          },
+          {
+            path: paths.catalogReview,
+            HydrateFallback: PageLoading,
+            lazy: async () => ({ Component: (await import('./routes/catalog-review')).default }),
+          },
+          {
+            path: paths.about,
+            HydrateFallback: PageLoading,
+            lazy: async () => ({ Component: (await import('./routes/about')).default }),
+          },
+          { path: '*', Component: NotFoundRoute },
+        ],
       },
-      { path: '*', Component: NotFoundRoute },
     ],
   },
 ]

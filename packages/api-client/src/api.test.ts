@@ -399,6 +399,24 @@ describe('api', () => {
       expect(store.getState().session).toMatchObject({ status: 'signedOut', accessToken: null })
     })
 
+    it('does not sign the user in when a sign-in answers after a sign-out', async () => {
+      const release = gated('post', '/sign-in', () => signedInResponse('late'))
+      const store = makeStore()
+      store.dispatch(sessionEnded())
+      const revisionBefore = store.getState().session.revision
+      const pending = store.dispatch(
+        api.endpoints.signIn.initiate({ body: { email: 'a@b.test', password: 'x' } }),
+      )
+      await started(store)
+      store.dispatch(sessionEnded())
+      expect(store.getState().session.revision).not.toBe(revisionBefore)
+
+      release()
+      await pending
+
+      expect(store.getState().session).toMatchObject({ status: 'signedOut', accessToken: null })
+    })
+
     it('does not replace a newer sign-in when a password change answers late', async () => {
       const release = gated('post', '/change-password', () => signedInResponse('late'))
       const store = signedInStore()

@@ -2,15 +2,21 @@ import type { Plugin } from 'vite'
 
 const configPath = '/config.js'
 
-const missingBody = (): string =>
+const missingBody = (setting: string): string =>
   `throw new Error(${JSON.stringify(
-    'API_BASE_URL is not set. Start the server through 1Password: ' +
+    `${setting} is not set. Start the server through 1Password: ` +
       'op run --env-file <app>/.env.op.development -- pnpm --filter <app> dev',
   )})`
 
+export interface RuntimeConfigOptions {
+  /** The admin app needs FRONTEND_URL too: a missing one answers 500 like a missing API_BASE_URL. */
+  frontendUrl?: boolean
+}
+
 // Serves `/config.js` from the process environment in `vite dev` and `vite preview`. Deployed images
 // render the same file with nginx. Nothing is written to `dist/`, so a build never needs the settings.
-export const runtimeConfig = (): Plugin => {
+// `FRONTEND_URL` is served when set; with `frontendUrl: true` it is required.
+export const runtimeConfig = (options: RuntimeConfigOptions = {}): Plugin => {
   const middleware = (
     req: { url?: string; method?: string },
     res: {
@@ -26,15 +32,22 @@ export const runtimeConfig = (): Plugin => {
       return
     }
     const apiBaseUrl = process.env.API_BASE_URL
+    const frontendUrl = process.env.FRONTEND_URL
     res.setHeader('Content-Type', 'text/javascript; charset=utf-8')
     res.setHeader('Cache-Control', 'no-cache')
-    if (!apiBaseUrl) {
+    const missing = !apiBaseUrl
+      ? 'API_BASE_URL'
+      : options.frontendUrl && !frontendUrl
+        ? 'FRONTEND_URL'
+        : undefined
+    if (missing) {
       res.statusCode = 500
-      res.end(missingBody())
+      res.end(missingBody(missing))
       return
     }
     res.statusCode = 200
-    res.end(`window.__WATTWISE_CONFIG__ = ${JSON.stringify({ apiBaseUrl })};`)
+    const config = { apiBaseUrl, ...(frontendUrl && { frontendUrl }) }
+    res.end(`window.__WATTWISE_CONFIG__ = ${JSON.stringify(config)};`)
   }
 
   return {

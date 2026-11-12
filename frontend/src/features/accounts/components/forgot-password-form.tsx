@@ -9,13 +9,10 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink } from 'react-router'
 import { useForgotPasswordMutation } from '@wattwise/api-client'
-import { FormTextField } from '@wattwise/ui'
+import { AccountPage, FormTextField, useErrorText, useMounted } from '@wattwise/ui'
 import { paths } from '@/config/routes'
-import useErrorText from '../use-error-text'
-import useMounted from '@/hooks/use-mounted'
 import { emailSchema } from '../schemas/email-schema'
 import type { EmailInput, EmailValues } from '../schemas/email-schema'
-import AccountPage from './account-page'
 
 const ForgotPasswordForm = () => {
   const { t } = useTranslation('accounts')

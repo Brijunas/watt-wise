@@ -52,3 +52,17 @@ Creates the `frontend/` and `admin/` Vite React TypeScript apps in the workspace
 - **S3.8 PWA.** `vite-plugin-pwa` in both apps: manifest, generated icons, app-shell precaching, a network-only `/api` rule and the `UpdatePrompt`. Lighthouse dropped its installability audit, so it was checked in the browser.
 - **S3.9 Runtime API config.** The API base URL comes from a runtime `/config.js` instead of the build, so one image runs in every environment; each app's dev server gets its settings from 1Password through `.env.op.development`. Decided after research, recorded in technical.md.
 - **S3.10 App commands in development.md.** The app dev, build, preview, icon and single-test commands, each run and checked.
+
+## E4. Accounts and authentication
+
+ASP.NET Core Identity with email and password: an account signs in only after confirming its email, and a forgotten password is reset through an emailed link. JWT access token plus a rotating refresh token in an httpOnly cookie; each sign-in is a session the user can see and end, one device at a time or everywhere at once ([security.md](security.md)). Transactional email over SMTP: Mailpit in Development and Testing, Brevo in Staging and Production ([technical.md](technical.md#cross-cutting)). Roles with permissions on the account; the `Admin` role's `admin.access` permission guards `/api/v1/admin`, and the role is granted with a `WattWise.Cli` command. Sign-up, sign-in, password and device pages with protected routes in the frontend; sign-in in the admin app. The account model leaves room for OAuth logins later without exposing them. Rate limiting on the `/api/v1/auth` endpoints and how the Hangfire dashboard is reached stay in E6. The backend stories (S4.2–S4.7) build on E2 and S4.1; the app stories (S4.8–S4.10) need E3's routing, forms, i18n and generated API client. Every story puts its code in the `Accounts/` folders, adds its section to [backend/docs/features/accounts.md](../backend/docs/features/accounts.md) and uses its [vocabulary](../backend/docs/features/accounts.md#vocabulary).
+
+### Stories
+
+- **S4.1 Account model.** ASP.NET Core Identity on `AppDbContext`: the `Account`, roles with permissions, single-use hashed email-link tokens.
+- **S4.2 Email sending and S4.3 Registration and confirmation.** The `IEmailSender` port with LT/EN Fluid + MJML templates over MailKit; the email outbox sent by the Jobs host; `/auth/register`, `/auth/confirm-email` and `/auth/resend-confirmation`.
+- **S4.4 Sign-in, refresh and sign-out; S4.5 Password reset and change; S4.6 Sessions.** The 15-minute JWT and rotating refresh token in an httpOnly cookie, `/me`, the password endpoints, and the session list and ending endpoints.
+- **S4.7 Admin role and permission.** The `admin.access` permission guarding `/api/v1/admin` and the `WattWise.Cli admin grant|revoke` commands.
+- **S4.8 Token handling in the clients.** The session in `@wattwise/core`: token in memory, restore, refresh and retry inside a Web Lock.
+- **S4.9 Frontend account pages.** Sign-up, confirmation, sign-in, password reset and change, and the devices page, with protected routes.
+- **S4.10 Admin app sign-in.** Sign-in and sign-out in `admin/`, an `admin.access` guard from `/me`, a no-access page, and the forgot-password link to the frontend through the new `FRONTEND_URL` setting. The shared sign-in pieces moved to `@wattwise/ui` and `@wattwise/core`.

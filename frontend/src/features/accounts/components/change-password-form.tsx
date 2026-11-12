@@ -7,13 +7,10 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { useChangePasswordMutation } from '@wattwise/api-client'
 import { encodeValidationMessage, errorCode } from '@wattwise/core'
-import { FormPasswordField } from '@wattwise/ui'
-import useErrorText from '../use-error-text'
-import useMounted from '@/hooks/use-mounted'
+import { AccountPage, FormPasswordField, useErrorText, useMounted } from '@wattwise/ui'
 import { changePasswordSchema } from '../schemas/change-password-schema'
 import type { ChangePasswordInput, ChangePasswordValues } from '../schemas/change-password-schema'
 import applyFieldErrors from '../utils/apply-field-errors'
-import AccountPage from './account-page'
 
 const ChangePasswordForm = () => {
   const { t } = useTranslation('accounts')

@@ -1,0 +1,8 @@
+{
+  "noAccess": {
+    "title": "No access",
+    "text": "This account can't use the admin app, so you were signed out. Sign in with an admin account.",
+    "signIn": "Sign in"
+  },
+  "access": { "retry": "Try again" }
+}

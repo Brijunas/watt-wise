@@ -4,12 +4,8 @@ import { http, HttpResponse } from 'msw'
 import { selectSessionStatus, sessionEnded, sessionStarted } from '@wattwise/core'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { server } from '@/testing/mocks/server'
-import {
-  authUrl,
-  createGate,
-  problemResponse,
-  sessionsResponse,
-} from '@/testing/mocks/handlers/auth'
+import { authUrl, sessionsResponse } from '@/testing/mocks/handlers/auth'
+import { createGate, problemResponse } from '@wattwise/core/testing'
 import { renderRoutesAt } from '@/testing/test-utils'
 import { routes } from '../router'
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import readRuntimeConfig from './read-runtime-config'
+import readRuntimeConfig, { readAdminRuntimeConfig } from './read-runtime-config'
 
 const read = (apiBaseUrl: unknown) => readRuntimeConfig({ apiBaseUrl })
 
@@ -65,5 +65,56 @@ describe('readRuntimeConfig', () => {
     } finally {
       delete (globalThis as { __WATTWISE_CONFIG__?: unknown }).__WATTWISE_CONFIG__
     }
+  })
+})
+
+describe('readAdminRuntimeConfig', () => {
+  const api = 'https://api.example.test'
+  const read = (frontendUrl: unknown) => readAdminRuntimeConfig({ apiBaseUrl: api, frontendUrl })
+
+  it('returns both origins', () => {
+    expect(read('https://app.example.test/')).toEqual({
+      apiBaseUrl: api,
+      frontendUrl: 'https://app.example.test',
+    })
+  })
+
+  it('allows http on loopback', () => {
+    expect(read('http://localhost:5174').frontendUrl).toBe('http://localhost:5174')
+  })
+
+  it('rejects a missing frontendUrl and names FRONTEND_URL', () => {
+    expect(() => read(undefined)).toThrow('frontendUrl is missing')
+    expect(() => read('')).toThrow('FRONTEND_URL')
+    expect(() => read(7)).toThrow('frontendUrl is missing')
+  })
+
+  it('rejects text that is not a URL', () => {
+    expect(() => read('nope')).toThrow('frontendUrl "nope" is not a URL')
+  })
+
+  it('rejects http on other hosts', () => {
+    expect(() => read('http://app.example.test')).toThrow('frontendUrl must use https')
+  })
+
+  it('rejects credentials, a query, a fragment and a path', () => {
+    const url = new URL('https://app.example.test')
+    url.username = 'someone'
+    expect(() => read(url.href)).toThrow('credentials')
+    expect(() => read('https://app.example.test?a=1')).toThrow('query')
+    expect(() => read('https://app.example.test#a')).toThrow('fragment')
+    expect(() => read('https://app.example.test/x')).toThrow('path')
+  })
+
+  it('still validates apiBaseUrl', () => {
+    expect(() => readAdminRuntimeConfig({ frontendUrl: 'https://app.example.test' })).toThrow(
+      'apiBaseUrl is missing',
+    )
+  })
+
+  it('is ignored by readRuntimeConfig', () => {
+    expect(readRuntimeConfig({ apiBaseUrl: api, frontendUrl: 'garbage' })).toEqual({
+      apiBaseUrl: api,
+    })
   })
 })

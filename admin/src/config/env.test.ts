@@ -5,4 +5,8 @@ describe('env', () => {
   it('reads the API base URL from the runtime config', () => {
     expect(env.apiBaseUrl).toBe('https://api.test')
   })
+
+  it('reads the frontend URL from the runtime config', () => {
+    expect(env.frontendUrl).toBe('https://app.test')
+  })
 })

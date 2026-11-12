@@ -39,12 +39,15 @@ A feature creates only the subfolders it needs. A subfolder that would hold one 
 ## Features
 
 - **One feature per route section:** the pages under one route prefix belong together. The backend's endpoint groups don't decide it: the sessions endpoints sit in the `/api/v1/auth` group, yet the devices pages are their own feature. A demo or a single page is a feature like any other.
-- **Expected first features.** `frontend`: `accounts` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `accounts` (sign-in only), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](../../docs/technical.md#admin-application)).
+- **Expected first features.** `frontend`: `accounts` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `accounts` (sign-in and the no-access page), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](../../docs/technical.md#admin-application)).
+- **Shared sign-in pieces.** Both apps use `SignInFields`, `AccountPage`, `useErrorText` and `useMounted` from `@wattwise/ui`, and `readReturnTo` (the return-to check) from `@wattwise/core`.
 - **Worked example (S4.9 sign-in):**
 
 ```
 packages/ui/src/auth/sign-in-fields.tsx     props only: control, onSubmit, busy, error and link slots; text from the `auth` namespace
 packages/core/src/errors/error-messages.ts  ProblemDetails error code -> `errors` key (errorMessage); shared by both apps
+packages/ui/src/auth/account-page.tsx       the narrow column and h1 of every account page
+packages/ui/src/hooks/use-error-text.ts     errorMessage + the `errors` namespace -> text
 packages/core/src/validation/sign-in-schema.ts
 frontend/src/
 ├── config/routes.ts                        paths.signIn, paths.devices, ...
@@ -55,13 +58,11 @@ frontend/src/
 │   └── change-password.tsx                 renders ChangePasswordForm inside protected-layout
 ├── features/accounts/
 │   ├── components/sign-in-form.tsx         SignInFields wired to the generated signIn mutation; errors via useErrorText
-│   ├── components/account-page.tsx         the narrow column and h1 of every account page
-│   ├── use-error-text.ts                   errorMessage + the `errors` namespace -> text
 │   ├── schemas/sign-up-schema.ts           the other forms' zod schemas sit beside it
-│   ├── utils/read-sign-in-state.ts         router state -> return-to path and notice
+│   ├── utils/read-sign-in-state.ts         router state -> notice; the path check is readReturnTo (core)
 │   └── locales/                            en.json, lt.json: the `accounts` namespace
 ├── features/devices/                       the devices page
-└── testing/mocks/handlers/auth.ts          shared by the accounts tests and the route tests
+└── testing/mocks/handlers/auth.ts          shared by the accounts tests and the route tests (its helpers come from `@wattwise/core/testing`)
 ```
 
 ## Import direction
@@ -98,7 +99,7 @@ Because `i18n` imports nothing, `core` → `i18n` can't close a cycle. `core` ne
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Generic or themed UI            | `@wattwise/ui`. Only layouts and pieces used by one app go in `<app>/src/components/`.                                                                                     |
 | A page                          | A route module in `app/routes/` that renders feature components. Pages hold no business logic.                                                                             |
-| Route guards                    | Layout routes in `app/routes/` that check the session from `@wattwise/core` (and the `Admin` role in admin). Guards are not route loaders.                                 |
+| Route guards                    | Layout routes in `app/routes/` that check the session from `@wattwise/core` (and, in admin, the `admin.access` permission from `/me`). Guards are not route loaders.       |
 | A component used by one feature | `features/<f>/components/`                                                                                                                                                 |
 | Endpoints                       | Generated into `@wattwise/api-client`. Never call `createApi` in an app.                                                                                                   |
 | Cache tags                      | `@wattwise/api-client`: tag types and `providesTags`/`invalidatesTags` with IDs, in one enhanced-API file next to the generated code.                                      |

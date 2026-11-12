@@ -5,8 +5,11 @@ export type { CreateStoreOptions } from './create-store'
 export { email, passwordMinLength, password, requiredText } from './validation/schemas'
 export { decodeValidationMessage, encodeValidationMessage } from './validation/validation-message'
 export type { ValidationMessage, ValidationParams } from './validation/validation-message'
-export { default as readRuntimeConfig } from './runtime-config/read-runtime-config'
-export type { RuntimeConfig } from './runtime-config/read-runtime-config'
+export {
+  default as readRuntimeConfig,
+  readAdminRuntimeConfig,
+} from './runtime-config/read-runtime-config'
+export type { AdminRuntimeConfig, RuntimeConfig } from './runtime-config/read-runtime-config'
 export {
   selectAccessToken,
   selectSessionRevision,
@@ -27,3 +30,4 @@ export {
   lockoutMinutes,
 } from './errors/error-messages'
 export type { ErrorMessage } from './errors/error-messages'
+export { default as readReturnTo } from './routing/read-return-to'

@@ -8,14 +8,11 @@ import { useTranslation } from 'react-i18next'
 import { Link as RouterLink, useNavigate } from 'react-router'
 import { useResetPasswordMutation } from '@wattwise/api-client'
 import { errorCode } from '@wattwise/core'
-import { FormPasswordField } from '@wattwise/ui'
+import { AccountPage, FormPasswordField, useErrorText, useMounted } from '@wattwise/ui'
 import { paths } from '@/config/routes'
-import useErrorText from '../use-error-text'
-import useMounted from '@/hooks/use-mounted'
 import { resetPasswordSchema } from '../schemas/reset-password-schema'
 import type { ResetPasswordInput, ResetPasswordValues } from '../schemas/reset-password-schema'
 import applyFieldErrors from '../utils/apply-field-errors'
-import AccountPage from './account-page'
 
 /** `id` and `token` come from the email link's query; a missing one makes the link invalid. */
 const ResetPasswordForm = ({

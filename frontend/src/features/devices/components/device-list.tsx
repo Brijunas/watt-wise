@@ -11,8 +11,7 @@ import {
 } from '@wattwise/api-client'
 import { errorCode, errorMessage } from '@wattwise/core'
 import type { ErrorMessage } from '@wattwise/core'
-import { PageLoading } from '@wattwise/ui'
-import useMounted from '@/hooks/use-mounted'
+import { PageLoading, useMounted } from '@wattwise/ui'
 import SessionItem from './session-item'
 
 // The devices page body: the sessions list with its actions. Ending the session this device uses,

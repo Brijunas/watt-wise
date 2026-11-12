@@ -23,5 +23,6 @@ paths = [
   '''\.test\.tsx?$''',
   '''(^|/)backend/tests/.+\.cs$''',
   '''(^|/)frontend/src/config/routes\.ts$''',
+  '''(^|/)admin/src/config/routes\.ts$''',
   '''(^|/)packages/core/src/errors/error-messages\.ts$''',
 ]
