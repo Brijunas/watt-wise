@@ -9,7 +9,6 @@ describe('errorMessage', () => {
     ['Accounts.EmailNotConfirmed', 'emailNotConfirmed'],
     ['Accounts.LockedOut', 'lockedOutNoTime'],
     ['Accounts.InvalidEmailLink', 'invalidEmailLink'],
-    ['Accounts.InvalidCurrentPassword', 'invalidCurrentPassword'],
     ['Accounts.AccountNotFound', 'accountNotFound'],
     ['Accounts.PasswordChangeConflict', 'passwordChangeConflict'],
     ['Accounts.SessionNotFound', 'sessionNotFound'],

@@ -18,6 +18,7 @@ const keys: Record<ValidationKey, true> = {
   'password.digit': true,
   'password.symbol': true,
   invalid: true,
+  invalidCurrentPassword: true,
 }
 
 const separator = '|'

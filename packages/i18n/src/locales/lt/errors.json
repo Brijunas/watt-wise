@@ -4,7 +4,6 @@
   "lockedOut": "Per daug nesėkmingų bandymų. Bandykite dar kartą po {{count}} min.",
   "lockedOutNoTime": "Per daug nesėkmingų bandymų. Bandykite vėliau.",
   "invalidEmailLink": "Ši nuoroda neteisinga arba nebegalioja. Paprašykite naujos.",
-  "invalidCurrentPassword": "Dabartinis slaptažodis neteisingas.",
   "accountNotFound": "Šios paskyros nepavyko rasti.",
   "passwordChangeConflict": "Jūsų paskyra buvo pakeista tuo pačiu metu. Bandykite dar kartą.",
   "sessionNotFound": "Šis įrenginys nebėra prisijungęs.",

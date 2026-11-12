@@ -8,5 +8,6 @@
     "digit": "The password must contain a digit",
     "symbol": "The password must contain a symbol"
   },
-  "invalid": "This value is not valid"
+  "invalid": "This value is not valid",
+  "invalidCurrentPassword": "The current password is wrong."
 }

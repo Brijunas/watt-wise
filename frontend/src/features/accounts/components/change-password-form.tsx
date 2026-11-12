@@ -40,9 +40,8 @@ const ChangePasswordForm = () => {
       return
     }
     if (errorCode(result.error) === 'Accounts.InvalidCurrentPassword') {
-      // The field is marked and the message under the form says what is wrong with it.
-      setError('currentPassword', { message: encodeValidationMessage('invalid') })
-      setOutcome({ error: result.error })
+      // The field itself says what is wrong; no alert repeats it.
+      setError('currentPassword', { message: encodeValidationMessage('invalidCurrentPassword') })
       return
     }
     if (!applyFieldErrors(result.error, ['currentPassword', 'newPassword'], setError)) {
