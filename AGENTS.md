@@ -44,7 +44,7 @@ Use descriptive scope/story commit subjects. PRs explain behavior, reference sto
 
 ## Codex Review
 
-A Claude session may start you as an Orca worker to review its backend change (the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). In that task:
+A Claude session may start you as an Orca worker (`gpt-6.1-sol`, medium effort) to review its backend change (the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). In that task:
 
 - Delegate the review to the [`backend-reviewer`](.codex/agents/backend-reviewer.toml) agent; this is the subagent the task asks for. Don't run `backend-test-reviewer` or write tests, because Claude reviews the tests and the test writer is a separate worker.
 - Review `git diff main` in your current worktree plus the untracked files `git status --short` lists under `backend/`, unless the task names another range.
