@@ -1,9 +1,13 @@
-import { cleanup, screen, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryRouter } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
+import { http } from 'msw'
+import { selectSessionStatus } from '@wattwise/core'
 import stubMatchMedia from '@/testing/match-media'
+import { server } from '@/testing/mocks/server'
+import { authUrl, problemResponse } from '@/testing/mocks/handlers/auth'
 import renderWithProviders from '@/testing/test-utils'
 import { routes } from '../router'
 
@@ -18,10 +22,13 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderAt(path: string, width: number) {
+function renderAt(path: string, width: number, session?: 'signedIn' | 'signedOut') {
   stubMatchMedia({ width })
   const router = createMemoryRouter(routes, { initialEntries: [path] })
-  return renderWithProviders(<RouterProvider router={router} />)
+  return {
+    router,
+    ...renderWithProviders(<RouterProvider router={router} />, { session }),
+  }
 }
 
 describe('RootLayout', () => {
@@ -123,6 +130,106 @@ describe('RootLayout', () => {
     expect(screen.getByRole('button', { name: 'Kalba' })).toBeTruthy()
     expect(localStorage.getItem('wattwise-language')).toBe('lt')
     expect(document.documentElement.lang).toBe('lt')
+  })
+
+  it('shows no account menu while the session is restored', async () => {
+    renderAt('/', 360)
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    expect(screen.queryByRole('button', { name: 'Account' })).toBeNull()
+  })
+
+  it('offers Sign in and Sign up to a signed-out visitor', async () => {
+    const user = userEvent.setup()
+    const { router } = renderAt('/', 360, 'signedOut')
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    const menu = screen.getByRole('menu')
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Sign in', 'Sign up'])
+    await user.click(within(menu).getByRole('menuitem', { name: 'Sign up' }))
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/sign-up')
+    })
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('offers Devices, Change password and Sign out to a signed-in user', async () => {
+    const user = userEvent.setup()
+    const { router } = renderAt('/', 900, 'signedIn')
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    const menu = screen.getByRole('menu')
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Devices', 'Change password', 'Sign out'])
+    await user.click(within(menu).getByRole('menuitem', { name: 'Devices' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Devices' })).toBeTruthy()
+    expect(router.state.location.pathname).toBe('/devices')
+  })
+
+  it('opens the change-password page from the menu', async () => {
+    const user = userEvent.setup()
+    const { router } = renderAt('/', 360, 'signedIn')
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Change password' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Change password' })).toBeTruthy()
+    expect(router.state.location.pathname).toBe('/change-password')
+  })
+
+  it('signs out from the menu, lands on sign-in and then offers Sign in', async () => {
+    const user = userEvent.setup()
+    const { router, store } = renderAt('/', 360, 'signedIn')
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeTruthy()
+    expect(router.state.location.pathname).toBe('/sign-in')
+    expect(router.state.historyAction).toBe('REPLACE')
+    expect(selectSessionStatus(store.getState())).toBe('signedOut')
+
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    expect(
+      within(screen.getByRole('menu'))
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Sign in', 'Sign up'])
+  })
+
+  it('signs out even when the request fails', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post(authUrl('/sign-out'), () =>
+        problemResponse({ status: 500, code: 'General.Unexpected' }),
+      ),
+    )
+    const { router } = renderAt('/', 360, 'signedIn')
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeTruthy()
+    expect(router.state.location.pathname).toBe('/sign-in')
+  })
+
+  it('names the account menu in Lithuanian', async () => {
+    const user = userEvent.setup()
+    stubMatchMedia({ width: 360 })
+    const router = createMemoryRouter(routes, { initialEntries: ['/'] })
+    renderWithProviders(<RouterProvider router={router} />, { session: 'signedIn', language: 'lt' })
+    await screen.findByRole('heading', { level: 1, name: 'Pradžia' })
+    await user.click(screen.getByRole('button', { name: 'Paskyra' }))
+    expect(
+      within(screen.getByRole('menu'))
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Įrenginiai', 'Keisti slaptažodį', 'Atsijungti'])
   })
 
   it('starts in Lithuanian when the browser prefers it', async () => {

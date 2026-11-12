@@ -1,0 +1,48 @@
+{
+  "fields": { "currentPassword": "Dabartinis slaptažodis", "newPassword": "Naujas slaptažodis" },
+  "signUp": {
+    "title": "Sukurti paskyrą",
+    "submit": "Sukurti paskyrą",
+    "haveAccount": "Jau turite paskyrą?",
+    "signIn": "Prisijunkite"
+  },
+  "checkEmail": {
+    "title": "Patikrinkite el. paštą",
+    "sentTo": "Išsiuntėme patvirtinimo nuorodą adresu {{email}}. Atidarykite ją, kad baigtumėte kurti paskyrą.",
+    "sent": "Išsiuntėme jums patvirtinimo nuorodą. Atidarykite ją, kad baigtumėte kurti paskyrą.",
+    "resend": "Siųsti dar kartą",
+    "resent": "Nuorodą išsiuntėme dar kartą."
+  },
+  "confirmEmail": {
+    "title": "Patvirtinkite el. paštą",
+    "confirming": "Patvirtinamas jūsų el. pašto adresas...",
+    "success": "Jūsų el. pašto adresas patvirtintas. Dabar galite prisijungti.",
+    "signIn": "Prisijungti",
+    "resendIntro": "Įveskite savo el. pašto adresą ir atsiųsime naują nuorodą.",
+    "resendSubmit": "Siųsti naują nuorodą",
+    "resent": "Jei šį adresą reikia patvirtinti, išsiuntėme naują nuorodą."
+  },
+  "signIn": {
+    "title": "Prisijungimas",
+    "resendLink": "Siųsti nuorodą dar kartą",
+    "resent": "Patvirtinimo nuorodą išsiuntėme dar kartą.",
+    "passwordReset": "Jūsų slaptažodis pakeistas. Prisijunkite su nauju."
+  },
+  "forgotPassword": {
+    "title": "Pamiršau slaptažodį",
+    "intro": "Įveskite savo el. pašto adresą ir atsiųsime nuorodą slaptažodžiui atkurti.",
+    "submit": "Siųsti nuorodą",
+    "sent": "Jei šį adresą naudoja paskyra, išsiuntėme nuorodą slaptažodžiui atkurti.",
+    "backToSignIn": "Atgal į prisijungimą"
+  },
+  "resetPassword": {
+    "title": "Slaptažodžio atkūrimas",
+    "submit": "Nustatyti naują slaptažodį",
+    "requestNewLink": "Paprašyti naujos nuorodos"
+  },
+  "changePassword": {
+    "title": "Slaptažodžio keitimas",
+    "submit": "Keisti slaptažodį",
+    "success": "Jūsų slaptažodis pakeistas. Kiti jūsų įrenginiai atjungti."
+  }
+}

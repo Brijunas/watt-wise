@@ -3,6 +3,7 @@ import type { RouteObject } from 'react-router'
 import { PageLoading } from '@wattwise/ui'
 import { paths } from '@/config/routes'
 import NotFoundRoute from './routes/not-found'
+import ProtectedLayout from './routes/protected-layout'
 import RootLayout from './routes/root-layout'
 
 // `lazy` is a function, not an object of loaders: React Router empties a `lazy` object once it has
@@ -28,6 +29,51 @@ export const routes: RouteObject[] = [
         path: paths.about,
         HydrateFallback: PageLoading,
         lazy: async () => ({ Component: (await import('./routes/about')).default }),
+      },
+      {
+        path: paths.signUp,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/sign-up')).default }),
+      },
+      {
+        path: paths.checkEmail,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/check-email')).default }),
+      },
+      {
+        path: paths.confirmEmail,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/confirm-email')).default }),
+      },
+      {
+        path: paths.signIn,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/sign-in')).default }),
+      },
+      {
+        path: paths.forgotPassword,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/forgot-password')).default }),
+      },
+      {
+        path: paths.resetPassword,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/reset-password')).default }),
+      },
+      {
+        Component: ProtectedLayout,
+        children: [
+          {
+            path: paths.changePassword,
+            HydrateFallback: PageLoading,
+            lazy: async () => ({ Component: (await import('./routes/change-password')).default }),
+          },
+          {
+            path: paths.devices,
+            HydrateFallback: PageLoading,
+            lazy: async () => ({ Component: (await import('./routes/devices')).default }),
+          },
+        ],
       },
       { path: '*', Component: NotFoundRoute },
     ],

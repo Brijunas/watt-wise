@@ -1,6 +1,10 @@
 import { createInstance, type i18n } from 'i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
+import enAuth from './locales/en/auth.json'
+import ltAuth from './locales/lt/auth.json'
+import enErrors from './locales/en/errors.json'
+import ltErrors from './locales/lt/errors.json'
 import enCommon from './locales/en/common.json'
 import ltCommon from './locales/lt/common.json'
 import enShell from './locales/en/shell.json'
@@ -16,6 +20,8 @@ declare module 'i18next' {
     common: typeof enCommon
     shell: typeof enShell
     validation: typeof enValidation
+    auth: typeof enAuth
+    errors: typeof enErrors
   }
 }
 
@@ -33,7 +39,7 @@ export interface CreateI18nOptions {
   namespaces?: Record<Language, Record<string, object>>
 }
 
-const sharedNamespaces = ['common', 'shell', 'validation']
+const sharedNamespaces = ['common', 'shell', 'validation', 'auth', 'errors']
 
 export const createI18n = (options: CreateI18nOptions = {}): i18n => {
   const extra = options.namespaces
@@ -65,8 +71,22 @@ export const createI18n = (options: CreateI18nOptions = {}): i18n => {
     .use(initReactI18next)
     .init({
       resources: {
-        en: { common: enCommon, shell: enShell, validation: enValidation, ...extra?.en },
-        lt: { common: ltCommon, shell: ltShell, validation: ltValidation, ...extra?.lt },
+        en: {
+          common: enCommon,
+          shell: enShell,
+          validation: enValidation,
+          auth: enAuth,
+          errors: enErrors,
+          ...extra?.en,
+        },
+        lt: {
+          common: ltCommon,
+          shell: ltShell,
+          validation: ltValidation,
+          auth: ltAuth,
+          errors: ltErrors,
+          ...extra?.lt,
+        },
       },
       lng: options.lng,
       supportedLngs: [...languages],
@@ -92,3 +112,6 @@ type FlattenKeys<T> = {
 
 /** Every key of the shared `validation` namespace, such as `required` or `password.tooShort`. */
 export type ValidationKey = FlattenKeys<typeof enValidation>
+
+/** Every key of the shared `errors` namespace, such as `invalidCredentials` or `network`. */
+export type ErrorKey = FlattenKeys<typeof enErrors>

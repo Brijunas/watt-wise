@@ -102,6 +102,7 @@ public sealed class AccountsEndpointModule : IEndpointModule
     {
         Application.Results.Result<SignedIn> result = await sender.Send(
             new SignInCommand(request?.Email, request?.Password, http.Request.Headers.UserAgent.ToString(), cookie.Read(http.Request)), cancellationToken);
+        RetryAfterHeader.Set(http.Response, result);
         return result.ToHttpResult(signedIn => RespondSignedIn(http, cookie, signedIn));
     }
 
@@ -152,6 +153,7 @@ public sealed class AccountsEndpointModule : IEndpointModule
         Application.Results.Result<SignedIn> result = await sender.Send(
             new ChangePasswordCommand(accountId, request?.CurrentPassword, request?.NewPassword, http.Request.Headers.UserAgent.ToString()),
             cancellationToken);
+        RetryAfterHeader.Set(http.Response, result);
         return result.ToHttpResult(signedIn => RespondSignedIn(http, cookie, signedIn));
     }
 

@@ -21,6 +21,7 @@ internal sealed class ConfigureCorsOptions(IOptions<CorsSettings> settings) : IC
             .WithOrigins(settings.Value.AllowedOrigins)
             .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
             .WithHeaders("Authorization", "Content-Type")
+            .WithExposedHeaders("Retry-After")
             .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
     }
 }

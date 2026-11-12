@@ -22,13 +22,13 @@ public sealed class ChangePasswordCommandHandler(
     {
         // Outside the transaction: a wrong password's count must stay when the change fails.
         CurrentPasswordCheck check = await passwordChange.CheckCurrentAsync(command.AccountId, command.CurrentPassword!, cancellationToken);
-        switch (check)
+        switch (check.Outcome)
         {
-            case CurrentPasswordCheck.WrongPassword:
+            case CurrentPasswordCheckOutcome.WrongPassword:
                 return AccountErrors.InvalidCurrentPassword();
-            case CurrentPasswordCheck.LockedOut:
-                return AccountErrors.LockedOut();
-            case CurrentPasswordCheck.NotFound:
+            case CurrentPasswordCheckOutcome.LockedOut:
+                return AccountErrors.LockedOut(check.LockoutEnd!.Value - clock.GetCurrentInstant());
+            case CurrentPasswordCheckOutcome.NotFound:
                 return AccountErrors.AccountNotFound();
         }
 

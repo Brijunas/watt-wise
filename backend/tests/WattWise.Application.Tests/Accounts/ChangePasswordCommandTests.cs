@@ -15,6 +15,18 @@ public class ChangePasswordCommandTests
     private static ChangePasswordCommand Command(string? userAgent = "agent") => new(AccountId, "old-pw", "new-pw", userAgent);
 
     [Fact]
+    public async Task Lockout_answers_the_time_remaining_at_the_time_of_the_check()
+    {
+        using SessionsHost host = new();
+        host.PasswordChange.CheckAnswer = CurrentPasswordCheck.LockedOut(Instant.FromUtc(2026, 11, 11, 12, 15));
+        host.Clock.Advance(Duration.FromMilliseconds(1250));
+
+        Result<SignedIn> result = await host.Mediator.Send(Command(), Token);
+
+        Assert.Equal(Duration.FromMilliseconds(898750), result.Error.RetryAfter);
+    }
+
+    [Fact]
     public async Task A_change_checks_the_current_password_then_changes_ends_all_sessions_and_starts_one_inside_one_transaction()
     {
         using SessionsHost host = new();
@@ -62,17 +74,17 @@ public class ChangePasswordCommandTests
             (session.AccountId, session.DeviceLabel, session.SecurityStamp, host.AccessTokens.SessionIds.Single()));
     }
 
-    public static TheoryData<CurrentPasswordCheck, string, ErrorType> RefusedChecks => new()
+    public static TheoryData<CurrentPasswordCheck, string, ErrorType, Duration?> RefusedChecks => new()
     {
-        { CurrentPasswordCheck.WrongPassword, "Accounts.InvalidCurrentPassword", ErrorType.Validation },
-        { CurrentPasswordCheck.LockedOut, "Accounts.LockedOut", ErrorType.Locked },
-        { CurrentPasswordCheck.NotFound, "Accounts.AccountNotFound", ErrorType.NotFound },
+        { CurrentPasswordCheck.WrongPassword(), "Accounts.InvalidCurrentPassword", ErrorType.Validation, null },
+        { CurrentPasswordCheck.LockedOut(Instant.FromUtc(2026, 11, 11, 12, 15)), "Accounts.LockedOut", ErrorType.Locked, Duration.FromSeconds(900) },
+        { CurrentPasswordCheck.NotFound(), "Accounts.AccountNotFound", ErrorType.NotFound, null },
     };
 
     [Theory]
     [MemberData(nameof(RefusedChecks))]
     public async Task A_refused_current_password_check_answers_its_error_and_never_opens_the_transaction_or_touches_a_session(
-        CurrentPasswordCheck check, string code, ErrorType type)
+        CurrentPasswordCheck check, string code, ErrorType type, Duration? retryAfter)
     {
         using SessionsHost host = new();
         host.PasswordChange.CheckAnswer = check;
@@ -81,15 +93,15 @@ public class ChangePasswordCommandTests
         Result<SignedIn> result = await host.Mediator.Send(Command(), Token);
 
         Assert.Equal(
-            (code, type, $"CheckCurrent:{AccountId}:old-pw", 1),
-            (result.Error.Code, result.Error.Type, string.Join(" > ", host.Calls), host.Sessions.Stored.Count));
+            (code, type, retryAfter, $"CheckCurrent:{AccountId}:old-pw", 1),
+            (result.Error.Code, result.Error.Type, result.Error.RetryAfter, string.Join(" > ", host.Calls), host.Sessions.Stored.Count));
     }
 
     [Fact]
     public async Task A_wrong_current_password_answers_a_field_error_on_the_current_password()
     {
         using SessionsHost host = new();
-        host.PasswordChange.CheckAnswer = CurrentPasswordCheck.WrongPassword;
+        host.PasswordChange.CheckAnswer = CurrentPasswordCheck.WrongPassword();
 
         Result<SignedIn> result = await host.Mediator.Send(Command(), Token);
 

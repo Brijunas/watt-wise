@@ -1,5 +1,9 @@
 import type { i18n } from 'i18next'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import enAuth from './locales/en/auth.json'
+import ltAuth from './locales/lt/auth.json'
+import enErrors from './locales/en/errors.json'
+import ltErrors from './locales/lt/errors.json'
 import enCommon from './locales/en/common.json'
 import ltCommon from './locales/lt/common.json'
 import enShell from './locales/en/shell.json'
@@ -139,16 +143,38 @@ describe('translations', () => {
     )
   })
 
+  it('resolves the auth namespace in both languages', () => {
+    expect(createI18n({ lng: 'en' }).t('signIn.submit', { ns: 'auth' })).toBe('Sign in')
+    expect(createI18n({ lng: 'lt' }).t('signIn.forgotPassword', { ns: 'auth' })).toBe(
+      'Pamiršote slaptažodį?',
+    )
+  })
+
+  it('resolves the errors namespace with the lockout minutes in both languages', () => {
+    expect(createI18n({ lng: 'en' }).t('lockedOut', { ns: 'errors', count: 3 })).toBe(
+      'Too many failed attempts. Try again in 3 min.',
+    )
+    expect(createI18n({ lng: 'lt' }).t('lockedOut', { ns: 'errors', count: 21 })).toBe(
+      'Per daug nesėkmingų bandymų. Bandykite dar kartą po 21 min.',
+    )
+    expect(createI18n({ lng: 'en' }).t('lockedOutNoTime', { ns: 'errors' })).toBe(
+      'Too many failed attempts. Try again later.',
+    )
+  })
+
   it('resolves the form texts of the common namespace', () => {
     expect(createI18n().t('form.showPassword')).toBe('Show password')
     expect(createI18n({ lng: 'lt' }).t('form.hidePassword')).toBe('Slėpti slaptažodį')
   })
 
-  it.each(['shell', 'validation'])('rejects an app namespace that replaces %s', (name) => {
-    expect(() => createI18n({ namespaces: { en: { [name]: {} }, lt: { [name]: {} } } })).toThrow(
-      'shared namespace',
-    )
-  })
+  it.each(['shell', 'validation', 'auth', 'errors'])(
+    'rejects an app namespace that replaces %s',
+    (name) => {
+      expect(() => createI18n({ namespaces: { en: { [name]: {} }, lt: { [name]: {} } } })).toThrow(
+        'shared namespace',
+      )
+    },
+  )
 
   it('rejects languages that register different app namespaces', () => {
     expect(() => createI18n({ namespaces: { en: { demo: {} }, lt: {} } })).toThrow(
@@ -175,6 +201,8 @@ describe('locale files', () => {
     ['common', enCommon, ltCommon],
     ['shell', enShell, ltShell],
     ['validation', enValidation, ltValidation],
+    ['auth', enAuth, ltAuth],
+    ['errors', enErrors, ltErrors],
   ])('have the same %s keys in English and Lithuanian', (_name, en, lt) => {
     expect(flattenKeys(lt).sort()).toEqual(flattenKeys(en).sort())
   })

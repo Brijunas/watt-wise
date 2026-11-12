@@ -18,3 +18,12 @@ export {
 export type { SessionRootState, SessionState, SessionStatus } from './session/session-slice'
 export { default as refreshSession } from './session/refresh-session'
 export { default as restoreSession } from './session/restore-session'
+export { signInSchema } from './validation/sign-in-schema'
+export type { SignInInput, SignInValues } from './validation/sign-in-schema'
+export {
+  errorCode,
+  errorFieldMessages,
+  errorMessage,
+  lockoutMinutes,
+} from './errors/error-messages'
+export type { ErrorMessage } from './errors/error-messages'

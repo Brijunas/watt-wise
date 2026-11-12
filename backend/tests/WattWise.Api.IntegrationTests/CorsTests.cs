@@ -8,6 +8,20 @@ public class CorsTests(ApiHostFixture fixture) : IClassFixture<ApiHostFixture>
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Theory]
+    [InlineData("/api/v1/auth/sign-in", "POST")]
+    [InlineData("/api/v1/about", "GET")]
+    public async Task Both_cors_policies_expose_retry_after_to_an_allowed_origin(string path, string method)
+    {
+        using HttpClient client = fixture.Factory.CreateClient();
+        using HttpRequestMessage request = new(new HttpMethod(method), path);
+        request.Headers.Add("Origin", ApiHostFixture.AllowedOrigin);
+
+        using HttpResponseMessage response = await client.SendAsync(request, Token);
+
+        Assert.Equal("Retry-After", HeaderOrNull(response, "Access-Control-Expose-Headers"));
+    }
+
+    [Theory]
     [InlineData(ApiHostFixture.AllowedOrigin, ApiHostFixture.AllowedOrigin)]
     [InlineData("https://evil.example.test", null)]
     public async Task Only_the_allowed_origin_is_echoed_in_Access_Control_Allow_Origin(string origin, string? expected)

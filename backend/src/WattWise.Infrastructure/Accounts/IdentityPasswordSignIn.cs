@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
+using NodaTime;
+
 using WattWise.Application.Accounts;
 using WattWise.Infrastructure.Persistence;
 
@@ -44,7 +46,7 @@ internal sealed class IdentityPasswordSignIn(
                 _ = hasher.VerifyHashedPassword(identity, identity.PasswordHash, password);
             }
 
-            return PasswordCheck.LockedOut();
+            return PasswordCheck.LockedOut(Instant.FromDateTimeOffset(identity.LockoutEnd!.Value));
         }
 
         PasswordVerificationResult verification = identity.PasswordHash is null

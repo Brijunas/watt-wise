@@ -125,7 +125,7 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
 
         PasswordCheck result = await CheckAsync(account.Provider, account.Email, account.Password);
 
-        Assert.Equal(PasswordCheck.LockedOut(), result);
+        Assert.Equal(new PasswordCheck(PasswordCheckOutcome.LockedOut, LockoutEnd: Instant.FromUtc(2026, 11, 11, 12, 15)), result);
     }
 
     [Fact]
@@ -133,11 +133,12 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
     {
         await using Seeded account = await SeedAsync(NewClock());
         await FailAsync(account.Provider, account.Email, 5);
-        int before = await FailedCountAsync(account.Provider, account.Ids.IdentityId);
 
         PasswordCheck result = await CheckAsync(account.Provider, account.Email, "wrong-password");
 
-        Assert.Equal((PasswordCheck.LockedOut(), before), (result, await FailedCountAsync(account.Provider, account.Ids.IdentityId)));
+        Assert.Equal(
+            (new PasswordCheck(PasswordCheckOutcome.LockedOut, LockoutEnd: Instant.FromUtc(2026, 11, 11, 12, 15)), 0),
+            (result, await FailedCountAsync(account.Provider, account.Ids.IdentityId)));
     }
 
     [Fact]
@@ -150,7 +151,7 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
 
         PasswordCheck result = await CheckAsync(account.Provider, account.Email, account.Password);
 
-        Assert.Equal(PasswordCheck.LockedOut(), result);
+        Assert.Equal(new PasswordCheck(PasswordCheckOutcome.LockedOut, LockoutEnd: Instant.FromUtc(2026, 11, 11, 12, 15)), result);
     }
 
     [Fact]
@@ -346,7 +347,7 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
 
         PasswordCheck result = await CheckAsync(provider, email, password);
 
-        Assert.Equal((PasswordCheck.LockedOut(), $"Verify:{password}"), (result, string.Join(",", hasher.Calls)));
+        Assert.Equal((new PasswordCheck(PasswordCheckOutcome.LockedOut, LockoutEnd: Instant.FromUtc(2026, 11, 11, 12, 15)), $"Verify:{password}"), (result, string.Join(",", hasher.Calls)));
     }
 
     [Fact]
@@ -361,7 +362,7 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
 
         PasswordCheck result = await CheckAsync(provider, email, "wrong-password");
 
-        Assert.Equal((PasswordCheck.LockedOut(), "Verify:wrong-password"), (result, string.Join(",", hasher.Calls)));
+        Assert.Equal((new PasswordCheck(PasswordCheckOutcome.LockedOut, LockoutEnd: Instant.FromUtc(2026, 11, 11, 12, 15)), "Verify:wrong-password"), (result, string.Join(",", hasher.Calls)));
     }
 
     [Fact]
@@ -377,7 +378,7 @@ public class IdentityPasswordSignInTests(DatabaseFixture fixture) : IClassFixtur
 
         PasswordCheck result = await CheckAsync(provider, email, "any-password");
 
-        Assert.Equal((PasswordCheck.LockedOut(), "Hash"), (result, string.Join(",", hasher.Calls)));
+        Assert.Equal((new PasswordCheck(PasswordCheckOutcome.LockedOut, LockoutEnd: Instant.FromUtc(2030, 1, 1, 0, 0)), "Hash"), (result, string.Join(",", hasher.Calls)));
     }
 
     [Fact]

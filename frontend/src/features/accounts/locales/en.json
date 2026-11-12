@@ -1,0 +1,48 @@
+{
+  "fields": { "currentPassword": "Current password", "newPassword": "New password" },
+  "signUp": {
+    "title": "Create an account",
+    "submit": "Create account",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in"
+  },
+  "checkEmail": {
+    "title": "Check your email",
+    "sentTo": "We sent a confirmation link to {{email}}. Open it to finish creating your account.",
+    "sent": "We sent you a confirmation link. Open it to finish creating your account.",
+    "resend": "Send again",
+    "resent": "We sent the link again."
+  },
+  "confirmEmail": {
+    "title": "Confirm your email",
+    "confirming": "Confirming your email address...",
+    "success": "Your email address is confirmed. You can sign in now.",
+    "signIn": "Sign in",
+    "resendIntro": "Enter your email address and we will send you a new link.",
+    "resendSubmit": "Send a new link",
+    "resent": "If this address needs confirming, we sent a new link."
+  },
+  "signIn": {
+    "title": "Sign in",
+    "resendLink": "Send the link again",
+    "resent": "We sent the confirmation link again.",
+    "passwordReset": "Your password was changed. Sign in with the new one."
+  },
+  "forgotPassword": {
+    "title": "Forgot password",
+    "intro": "Enter your email address and we will send you a link to reset your password.",
+    "submit": "Send the link",
+    "sent": "If an account uses this address, we've sent a link to reset the password.",
+    "backToSignIn": "Back to sign in"
+  },
+  "resetPassword": {
+    "title": "Reset password",
+    "submit": "Set the new password",
+    "requestNewLink": "Request a new link"
+  },
+  "changePassword": {
+    "title": "Change password",
+    "submit": "Change password",
+    "success": "Your password was changed. Your other devices were signed out."
+  }
+}
