@@ -10,4 +10,4 @@ if ! token=$(gh auth token 2>/dev/null) || [[ -z "$token" ]]; then
   exit 1
 fi
 
-GITHUB_PERSONAL_ACCESS_TOKEN="$token" exec docker run -i --rm --init -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server:v2.0.2 stdio
+GITHUB_PERSONAL_ACCESS_TOKEN="$token" exec docker run -i --rm --init -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server:v2.1.0 stdio

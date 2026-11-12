@@ -38,7 +38,7 @@ const FormTextField = <Values extends FieldValues>({
       label={label}
       fullWidth={fullWidth}
       error={message !== undefined}
-      helperText={message === undefined ? undefined : t(message.key, message.params)}
+      helperText={message === undefined ? undefined : t(message.key, message.params ?? {})}
     />
   )
 }

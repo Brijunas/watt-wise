@@ -6,7 +6,7 @@ const useErrorText = () => {
   const { t } = useTranslation('errors')
   return (error: unknown): string => {
     const message = errorMessage(error)
-    return t(message.key, message.params)
+    return t(message.key, message.params ?? {})
   }
 }
 

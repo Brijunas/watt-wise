@@ -52,7 +52,7 @@ const DeviceList = () => {
     const message = errorMessage(error)
     return (
       <Stack spacing={2} sx={{ alignItems: 'flex-start' }}>
-        <Alert severity="error">{tErrors(message.key, message.params)}</Alert>
+        <Alert severity="error">{tErrors(message.key, message.params ?? {})}</Alert>
         <Button
           variant="outlined"
           onClick={() => {
@@ -71,7 +71,7 @@ const DeviceList = () => {
   return (
     <Stack spacing={2}>
       <Typography color="text.secondary">{t('intro')}</Typography>
-      {failure && <Alert severity="error">{tErrors(failure.key, failure.params)}</Alert>}
+      {failure && <Alert severity="error">{tErrors(failure.key, failure.params ?? {})}</Alert>}
       <Stack
         component="ul"
         aria-label={t('title')}

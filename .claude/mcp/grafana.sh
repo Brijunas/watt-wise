@@ -16,4 +16,4 @@ if [[ -z "$GRAFANA_URL" ]]; then
 fi
 export GRAFANA_URL
 
-exec docker run -i --rm --init --network host -e GRAFANA_URL grafana/mcp-grafana:2.0.2 -t stdio
+exec docker run -i --rm --init --network host -e GRAFANA_URL grafana/mcp-grafana:2.3.0 -t stdio
