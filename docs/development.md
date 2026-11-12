@@ -123,6 +123,15 @@ Only `WattWise.Cli migrate` changes the schema, in every environment; never use 
 | `dotnet ef migrations has-pending-model-changes <infra>`                                                                                                          | Fails if the model has changes no migration covers. CI runs it from E5.                                                                                                 |
 | `dotnet ef migrations script --idempotent <infra> -o <file>.sql`                                                                                                  | Writes the SQL of every migration, for review.                                                                                                                          |
 
+## Admin role
+
+The commands connect like `migrate` (the `.env.development` of the Cli, `owner` role; [postgres.md](../deploy/docs/postgres.md)). The account must exist and have a confirmed email. What they do and print is "Admin role" in [accounts.md](../backend/docs/features/accounts.md#admin-role).
+
+| Command                                                                                                                                | What it does                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- admin grant <email>`  | Gives the account the `Admin` role, so it can call `/api/v1/admin` once its token is refreshed. |
+| `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- admin revoke <email>` | Takes the role away and ends all the account's sessions.                                        |
+
 ## Updating dependencies
 
 The policy (minimum release age, how majors are taken, Renovate later) is in "Dependency updates" in [technical.md](technical.md). Check [known-issues.md](known-issues.md) before touching TypeScript or typescript-eslint.

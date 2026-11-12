@@ -15,5 +15,12 @@ internal sealed class PermissionConfiguration : IEntityTypeConfiguration<Permiss
         builder.Property(permission => permission.Name).IsRequired();
         builder.Property(permission => permission.Description).IsRequired();
         builder.HasIndex(permission => permission.Name).IsUnique();
+
+        builder.HasData(new
+        {
+            Id = PermissionNames.AdminAccessId,
+            Name = PermissionNames.AdminAccess,
+            Description = "Use the admin area.",
+        });
     }
 }

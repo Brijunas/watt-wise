@@ -15,5 +15,7 @@ internal sealed class RolePermissionConfiguration : IEntityTypeConfiguration<Rol
             .WithMany()
             .HasForeignKey(link => link.PermissionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasData(new { RoleId = RoleNames.AdminId, PermissionId = PermissionNames.AdminAccessId });
     }
 }

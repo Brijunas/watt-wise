@@ -17,14 +17,14 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261111213533_Initial";
+    public override string LastMigrationId => "20261112075918_Initial";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
         modelBuilder
             .HasDefaultSchema("app")
-            .HasAnnotation("ProductVersion", "11.0.0-rc.2.26504.105")
+            .HasAnnotation("ProductVersion", "11.0.0-rc.3.26522.148")
             .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
         NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -144,6 +144,14 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasDatabaseName("ix_permissions_name");
 
                 b.ToTable("permissions", "app");
+
+                b.HasData(
+                    new
+                    {
+                        Id = new Guid("0192e5a0-0000-7000-8000-000000000002"),
+                        Description = "Use the admin area.",
+                        Name = "admin.access"
+                    });
             });
 
         modelBuilder.Entity("WattWise.Domain.Accounts.RefreshToken", b =>
@@ -214,6 +222,13 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasDatabaseName("ix_roles_name");
 
                 b.ToTable("roles", "app");
+
+                b.HasData(
+                    new
+                    {
+                        Id = new Guid("0192e5a0-0000-7000-8000-000000000001"),
+                        Name = "Admin"
+                    });
             });
 
         modelBuilder.Entity("WattWise.Domain.Accounts.RolePermission", b =>
@@ -233,6 +248,13 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
                     .HasDatabaseName("ix_role_permissions_permission_id");
 
                 b.ToTable("role_permissions", "app");
+
+                b.HasData(
+                    new
+                    {
+                        RoleId = new Guid("0192e5a0-0000-7000-8000-000000000001"),
+                        PermissionId = new Guid("0192e5a0-0000-7000-8000-000000000002")
+                    });
             });
 
         modelBuilder.Entity("WattWise.Domain.Accounts.Session", b =>

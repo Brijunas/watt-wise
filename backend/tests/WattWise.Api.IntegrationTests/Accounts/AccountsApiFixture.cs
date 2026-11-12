@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using NodaTime;
 using NodaTime.Testing;
 
+using WattWise.Application;
+using WattWise.Application.Accounts;
 using WattWise.Infrastructure.Accounts;
 using WattWise.Infrastructure.Persistence;
 
@@ -210,6 +212,22 @@ public sealed class AccountsApiFixture(PostgresContainerFixture postgres) : IAsy
     /// <summary>Creates a role and a permission per name, and gives the role to the account.</summary>
     public Task GrantAsync(Guid accountId, string roleName, params string[] permissionNames) =>
         AccountSeeder.GrantAsync(issuer!, accountId, roleName, permissionNames);
+
+    /// <summary>Gives the account an existing role, such as the seeded <c>Admin</c> role.</summary>
+    public Task AssignRoleAsync(Guid accountId, Guid roleId) =>
+        AccountSeeder.AssignRoleAsync(issuer!, accountId, roleId);
+
+    /// <summary>Takes the <c>Admin</c> role from the account the way <c>WattWise.Cli admin revoke</c> does: on the <c>cli</c> role, ending its sessions.</summary>
+    public async Task RevokeAdminAsync(string email)
+    {
+        await using AsyncServiceScope scope = reader!.CreateAsyncScope();
+        RevokeAdminRoleCommandHandler handler = new(
+            scope.ServiceProvider.GetRequiredService<IEmailAddressNormalizer>(),
+            scope.ServiceProvider.GetRequiredService<IAccountRoles>(),
+            scope.ServiceProvider.GetRequiredService<IAccountSessions>(),
+            scope.ServiceProvider.GetRequiredService<ITransactionRunner>());
+        Assert.True((await handler.Handle(new RevokeAdminRoleCommand(email), TestContext.Current.CancellationToken)).IsSuccess);
+    }
 
     /// <summary>Signs in through the endpoint and returns the access token, its expiry text and the refresh cookie.</summary>
     public async Task<SignedInSession> SignInAsync(string email, string password, string? userAgent = null)

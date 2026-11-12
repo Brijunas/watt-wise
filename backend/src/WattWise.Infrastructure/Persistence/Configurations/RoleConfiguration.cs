@@ -15,6 +15,8 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.Property(role => role.Name).IsRequired();
         builder.HasIndex(role => role.Name).IsUnique();
 
+        builder.HasData(new { Id = RoleNames.AdminId, Name = RoleNames.Admin });
+
         builder.HasMany<RolePermission>("_permissions")
             .WithOne()
             .HasForeignKey(link => link.RoleId)
