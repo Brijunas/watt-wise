@@ -75,6 +75,17 @@ public class OpenApiDocumentTests(ApiHostFixture fixture) : IClassFixture<ApiHos
     }
 
     [Theory]
+    [InlineData("GET", "/api/v1/auth/sessions")]
+    [InlineData("DELETE", "/api/v1/auth/sessions/{id}")]
+    [InlineData("POST", "/api/v1/auth/sign-out-everywhere")]
+    public async Task The_session_operations_require_the_Bearer_scheme(string method, string path)
+    {
+        OpenApiDocument document = (await LoadAsync()).Document!;
+
+        Assert.Equal(1, document.Paths[path].Operations![new HttpMethod(method)].Security?.Count ?? 0);
+    }
+
+    [Theory]
     [InlineData("register")]
     [InlineData("resend-confirmation")]
     [InlineData("confirm-email")]

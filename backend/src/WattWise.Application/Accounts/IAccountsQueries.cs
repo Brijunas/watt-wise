@@ -1,3 +1,5 @@
+using NodaTime;
+
 namespace WattWise.Application.Accounts;
 
 public interface IAccountsQueries
@@ -10,4 +12,7 @@ public interface IAccountsQueries
 
     /// <summary>The account's details, or <c>null</c> when there is no such account.</summary>
     Task<Me?> GetMeAsync(Guid accountId, CancellationToken cancellationToken);
+
+    /// <summary>The account's sessions that still have a refresh token valid at <paramref name="now"/>, most recently used first, then by id.</summary>
+    Task<IReadOnlyList<SessionListItem>> GetSessionsAsync(Guid accountId, Instant now, CancellationToken cancellationToken);
 }

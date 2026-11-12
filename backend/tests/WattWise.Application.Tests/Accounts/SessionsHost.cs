@@ -33,6 +33,7 @@ internal sealed class SessionsHost : IDisposable
         Queries = new FakeAccountsQueries();
         AccessTokens = new RecordingAccessTokenIssuer(Calls);
         ExpiredSessions = new RecordingExpiredSessions();
+        AccountSessions = new RecordingAccountSessions(Calls);
         _host = new PipelineHost(services =>
         {
             services.AddSingleton<IClock>(Clock);
@@ -47,7 +48,7 @@ internal sealed class SessionsHost : IDisposable
             services.AddSingleton<IUnitOfWork>(UnitOfWork);
             services.AddSingleton<IPasswordChange>(PasswordChange);
             services.AddSingleton<IPasswordReset>(PasswordReset);
-            services.AddSingleton<IAccountSessions>(new RecordingAccountSessions(Calls));
+            services.AddSingleton<IAccountSessions>(AccountSessions);
             services.AddSingleton<ITransactionRunner>(new RecordingTransactionRunner(Calls));
             services.AddSingleton<IPasswordPolicy>(new FixedPasswordPolicy([], passwordMessages));
         });
@@ -73,6 +74,8 @@ internal sealed class SessionsHost : IDisposable
     public RecordingAccessTokenIssuer AccessTokens { get; }
 
     public RecordingExpiredSessions ExpiredSessions { get; }
+
+    public RecordingAccountSessions AccountSessions { get; }
 
     public IMediator Mediator => _host.Mediator;
 

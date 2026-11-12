@@ -24,8 +24,7 @@ public sealed class MeEndpointModule : IEndpointModule
     private static async Task<Results<Ok<Me>, ProblemHttpResult, ValidationProblem>> GetMe(
         ClaimsPrincipal user, ISender sender, CancellationToken cancellationToken)
     {
-        // The claims keep their token names (MapInboundClaims is off), so the account id is "sub".
-        if (!Guid.TryParse(user.FindFirstValue("sub"), out Guid accountId))
+        if (!AccessTokenClaims.TryGetAccountId(user, out Guid accountId))
         {
             return TypedResults.Problem(statusCode: StatusCodes.Status401Unauthorized);
         }

@@ -38,6 +38,51 @@ public class AccountSessionsTests(DatabaseFixture fixture) : IClassFixture<Datab
         return await scope.ServiceProvider.GetRequiredService<IAccountSessions>().EndAllAsync(accountId, Token);
     }
 
+    private static async Task<int> EndAsync(ServiceProvider provider, Guid accountId, Guid sessionId)
+    {
+        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IAccountSessions>().EndAsync(accountId, sessionId, Token);
+    }
+
+    [Fact]
+    public async Task Ending_one_deletes_that_session_with_its_tokens_and_leaves_the_accounts_others()
+    {
+        await using ServiceProvider provider = fixture.BuildAccountServices();
+        await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
+        Guid accountId = await NewAccountAsync(provider);
+        Session ended = await AddSessionAsync(provider, accountId, rotated: true);
+        Session kept = await AddSessionAsync(provider, accountId);
+
+        int count = await EndAsync(provider, accountId, ended.Id);
+
+        Assert.Equal(
+            (1, "0|0", "1|1"),
+            (count, await SessionRows.OfSessionAsync(reader, ended.Id), await SessionRows.OfSessionAsync(reader, kept.Id)));
+    }
+
+    [Fact]
+    public async Task Ending_another_accounts_session_deletes_nothing_and_returns_zero()
+    {
+        await using ServiceProvider provider = fixture.BuildAccountServices();
+        await using ServiceProvider reader = fixture.BuildServices(DatabaseRole.Cli);
+        Guid accountId = await NewAccountAsync(provider);
+        Guid otherId = await NewAccountAsync(provider);
+        Session others = await AddSessionAsync(provider, otherId);
+
+        int count = await EndAsync(provider, accountId, others.Id);
+
+        Assert.Equal((0, "1|1"), (count, await SessionRows.OfSessionAsync(reader, others.Id)));
+    }
+
+    [Fact]
+    public async Task Ending_an_unknown_session_returns_zero()
+    {
+        await using ServiceProvider provider = fixture.BuildAccountServices();
+        Guid accountId = await NewAccountAsync(provider);
+
+        Assert.Equal(0, await EndAsync(provider, accountId, Guid.NewGuid()));
+    }
+
     [Fact]
     public async Task Ending_all_deletes_every_session_of_the_account_with_its_tokens_and_returns_how_many()
     {
