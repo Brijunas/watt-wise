@@ -42,7 +42,8 @@ You often share the checkout with other agents. That only works when nobody edit
 - If the build fails in a file you don't own, report it with `file:line`; don't fix it.
 - `pnpm generate:api` (after an endpoint change) rewrites files outside `backend/`. Run it when you
   work alone or when the brief says you are the last to change endpoints; otherwise report that an
-  endpoint changed.
+  endpoint changed. Verify the run with `git status packages/api-client backend/openapi`, not by
+  reading the generator's output.
 
 ## Tests
 

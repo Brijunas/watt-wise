@@ -33,11 +33,9 @@ The rules are in "Writing tests that catch bugs" in [docs/testing.md](docs/testi
 - Fake only boundaries (`IClock` → `FakeClock`, external HTTP, SMTP, ports in Application tests). Integration tests use the real PostgreSQL fixture: `IClassFixture<DatabaseFixture>`, the role the code uses, unique data per test, state read back in a new scope. Never InMemory or SQLite.
 - Sentence-style names, one behavior and one logical assert per test, plain xUnit `Assert`.
 - The `backend-test-writer` agent writes tests, choosing layers and cases itself; `backend-test-reviewer` reviews them.
-- `Assert.Equal` on a tuple that holds an array or list compares the collection by reference and fails with identical printed values. Assert the collection on its own, or `string.Join` it inside the tuple.
 - One `AddMediator` call per assembly (the generator fails with MSG0007). Application.Tests builds every host on `Pipeline/PipelineHost` and its `configure` hook.
 - Stryker runs Application with Application.Tests and Infrastructure with its two test projects, never Api.IntegrationTests. New handlers, validators and adapters need tests in those projects, or they count as no coverage.
 - Run Stryker alone: with other builds or Docker test runs going, its scores are wrong.
-- A test of code that acts on every row of a table (the outbox claim, a purge, a count) goes in its own test class, so it gets its own database clone.
 
 | Run                                | Command                                                                                                                                                                     |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

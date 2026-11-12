@@ -80,6 +80,7 @@ Assertions:
 - `NotNull`, `NotEmpty`, a count or "doesn't throw" is never the only check. Assert exact values, exact error codes (`Error.Code`, the ProblemDetails `code`) and exact stored state.
 - Never fake the class under test. Fake only boundaries: `IClock` with NodaTime's `FakeClock`, external HTTP sources, SMTP and the ports in Application tests (hand-written fakes, no mocking library). Integration tests never fake `AppDbContext`, repositories or ASP.NET Core Identity.
 - One behavior per test, arranged, acted and asserted in separate blocks. Names are sentences (`A_reset_link_sets_the_new_password_and_a_second_use_fails`). Plain xUnit `Assert`; every async call gets `TestContext.Current.CancellationToken`.
+- A protected endpoint's 401 test asserts `WWW-Authenticate: Bearer`, not only the status: a handler's own defensive 401 (a missing `sub`) would otherwise pass the test without `RequireAuthorization`.
 - One logical assert per test: one `Assert` call. A helper that checks one contract (such as `ProblemDetailsAssertions`) or one `Assert.Equal` on a tuple or record of the outcome counts as one. Precondition checks in Arrange are allowed.
 - Variants of one rule go in a `[Theory]` that never branches on its arguments.
 - Every reachable branch gets a happy and a sad path, argument guards included. A branch only a production change can reach is named as unreachable.
@@ -121,6 +122,9 @@ Stryker.NET (`dotnet-stryker`, a local tool: `dotnet tool restore`) changes the 
 - **Rules.**
   - A change that adds production code: add `--since:main` (files changed against `main`) or `--mutate "**/Pricing/*.cs"` (a glob, repeatable) to a run.
   - A test-only change (a rewrite) mutates nothing under `--since:main`: use a full run or `--mutate`, never `--since:main`.
+  - In a git worktree `--since:main` mutates nothing either (the changed paths resolve into `.git/worktrees/`): scope a run with `--mutate <changed files>`.
+  - Use a fresh `-O` output folder for each run. A run that reports 0 % with no killed mutants is a bad run: rerun it from a clean folder.
+  - Api's scope runs `Api.Tests` only, so the authorization wiring (`PermissionPolicies`, `RequirePermission`, `EndpointModuleExtensions`) is covered by the integration tests alone; Stryker can't show a gap there.
   - Kill every killable survivor. Record accepted survivors, each with its reason, in the commit.
   - A change must not lower a project's score. The targets are the scores of 2026-11-02: Domain 88.46 %, Application 78.12 %, Infrastructure 57.42 %, Api 51.24 %.
   - `high`, `low` and `break` go under `stryker-config` in `stryker-config.json`; `high` 80 and `low` 60 are Stryker's defaults and only colour the report. A run exits with code 1 below `break`, the floor all four runs must meet: the lowest of their scores rounded down to a multiple of 5. Raise it when killed survivors lift the lowest score past the next multiple.

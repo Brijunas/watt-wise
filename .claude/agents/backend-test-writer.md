@@ -73,6 +73,14 @@ Use the fixtures and follow the PostgreSQL rules and list in
 case from that list only when the change touches that behavior. Jobs tests follow "Testing a job" in
 `backend/docs/jobs.md`.
 
+## Traps
+
+- `Assert.Equal` on a tuple that holds an array or list compares the collection by reference and
+  fails with identical printed values. Assert the collection on its own, or `string.Join` it inside
+  the tuple.
+- A test of code that acts on every row of a table (the outbox claim, a purge, a count) goes in its
+  own test class, so it gets its own database clone.
+
 ## Unit tests
 
 - Domain logic is tested without a database, without fakes and without I/O (`WattWise.Domain.Tests`).
