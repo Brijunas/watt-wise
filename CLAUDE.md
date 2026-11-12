@@ -64,6 +64,14 @@ Sessions may start at the repo root or inside a project (`backend/`), and both m
 - A hook that takes a `flock` closes the lock's fd for `dotnet` children (`9>&-`): MSBuild's reused nodes and the compiler server outlive the build and would hold the lock for minutes.
 - MCP servers are in the root `.mcp.json`: `postgres` (read-only `reader` role; disabled in both `settings.json` files so it doesn't ask 1Password at every session start), `grafana` (logs, traces and metrics in Grafana LGTM; its URL comes from the rendered `deploy/.env`, no `op`) and `github` (token from `gh auth token` at start; the GitHub plugin stays off because its server needs a token in the environment). When a new observability or external tool is added, add or update its MCP server in the same change.
 
+## Coordinator orchestrator
+
+These rules apply only to a Claude session acting as the coordinator orchestrator: the session that drives an epic's stories, each in its own Orca worktree run by a story session. Story sessions and other sessions don't follow them.
+
+- Stories run one at a time, each in a new worktree that starts from the latest `origin/main`: run `git fetch`, create the worktree from `origin/main` (never the local `main`, which goes stale when PRs merge through `gh`), and check that its HEAD equals `origin/main` before any agent works in it. The next story starts only after the previous one has merged, because each builds on the last (the regenerated `Initial` migration, `backend/docs/features/accounts.md`, the generated API client).
+- A story session becomes a worker story orchestrator when the coordinator hands it an Orca task with a dispatch id (`orca orchestration dispatch --inject` into the session, idle in plan mode after a bare `/plan`). It then asks through `orca orchestration ask`, escalates blocks and ends with `worker_done`. A story session the user drives directly gets no task and asks the user with AskUserQuestion.
+- Merge a PR with exactly `gh pr merge <n> --squash`, alone in its own Bash call. A chained or piped command doesn't match the `Bash(gh pr merge:*)` allow rule, and auto mode then denies it as "Merge Without Review".
+
 ## Commands
 
 @docs/development.md
