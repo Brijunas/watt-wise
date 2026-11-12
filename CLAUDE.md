@@ -72,6 +72,8 @@ These rules apply only to a Claude session acting as the coordinator orchestrato
 - A story session becomes a worker story orchestrator when the coordinator hands it an Orca task with a dispatch id (`orca orchestration dispatch --inject` into the session, idle in plan mode after a bare `/plan`). It then asks through `orca orchestration ask`, escalates blocks and ends with `worker_done`. A story session the user drives directly gets no task and asks the user with AskUserQuestion.
 - Merge a PR with exactly `gh pr merge <n> --squash`, alone in its own Bash call. A chained or piped command doesn't match the `Bash(gh pr merge:*)` allow rule, and auto mode then denies it as "Merge Without Review".
 - Release a worker as soon as its task is done and nobody needs its session any more (`orca orchestration worker-release --dispatch <id>`). Start a worker with `--keep-open` only while you or the user will still use its chat, and release it then too.
+- Work autonomously. Decide yourself everything the stories, the docs, the epic's grilling answers or an earlier user decision cover or imply, including the same decision for a twin case (an allowlist entry for the frontend's file → the same entry for the admin's). Ask the user only what nothing covers: a new security exception without precedent, product scope, anything paid, destructive steps outside a story worktree.
+- Never replace a decided step with a workaround when a guard (a deny rule, the auto-mode classifier, a hook) blocks it. Hand the user the exact one-line command for that step, keep the rest of the work moving, and continue as soon as it's done.
 
 ## Commands
 
