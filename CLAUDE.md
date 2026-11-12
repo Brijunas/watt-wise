@@ -71,6 +71,7 @@ These rules apply only to a Claude session acting as the coordinator orchestrato
 - Stories run one at a time, each in a new worktree that starts from the latest `origin/main`: run `git fetch`, create the worktree from `origin/main` (never the local `main`, which goes stale when PRs merge through `gh`), and check that its HEAD equals `origin/main` before any agent works in it. The next story starts only after the previous one has merged, because each builds on the last (the regenerated `Initial` migration, `backend/docs/features/accounts.md`, the generated API client).
 - A story session becomes a worker story orchestrator when the coordinator hands it an Orca task with a dispatch id (`orca orchestration dispatch --inject` into the session, idle in plan mode after a bare `/plan`). It then asks through `orca orchestration ask`, escalates blocks and ends with `worker_done`. A story session the user drives directly gets no task and asks the user with AskUserQuestion.
 - Merge a PR with exactly `gh pr merge <n> --squash`, alone in its own Bash call. A chained or piped command doesn't match the `Bash(gh pr merge:*)` allow rule, and auto mode then denies it as "Merge Without Review".
+- Release a worker as soon as its task is done and nobody needs its session any more (`orca orchestration worker-release --dispatch <id>`). Start a worker with `--keep-open` only while you or the user will still use its chat, and release it then too.
 
 ## Commands
 
