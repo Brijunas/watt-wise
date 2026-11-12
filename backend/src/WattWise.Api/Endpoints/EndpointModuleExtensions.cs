@@ -13,6 +13,7 @@ public static class EndpointModuleExtensions
     {
         AddModules<IEndpointModule>(services);
         AddModules<IAdminEndpointModule>(services);
+        services.TryAddSingleton<RefreshTokenCookie>();
         return services;
     }
 

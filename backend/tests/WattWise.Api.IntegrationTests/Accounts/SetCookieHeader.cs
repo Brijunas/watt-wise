@@ -5,6 +5,8 @@ public sealed record SetCookieHeader(string Name, string Value, IReadOnlyDiction
 {
     public const string RefreshCookieName = "__Secure-wattwise-refresh";
 
+    public const string AdminRefreshCookieName = "__Secure-wattwise-admin-refresh";
+
     public string NameAndValue => $"{Name}={Value}";
 
     public static SetCookieHeader Parse(string header)
@@ -32,9 +34,9 @@ public sealed record SetCookieHeader(string Name, string Value, IReadOnlyDiction
     /// The refresh cookie the response sets, described as <c>value|path|httponly|secure|samesite|expiry date</c>, so a test can
     /// compare a clearing cookie with <see cref="Cleared"/> in one assert; null when it sets none.
     /// </summary>
-    public static string? DescribeRefreshCookieOf(HttpResponseMessage response)
+    public static string? DescribeRefreshCookieOf(HttpResponseMessage response, string name = RefreshCookieName)
     {
-        SetCookieHeader? cookie = RefreshCookieOf(response);
+        SetCookieHeader? cookie = RefreshCookieOf(response, name);
         if (cookie is null)
         {
             return null;
@@ -50,13 +52,13 @@ public sealed record SetCookieHeader(string Name, string Value, IReadOnlyDiction
     public const string Cleared = "|/api/v1/auth|True|True|strict|1970-01-01";
 
     /// <summary>The refresh cookie the response sets, or null when it sets none.</summary>
-    public static SetCookieHeader? RefreshCookieOf(HttpResponseMessage response)
+    public static SetCookieHeader? RefreshCookieOf(HttpResponseMessage response, string name = RefreshCookieName)
     {
         if (!response.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? headers))
         {
             return null;
         }
 
-        return headers.Select(Parse).SingleOrDefault(cookie => cookie.Name == RefreshCookieName);
+        return headers.Select(Parse).SingleOrDefault(cookie => cookie.Name == name);
     }
 }

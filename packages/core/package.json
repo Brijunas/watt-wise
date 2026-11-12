@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@reduxjs/toolkit": "catalog:",
+    "jsdom": "catalog:",
     "msw": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"

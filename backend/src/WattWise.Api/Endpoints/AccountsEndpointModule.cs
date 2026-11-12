@@ -98,31 +98,31 @@ public sealed class AccountsEndpointModule : IEndpointModule
     }
 
     private static async Task<Results<Ok<SignedInResponse>, ProblemHttpResult, ValidationProblem>> SignIn(
-        SignInRequest? request, HttpContext http, ISender sender, CancellationToken cancellationToken)
+        SignInRequest? request, HttpContext http, RefreshTokenCookie cookie, ISender sender, CancellationToken cancellationToken)
     {
         Application.Results.Result<SignedIn> result = await sender.Send(
-            new SignInCommand(request?.Email, request?.Password, http.Request.Headers.UserAgent.ToString(), RefreshTokenCookie.Read(http.Request)), cancellationToken);
-        return result.ToHttpResult(signedIn => RespondSignedIn(http, signedIn));
+            new SignInCommand(request?.Email, request?.Password, http.Request.Headers.UserAgent.ToString(), cookie.Read(http.Request)), cancellationToken);
+        return result.ToHttpResult(signedIn => RespondSignedIn(http, cookie, signedIn));
     }
 
     private static async Task<Results<Ok<SignedInResponse>, ProblemHttpResult, ValidationProblem>> Refresh(
-        HttpContext http, ISender sender, CancellationToken cancellationToken)
+        HttpContext http, RefreshTokenCookie cookie, ISender sender, CancellationToken cancellationToken)
     {
         Application.Results.Result<SignedIn> result = await sender.Send(
-            new RefreshSessionCommand(RefreshTokenCookie.Read(http.Request)), cancellationToken);
+            new RefreshSessionCommand(cookie.Read(http.Request)), cancellationToken);
         if (result.IsFailure)
         {
             // A cookie that can't refresh is of no use to the browser either.
-            RefreshTokenCookie.Delete(http.Response);
+            cookie.Delete(http);
         }
 
-        return result.ToHttpResult(signedIn => RespondSignedIn(http, signedIn));
+        return result.ToHttpResult(signedIn => RespondSignedIn(http, cookie, signedIn));
     }
 
-    private static async Task<NoContent> SignOut(HttpContext http, ISender sender, CancellationToken cancellationToken)
+    private static async Task<NoContent> SignOut(HttpContext http, RefreshTokenCookie cookie, ISender sender, CancellationToken cancellationToken)
     {
-        _ = await sender.Send(new SignOutCommand(RefreshTokenCookie.Read(http.Request)), cancellationToken);
-        RefreshTokenCookie.Delete(http.Response);
+        _ = await sender.Send(new SignOutCommand(cookie.Read(http.Request)), cancellationToken);
+        cookie.Delete(http);
         return TypedResults.NoContent();
     }
 
@@ -142,7 +142,7 @@ public sealed class AccountsEndpointModule : IEndpointModule
     }
 
     private static async Task<Results<Ok<SignedInResponse>, ProblemHttpResult, ValidationProblem>> ChangePassword(
-        ChangePasswordRequest? request, ClaimsPrincipal user, HttpContext http, ISender sender, CancellationToken cancellationToken)
+        ChangePasswordRequest? request, ClaimsPrincipal user, HttpContext http, RefreshTokenCookie cookie, ISender sender, CancellationToken cancellationToken)
     {
         if (!AccessTokenClaims.TryGetAccountId(user, out Guid accountId))
         {
@@ -152,7 +152,7 @@ public sealed class AccountsEndpointModule : IEndpointModule
         Application.Results.Result<SignedIn> result = await sender.Send(
             new ChangePasswordCommand(accountId, request?.CurrentPassword, request?.NewPassword, http.Request.Headers.UserAgent.ToString()),
             cancellationToken);
-        return result.ToHttpResult(signedIn => RespondSignedIn(http, signedIn));
+        return result.ToHttpResult(signedIn => RespondSignedIn(http, cookie, signedIn));
     }
 
     private static async Task<Results<Ok<IReadOnlyList<SessionResponse>>, ProblemHttpResult, ValidationProblem>> ListSessions(
@@ -171,7 +171,7 @@ public sealed class AccountsEndpointModule : IEndpointModule
     }
 
     private static async Task<Results<NoContent, ProblemHttpResult, ValidationProblem>> EndSession(
-        Guid id, ClaimsPrincipal user, HttpContext http, ISender sender, CancellationToken cancellationToken)
+        Guid id, ClaimsPrincipal user, HttpContext http, RefreshTokenCookie cookie, ISender sender, CancellationToken cancellationToken)
     {
         if (!AccessTokenClaims.TryGetAccountId(user, out Guid accountId))
         {
@@ -182,14 +182,14 @@ public sealed class AccountsEndpointModule : IEndpointModule
         if (result.IsSuccess && AccessTokenClaims.GetSessionId(user) == id)
         {
             // Ending the current session is a sign-out: the cookie is of no use any more.
-            RefreshTokenCookie.Delete(http.Response);
+            cookie.Delete(http);
         }
 
         return result.ToHttpResult(_ => TypedResults.NoContent());
     }
 
     private static async Task<Results<NoContent, ProblemHttpResult, ValidationProblem>> SignOutEverywhere(
-        ClaimsPrincipal user, HttpContext http, ISender sender, CancellationToken cancellationToken)
+        ClaimsPrincipal user, HttpContext http, RefreshTokenCookie cookie, ISender sender, CancellationToken cancellationToken)
     {
         if (!AccessTokenClaims.TryGetAccountId(user, out Guid accountId))
         {
@@ -197,13 +197,13 @@ public sealed class AccountsEndpointModule : IEndpointModule
         }
 
         Application.Results.Result<Unit> result = await sender.Send(new SignOutEverywhereCommand(accountId), cancellationToken);
-        RefreshTokenCookie.Delete(http.Response);
+        cookie.Delete(http);
         return result.ToHttpResult(_ => TypedResults.NoContent());
     }
 
-    private static Ok<SignedInResponse> RespondSignedIn(HttpContext http, SignedIn signedIn)
+    private static Ok<SignedInResponse> RespondSignedIn(HttpContext http, RefreshTokenCookie cookie, SignedIn signedIn)
     {
-        RefreshTokenCookie.Write(http.Response, signedIn.RefreshToken, signedIn.RefreshTokenExpiresAt);
+        cookie.Write(http, signedIn.RefreshToken, signedIn.RefreshTokenExpiresAt);
         return TypedResults.Ok(new SignedInResponse(signedIn.AccessToken, signedIn.AccessTokenExpiresAt.ToDateTimeOffset()));
     }
 }

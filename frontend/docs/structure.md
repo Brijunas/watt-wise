@@ -87,7 +87,7 @@ The packages never import an app, and import each other only in this direction, 
 | `@wattwise/api-client` | `core` (the base query)               |
 | `@wattwise/ui`         | `core`, `i18n`; never `api-client`    |
 
-Because `i18n` imports nothing, `core` → `i18n` can't close a cycle. `core` never imports `api-client`: its store factory receives the API slice as a parameter, and its token refresh calls the refresh endpoint with `fetch` inside the base query instead of through a generated endpoint. `ui` stays free of data fetching: a component both apps need takes data and callbacks as props, and each app's feature connects it to the API. It doesn't import React Router either: a component that links, such as `AppShell`, takes the link component and the paths as props.
+Because `i18n` imports nothing, `core` → `i18n` can't close a cycle. `core` never imports `api-client`: its store factory receives the API slice as a parameter (for its middleware and `util.resetApiState`), and its token refresh calls the refresh endpoint with `fetch` instead of through a generated endpoint. `ui` stays free of data fetching: a component both apps need takes data and callbacks as props, and each app's feature connects it to the API. It doesn't import React Router either: a component that links, such as `AppShell`, takes the link component and the paths as props.
 
 ## Where things go
 
@@ -122,8 +122,8 @@ Tags live in the package because they are part of the API contract: both apps ne
 ## Store
 
 - `@wattwise/core` provides the store factory, the base query and the session slice; `@wattwise/api-client` provides the single API slice. Each app owns its `RootState` and typed hooks because the two apps' state differs.
-- **The store factory takes the API slice and the API base URL as parameters.** Each app reads the URL in `config/env.ts` and passes it in; the factory sets it as the thunk extra argument and the base query reads `api.extra.baseUrl`, so configuration stays out of the state. `core` never reads `import.meta.env`; the URL comes from the runtime config ([architecture.md](architecture.md#runtime-config)).
-- **The session lives in the store.** The access token is kept in `core`'s session slice, never in a module variable, so a fresh store per test starts signed out. Redux DevTools would show the token, so the factory takes a `devTools` flag and each app passes `import.meta.env.DEV` ([security.md](../../docs/security.md#tokens)).
+- **The store factory takes the API slice and the API base URL as parameters.** Each app reads the URL in `config/env.ts` and passes it in; the factory sets it, with the per-store refresh state and the API slice's reset action, as the thunk extra argument (`StoreExtra`) and the base query reads `api.extra.baseUrl`, so configuration stays out of the state. `core` never reads `import.meta.env`; the URL comes from the runtime config ([architecture.md](architecture.md#runtime-config)).
+- **The session lives in the store.** The access token is kept in `core`'s session slice, never in a module variable, so a fresh store per test starts in `restoring`; how it is restored, refreshed and cleared is under [Session](architecture.md#session). Redux DevTools would show the token, so the factory takes a `devTools` flag and each app passes `import.meta.env.DEV` ([security.md](../../docs/security.md#tokens)).
 - `stores/` holds:
   - the root reducer, `combineSlices(api, sessionSlice).withLazyLoadedSlices<LazyLoadedSlices>()`, with `RootState` derived from it;
   - the app's store function, which calls the `@wattwise/core` factory with that reducer, the API slice, the base URL and the `devTools` flag, and the `AppStore` and `AppDispatch` types;
@@ -131,7 +131,7 @@ Tags live in the package because they are part of the API contract: both apps ne
 - Features import the typed hooks from `stores/`, which keeps the one-way rule.
 - A feature slice extends `LazyLoadedSlices` with `declare module` and injects itself with `const injected = slice.injectInto(rootReducer)`, so the root reducer never imports a feature.
 - A lazy slice is missing from the state until its module has run, so `RootState` types it as optional. A feature reads its state only through `injected.selectors` or `injected.selectSlice`, which fall back to the initial state, never through `state.<feature>`.
-- `main.tsx` calls the store function once and renders `<AppProvider store={store}><App /></AppProvider>`. Tests create a fresh store per test with the same function and pass it the same way.
+- `main.tsx` calls the store function once, dispatches `restoreSession()` and renders `<AppProvider store={store}><App /></AppProvider>`. Tests create a fresh store per test with the same function and pass it the same way.
 
 ## Why this structure
 

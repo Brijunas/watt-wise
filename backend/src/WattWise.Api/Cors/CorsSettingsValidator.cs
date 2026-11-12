@@ -20,10 +20,28 @@ internal sealed class CorsSettingsValidator : IValidateOptions<CorsSettings>
             }
         }
 
-        return invalid.Count == 0
+        if (invalid.Count > 0)
+        {
+            return ValidateOptionsResult.Fail(
+                $"Cors configuration has invalid origins (each must be an absolute http or https origin without path, query or fragment): {string.Join(", ", invalid)}.");
+        }
+
+        string? adminOrigin = options.AdminOrigin;
+        if (string.IsNullOrWhiteSpace(adminOrigin))
+        {
+            return ValidateOptionsResult.Success;
+        }
+
+        if (!IsValidOrigin(adminOrigin))
+        {
+            return ValidateOptionsResult.Fail(
+                $"{CorsSettings.SectionName}:{nameof(CorsSettings.AdminOrigin)} ('{adminOrigin}') must be an absolute http or https origin without path, query or fragment.");
+        }
+
+        return options.AllowedOrigins.Contains(adminOrigin, StringComparer.Ordinal)
             ? ValidateOptionsResult.Success
             : ValidateOptionsResult.Fail(
-                $"Cors configuration has invalid origins (each must be an absolute http or https origin without path, query or fragment): {string.Join(", ", invalid)}.");
+                $"{CorsSettings.SectionName}:{nameof(CorsSettings.AdminOrigin)} ('{adminOrigin}') must be one of {CorsSettings.SectionName}:{nameof(CorsSettings.AllowedOrigins)}.");
     }
 
     private static bool IsValidOrigin(string? origin)
