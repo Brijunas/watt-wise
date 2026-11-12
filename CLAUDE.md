@@ -48,7 +48,7 @@ Each doc has one job. Read or update the one that matches the task:
 Sessions may start at the repo root or inside a project (`backend/`), and both must work.
 
 - Agents and skills live in the root `.claude/agents/` and `.claude/skills/`, named `<project>-…` when they belong to one project. Claude Code finds them from a subfolder by walking up.
-- Codex has a parallel setup derived from this one: `AGENTS.md` in the root and each project, `.codex/` (config, agents, hooks) and `.agents/skills/`. A change to `.claude/agents/*.md`, `.claude/skills/` or `.claude/hooks/` updates its twin (`.codex/agents/*.toml`, `.agents/skills/`, `.codex/hooks/`) in the same change; the Claude file is the source.
+- Codex has a parallel setup derived from this one: `AGENTS.md` in the root and each project, `.codex/` (config, agents, hooks) and `.agents/skills/`. A change to `.claude/agents/*.md`, `.claude/skills/` or `.claude/hooks/` updates its twin (`.codex/agents/*.toml`, `.agents/skills/`, `.codex/hooks/`) in the same change; the Claude file is the source. The one exception is the `coordinator-orchestrator` skill: it drives Claude story sessions through Orca, so it runs only in Claude and has no Codex twin.
 - Path-scoped rules and notes for one project go in `<project>/.claude/rules/` and `<project>/CLAUDE.md`.
 - `settings.json` is not inherited from the root. A project Claude may be started in has its own `.claude/settings.json`, registering the same hooks, MCP servers and deny rules; change both together. Hook scripts live once, in the root `.claude/hooks/`. Today only `backend/` has one; start frontend sessions at the root.
 - Concurrent sessions each work in their own worktree. Don't start a branch in a checkout another session is using: it branches from that session's HEAD and carries its commits into your PR.
@@ -71,6 +71,8 @@ Sessions may start at the repo root or inside a project (`backend/`), and both m
 ## Coordinator orchestrator
 
 These rules apply only to a Claude session acting as the coordinator orchestrator: the session that drives an epic's stories, each in its own Orca worktree run by a story session. Story sessions and other sessions don't follow them.
+
+The `/coordinator-orchestrator <E5 | S5.3 | S5.2-S5.4>` skill runs an epic, a story or a range of stories this way, from grilling to the end-of-run report.
 
 - Stories run one at a time, each in a new worktree that starts from the latest `origin/main`: run `git fetch`, create the worktree from `origin/main` (never the local `main`, which goes stale when PRs merge through `gh`), and check that its HEAD equals `origin/main` before any agent works in it. The next story starts only after the previous one has merged, because each builds on the last (the regenerated `Initial` migration, `backend/docs/features/accounts.md`, the generated API client).
 - A story session becomes a worker story orchestrator when the coordinator hands it an Orca task with a dispatch id (`orca orchestration dispatch --inject` into the session, idle in plan mode after a bare `/plan`). It then asks through `orca orchestration ask`, escalates blocks and ends with `worker_done`. A story session the user drives directly gets no task and asks the user with AskUserQuestion.
