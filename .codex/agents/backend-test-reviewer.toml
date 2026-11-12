@@ -20,6 +20,10 @@ each test targets.
    tautological.
 3. **Exact assertions?** Flag tests whose only checks are `NotNull`, `NotEmpty`, counts, `Succeeded`
    or "no exception". Flag whole-table counts in a shared class clone.
+   Flag a test of code that acts on every row of a table (the outbox claim, a purge, a count) that
+   shares a test class with other seeding tests: it belongs in its own class.
+   Flag a protected endpoint's 401 test that doesn't assert `WWW-Authenticate: Bearer`
+   ([testing.md](../../backend/docs/testing.md#writing-tests-that-catch-bugs)).
 4. **Faked what should be real?** In integration tests: a faked `AppDbContext`, repository, ASP.NET Core Identity
    store or `DatabaseMigrator`, EF InMemory, SQLite, `EnsureCreated`. In unit tests: faking the class
    under test. Also: state read back through the same context that wrote it, or the wrong
@@ -58,6 +62,12 @@ says:
 - For a test-only change (a rewrite), `--since:main` mutates nothing. Use `--mutate` with globs for
   the code the reviewed tests cover, and compare the score with the baseline on the same scope when
   one is given.
+- In a git worktree `--since:main` mutates nothing: use `--mutate <changed files>`.
+- A fresh `-O` folder for every run. A run that reports 0 % with no killed mutants is a bad run:
+  rerun it from a clean folder.
+- The Api scope runs `Api.Tests` only, so authorization wiring (`PermissionPolicies`,
+  `RequirePermission`, `EndpointModuleExtensions`) is checked by reading its integration tests, not
+  by Stryker.
 - Never a whole-project run; the orchestrator runs those.
 
 List the surviving mutants. If Stryker isn't set up, say so, and list by hand the mutations of the
@@ -68,6 +78,8 @@ changed production code that no test would catch.
 - Read files with the read tools.
 - Start Stryker and the test runs as background commands and act on their completion notification.
   Never poll with `until … sleep` loops or repeated `tail`.
+- Wait for your own Stryker run to finish before you report, and send exactly one final report. An
+  early hand-back ("not delivered yet") loses the review.
 - Run one Stryker project at a time and nothing else alongside it: concurrent builds or Docker runs
   skew the scores ([testing.md](../../backend/docs/testing.md#mutation-testing)).
 

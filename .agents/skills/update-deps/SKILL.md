@@ -21,6 +21,7 @@ These come from upstream problems or deliberate decisions, not taste. A "latest"
 
 - `git status --short` must be clean, otherwise ask: the report has to show only this run's changes.
 - On `main`, `git pull --ff-only`, then `git switch -c deps-<YYYY-MM-DD>`.
+- **Refresh on the current branch** when the user asks for it (a story branch that needs fresh versions): skip the branch switch, note `git status --short` first, and touch and stage only dependency files (manifests, `pnpm-lock.yaml`, tool and compose files, fixture tags and the doc references of step 5).
 - Docker must be running (`docker info`): the backend integration tests start PostgreSQL through Testcontainers. If it isn't, start it (or ask the user to) before going on, rather than finding out at the end.
 - Read `docs/known-issues.md`. Every open entry is a constraint for this run, and step 6 rechecks each one.
 
@@ -42,7 +43,7 @@ Work through the sources in this order. The SDK goes first because the NuGet cho
 - At a GA release, follow "At .NET 11 GA" in [conventions.md](../../../backend/docs/conventions.md): `dotnet = "latest"` in mise.toml, the GA SDK and `"allowPrerelease": false` in global.json, and the comment in mise.toml removed.
 - Set `dotnet-ef` in `.config/dotnet-tools.json` to the same build as the EF Core packages, then `dotnet tool restore`.
 - Set every other tool in `.config/dotnet-tools.json` (e.g. `dotnet-stryker`) to its newest stable version that is old enough, as the survey shows, then `dotnet tool restore`.
-- `mise upgrade` for the floating tools (node lts, pnpm, betterleaks). Nothing in the repo changes for those; they matter because the checks run with them.
+- `mise upgrade` for the floating tools (node lts, pnpm, betterleaks). Nothing in the repo changes for those; they matter because the checks run with them. After a floating tool moves, check its behaviour still matches the repo's use. Betterleaks 1.10 stopped auto-loading `.betterleaks.toml` (the pre-commit hook now passes `--config`): scan a staged line that the allowlist covers (an `op://` reference) with `betterleaks git --staged --redact --no-banner -v --config .betterleaks.toml` and check that it passes.
 
 **JS (pnpm)**
 
@@ -59,6 +60,7 @@ Work through the sources in this order. The SDK goes first because the NuGet cho
 
 - postgres: the survey's tag (same major), changed in both files named in the hard rules.
 - Grafana LGTM and Mailpit: the survey's tag in `deploy/docker-compose.development.yml`.
+- Testcontainers fixture image tags under `backend/tests/` (e.g. the Mailpit fixture) get the same tag as their compose service; the survey doesn't see them, so `git grep` for the old tag.
 
 ## 4. Fix what the majors broke
 

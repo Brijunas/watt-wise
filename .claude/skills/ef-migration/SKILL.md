@@ -13,7 +13,7 @@ disable-model-invocation: true
    reports none, stop.
 2. **Pick the path without asking.** Until the MVP is in Production, regenerate `Initial` (step 3).
    After that, only add a new migration (step 4).
-3. **Regenerate Initial:**
+3. **Regenerate Initial** (the orchestrator's step: auto mode denies an agent's `rm` of migration files, so an agent stalls here):
    1. Delete `backend/src/WattWise.Infrastructure/Persistence/Migrations/*` (the migration, its Designer and the snapshot).
    2. `dotnet ef migrations add Initial <infra> --output-dir Persistence/Migrations`
    3. Reset the Development tables: the `reset-app-tables.sql` command in `docs/development.md#migrations`.

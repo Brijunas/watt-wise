@@ -71,6 +71,7 @@ The Done is what the reviewer and the tests check. Every part of it can pass or 
   - Lighthouse reports installable.
 - **Say what must not happen** as well as what must: "each role can do only what it should", "API requests are never served from cache", "regenerating produces no diff".
 - **Name the test level** when it matters: unit (`Domain.Tests`, `Application.Tests`), integration (Testcontainers, `WebApplicationFactory`), component (Vitest and React Testing Library). The rules are in `backend/docs/testing.md` and `frontend/docs/testing.md`.
+- **API client in app stories.** When the backend stories already regenerated it, the Done says "`pnpm generate:api` leaves no diff", not "regenerate the API client".
 - **Avoid vague words:** "works correctly", "is fast", "is intuitive". Name the observable result instead.
 - **The checks are a given.** Every story ends with the checks in `docs/development.md` green and the backend building with 0 warnings, so don't repeat them unless the story changes the checks.
 
