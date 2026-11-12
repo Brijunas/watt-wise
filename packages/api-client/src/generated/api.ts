@@ -33,6 +33,27 @@ const injectedRtkApi = api.injectEndpoints({
     signOut: build.mutation<SignOutApiResponse, SignOutApiArg>({
       query: () => ({ url: `/api/v1/auth/sign-out`, method: 'POST' }),
     }),
+    forgotPassword: build.mutation<ForgotPasswordApiResponse, ForgotPasswordApiArg>({
+      query: (queryArg) => ({
+        url: `/api/v1/auth/forgot-password`,
+        method: 'POST',
+        body: queryArg.body,
+      }),
+    }),
+    resetPassword: build.mutation<ResetPasswordApiResponse, ResetPasswordApiArg>({
+      query: (queryArg) => ({
+        url: `/api/v1/auth/reset-password`,
+        method: 'POST',
+        body: queryArg.body,
+      }),
+    }),
+    changePassword: build.mutation<ChangePasswordApiResponse, ChangePasswordApiArg>({
+      query: (queryArg) => ({
+        url: `/api/v1/auth/change-password`,
+        method: 'POST',
+        body: queryArg.body,
+      }),
+    }),
   }),
   overrideExisting: false,
 })
@@ -61,6 +82,18 @@ export type RefreshSessionApiResponse = /** status 200 OK */ SignedInResponse
 export type RefreshSessionApiArg = void
 export type SignOutApiResponse = unknown
 export type SignOutApiArg = void
+export type ForgotPasswordApiResponse = unknown
+export type ForgotPasswordApiArg = {
+  body: (null | null) | ForgotPasswordRequest
+}
+export type ResetPasswordApiResponse = unknown
+export type ResetPasswordApiArg = {
+  body: (null | null) | ResetPasswordRequest
+}
+export type ChangePasswordApiResponse = /** status 200 OK */ SignedInResponse
+export type ChangePasswordApiArg = {
+  body: (null | null) | ChangePasswordRequest
+}
 export type AboutResponse = {
   name: string
   version: string
@@ -108,6 +141,18 @@ export type SignInRequest = {
   email: string | null
   password: string | null
 }
+export type ForgotPasswordRequest = {
+  email: string | null
+}
+export type ResetPasswordRequest = {
+  id: string | null
+  token: string | null
+  newPassword: string | null
+}
+export type ChangePasswordRequest = {
+  currentPassword: string | null
+  newPassword: string | null
+}
 export const {
   useGetAboutQuery,
   useGetMeQuery,
@@ -117,4 +162,7 @@ export const {
   useSignInMutation,
   useRefreshSessionMutation,
   useSignOutMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
+  useChangePasswordMutation,
 } = injectedRtkApi

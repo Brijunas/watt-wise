@@ -81,7 +81,7 @@ A password that breaks the rules returns 400 ProblemDetails with field errors ([
 
 ## Sign-in, refresh and sign-out
 
-`AccountsEndpointModule` maps three more endpoints under `/api/v1/auth` and `MeEndpointModule` maps `GET /api/v1/me`. The `/api/v1` group requires authorization; `/about` and every `/auth` endpoint are anonymous ([architecture.md](../architecture.md#http-surface)). The rules (lifetimes, reuse, lockout) are in [security.md](../../../docs/security.md#tokens).
+`AccountsEndpointModule` maps three more endpoints under `/api/v1/auth` and `MeEndpointModule` maps `GET /api/v1/me`. Which endpoints need a token is in [architecture.md](../architecture.md#http-surface). The rules (lifetimes, reuse, lockout) are in [security.md](../../../docs/security.md#tokens).
 
 | Endpoint         | Response                                             | Does                                                                                                                                                |
 | ---------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -104,11 +104,11 @@ A password that breaks the rules returns 400 ProblemDetails with field errors ([
 
 Three more endpoints under `/api/v1/auth`. The rules (lifetimes, lockout, what ends sessions) are in [security.md](../../../docs/security.md#accounts).
 
-| Endpoint               | Body                               | Response                                             | Does                                                                                                                                                                                     |
-| ---------------------- | ---------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POST forgot-password` | email                              | 202                                                  | requests `PasswordReset` for the address without looking it up (the worker does); the same empty response for any address                                                                |
-| `POST reset-password`  | `{ id, token, newPassword }`       | 204                                                  | sets the password from the link, clears the lockout and ends every session; no session is left. A bad, used or expired link is 400 `Accounts.InvalidEmailLink`                           |
-| `POST change-password` | `{ currentPassword, newPassword }` | 200 `{ accessToken, accessTokenExpiresAt }` + cookie | needs a Bearer token (`.RequireAuthorization()` inside the anonymous group, for the credentialed CORS policy and the cookie's path); ends every session, starts a new one for the caller |
+| Endpoint               | Body                               | Response                                             | Does                                                                                                                                                           |
+| ---------------------- | ---------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST forgot-password` | email                              | 202                                                  | requests `PasswordReset` for the address without looking it up (the worker does); the same empty response for any address                                      |
+| `POST reset-password`  | `{ id, token, newPassword }`       | 204                                                  | sets the password from the link, clears the lockout and ends every session; no session is left. A bad, used or expired link is 400 `Accounts.InvalidEmailLink` |
+| `POST change-password` | `{ currentPassword, newPassword }` | 200 `{ accessToken, accessTokenExpiresAt }` + cookie | needs a Bearer token ([architecture.md](../architecture.md#http-surface)); ends every session, starts a new one for the caller                                 |
 
 - **Errors.**
   - A new password that breaks the rules: 400 with field errors on `newPassword`. It is checked first, so a reset link still works afterwards.

@@ -17,33 +17,41 @@ public sealed class AccountsEndpointModule : IEndpointModule
     {
         RouteGroupBuilder auth = group.MapGroup("/auth")
             .WithTags("Accounts")
-            .RequireCors(AuthCorsPolicy.Name)
-            .AllowAnonymous();
+            .RequireCors(AuthCorsPolicy.Name);
 
         auth.MapPost("/register", Register)
-            .WithName("Register");
+            .WithName("Register")
+            .AllowAnonymous();
         auth.MapPost("/resend-confirmation", ResendConfirmation)
-            .WithName("ResendConfirmation");
+            .WithName("ResendConfirmation")
+            .AllowAnonymous();
         auth.MapPost("/confirm-email", ConfirmEmail)
             .WithName("ConfirmEmail")
+            .AllowAnonymous()
             .ProducesProblem(StatusCodes.Status400BadRequest);
         auth.MapPost("/sign-in", SignIn)
             .WithName("SignIn")
+            .AllowAnonymous()
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status423Locked);
         auth.MapPost("/refresh", Refresh)
             .WithName("RefreshSession")
+            .AllowAnonymous()
             .ProducesProblem(StatusCodes.Status401Unauthorized);
         auth.MapPost("/sign-out", SignOut)
-            .WithName("SignOut");
+            .WithName("SignOut")
+            .AllowAnonymous();
         auth.MapPost("/forgot-password", ForgotPassword)
-            .WithName("ForgotPassword");
+            .WithName("ForgotPassword")
+            .AllowAnonymous();
         auth.MapPost("/reset-password", ResetPassword)
             .WithName("ResetPassword")
+            .AllowAnonymous()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
-        // Signed in, unlike the rest of the group; it stays here for the credentialed CORS policy and the refresh cookie's path.
+        // Signed in, unlike the rest of the group: no AllowAnonymous, so the /api/v1 group's default and RequireAuthorization apply.
+        // It stays here for the credentialed CORS policy and the refresh cookie's path.
         auth.MapPost("/change-password", ChangePassword)
             .WithName("ChangePassword")
             .RequireAuthorization()

@@ -29,17 +29,6 @@ public class ChangePasswordTests(AccountsApiFixture fixture) : IClassFixture<Acc
         fixture.SendAsync(HttpMethod.Post, "/api/v1/auth/refresh", cookie: cookie);
 
     [Fact]
-    public async Task Changing_without_a_token_answers_401_and_changes_nothing()
-    {
-        Seeded account = await SeedAsync();
-
-        using HttpResponseMessage response = await ChangeAsync(null, account.Password, ValidPassword());
-
-        await ProblemDetailsAssertions.AssertProblemAsync(response, HttpStatusCode.Unauthorized, "General.Unauthorized", Token);
-        Assert.True(await fixture.PasswordMatchesAsync(account.Ids.IdentityId, account.Password));
-    }
-
-    [Fact]
     public async Task A_change_answers_200_with_the_access_token_and_its_expiry_and_nothing_else()
     {
         Seeded account = await SeedAsync();

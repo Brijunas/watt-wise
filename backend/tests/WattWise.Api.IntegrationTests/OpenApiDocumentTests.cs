@@ -67,6 +67,30 @@ public class OpenApiDocumentTests(ApiHostFixture fixture) : IClassFixture<ApiHos
     }
 
     [Fact]
+    public async Task The_change_password_operation_requires_the_Bearer_scheme()
+    {
+        OpenApiDocument document = (await LoadAsync()).Document!;
+
+        Assert.Equal(1, document.Paths["/api/v1/auth/change-password"].Operations![HttpMethod.Post].Security?.Count ?? 0);
+    }
+
+    [Theory]
+    [InlineData("register")]
+    [InlineData("resend-confirmation")]
+    [InlineData("confirm-email")]
+    [InlineData("sign-in")]
+    [InlineData("refresh")]
+    [InlineData("sign-out")]
+    [InlineData("forgot-password")]
+    [InlineData("reset-password")]
+    public async Task The_anonymous_auth_operations_require_nothing(string operation)
+    {
+        OpenApiDocument document = (await LoadAsync()).Document!;
+
+        Assert.Equal(0, document.Paths[$"/api/v1/auth/{operation}"].Operations![HttpMethod.Post].Security?.Count ?? 0);
+    }
+
+    [Fact]
     public async Task Scalar_is_served_as_html_outside_production()
     {
         using HttpClient client = fixture.Factory.CreateClient();

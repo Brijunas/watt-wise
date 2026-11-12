@@ -1,5 +1,7 @@
 using System.Net;
 
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace WattWise.Api.IntegrationTests.Authentication;
@@ -44,6 +46,18 @@ public class AuthenticationRequirementTests(ApiHostFixture fixture) : IClassFixt
         using HttpResponseMessage response = await client.PostAsJsonAsync(path, new { }, Token);
 
         Assert.Equal(expected, response.StatusCode);
+    }
+
+    [Fact]
+    public void The_change_password_endpoint_requires_authorization_and_does_not_allow_anonymous()
+    {
+        RouteEndpoint endpoint = fixture.Factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Single(candidate => candidate.RoutePattern.RawText == "/api/v1/auth/change-password");
+
+        Assert.Equal(
+            (false, true),
+            (endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null, endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>().Count > 0));
     }
 
     [Fact]
