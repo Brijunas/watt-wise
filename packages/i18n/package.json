@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "mutation": "stryker run ../../stryker.config.json"
   },
   "dependencies": {
     "i18next-browser-languagedetector": "catalog:"
@@ -19,9 +20,11 @@
     "react-i18next": "catalog:"
   },
   "devDependencies": {
+    "fast-check": "catalog:",
     "i18next": "catalog:",
+    "jsdom": "catalog:",
     "react": "catalog:",
     "react-i18next": "catalog:",
-    "jsdom": "catalog:"
+    "vitest-axe": "catalog:"
   }
 }

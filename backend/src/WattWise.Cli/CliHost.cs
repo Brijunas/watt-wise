@@ -1,5 +1,6 @@
 using Mediator;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -9,6 +10,7 @@ using OpenTelemetry.Trace;
 
 using WattWise.Application;
 using WattWise.Application.Behaviors;
+using WattWise.Cli.SmokeAccounts;
 using WattWise.Infrastructure;
 using WattWise.Infrastructure.Observability;
 using WattWise.Infrastructure.Persistence;
@@ -34,6 +36,10 @@ internal static class CliHost
             options.PipelineBehaviors = [typeof(LoggingBehavior<,>), typeof(ValidationBehavior<,>)];
             options.ServiceLifetime = ServiceLifetime.Scoped;
         });
+        // Read from the built configuration and validated only when resolved: just the seed command needs them.
+        builder.Services.AddOptions<SmokeAccountsSettings>()
+            .Configure<IConfiguration>((settings, configuration) => settings.ReadFrom(configuration));
+        builder.Services.AddSingleton<IValidateOptions<SmokeAccountsSettings>, SmokeAccountsSettingsValidator>();
         return builder.Build();
     }
 

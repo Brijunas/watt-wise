@@ -39,6 +39,8 @@ catalog:
   vite-plugin-pwa: ^2.0.0
   workbox-window: ^7.4.1
   '@vite-pwa/assets-generator': ^2.0.0
+  fast-check: ^4.10.2
+  vitest-axe: ^0.1.0
 
 # unrs-resolver (used by eslint-import-resolver-typescript) ships its native binary as an
 # optional dependency; its postinstall script is only a fallback, so it doesn't run.

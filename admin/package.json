@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc",
-    "generate:icons": "pwa-assets-generator"
+    "generate:icons": "pwa-assets-generator",
+    "mutation": "stryker run ../stryker.config.json"
   },
   "dependencies": {
     "@emotion/react": "catalog:",
@@ -40,10 +41,12 @@
     "@types/react-dom": "catalog:",
     "@vite-pwa/assets-generator": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "fast-check": "catalog:",
     "jsdom": "catalog:",
     "msw": "catalog:",
     "vite": "catalog:",
     "vite-plugin-pwa": "catalog:",
+    "vitest-axe": "catalog:",
     "workbox-window": "catalog:"
   }
 }

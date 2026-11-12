@@ -11,7 +11,7 @@ Notes for Claude Code when working in `backend/`. The rules themselves live in [
 
 ## Claude Code tooling
 
-Hook scripts are in the root `.claude/hooks/`, registered in both `.claude/settings.json` files.
+Hook scripts are in the root `.claude/hooks/`, registered in all five `.claude/settings.json` files (root, `backend/`, `frontend/`, `admin/`, `packages/`); the frontend hooks run only on frontend files.
 
 - `backend-unused-usings` runs after every edit of a `backend/**/*.cs` file and reports unused usings (IDE0005). Remove them before moving on.
 - `backend-migration-guard` blocks `dotnet ef database update` and edits to a migration's `*.Designer.cs` or `AppDbContextModelSnapshot.cs`. Change the model instead; only a migration's `Up`/`Down` take hand edits.
@@ -39,7 +39,7 @@ The rules are in "Writing tests that catch bugs" in [docs/testing.md](docs/testi
 
 | Run                                | Command                                                                                                                                                                     |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit tests                         | `dotnet test --project backend/tests/WattWise.Domain.Tests` (also `Application.Tests`, `Infrastructure.Tests`, `Api.Tests`)                                                 |
+| Unit tests                         | `dotnet test --project backend/tests/WattWise.Domain.Tests` (also `Application.Tests`, `Infrastructure.Tests`, `Api.Tests`, `Cli.Tests`; its process tests need Docker)     |
 | Integration tests (Docker running) | `dotnet test --project backend/tests/WattWise.Infrastructure.IntegrationTests` (also `Api.`, `Jobs.IntegrationTests`)                                                       |
 | One class                          | `dotnet test --project <project> --filter-class "*.<Class>"`                                                                                                                |
 | Mutation testing                   | `dotnet stryker -f backend/stryker-config.json -O backend/StrykerOutput/<Project> -p WattWise.<Project>.csproj -tp …` ([docs/testing.md](docs/testing.md#mutation-testing)) |

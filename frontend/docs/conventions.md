@@ -9,6 +9,11 @@ ESLint runs once from the root `eslint.config.js` across both apps and every pac
 - typescript-eslint `strictTypeChecked` + `stylisticTypeChecked`, `@eslint-react` (`eslint-plugin-react` doesn't support ESLint 10), `eslint-plugin-react-hooks`, and `eslint-config-prettier` last.
 - ESLint runs on TypeScript 6 while `tsc` is TypeScript 7; why, and what to watch for, is in [known-issues.md](../../docs/known-issues.md).
 
+## Code style
+
+- **KISS.** The simplest code that meets the story: no option, layer or abstraction nobody needs yet.
+- **DRY.** One place per rule or piece of code. A second use moves it down to the shared folder or package ([structure.md](structure.md#where-things-go)); don't copy it.
+
 ## Files and naming
 
 - File and folder names are kebab-case: `plan-card.tsx`, `use-plan-filter.ts`, `plans-slice.ts`. Component names inside stay PascalCase.

@@ -35,3 +35,10 @@ StrykerOutput/
 
 # Playwright MCP snapshots and console logs
 .playwright-mcp/
+
+# StrykerJS output
+reports/mutation/
+.stryker-tmp/
+
+# StrykerJS vitest-runner leftovers
+stryker-setup-*.js
