@@ -74,7 +74,7 @@ Report the PR URL. In create-only mode, stop here.
    - Failing: stop and report. Don't merge red builds.
 2. Check mergeability: `gh pr view <n> --json mergeable,mergeStateStatus`.
    - Conflicting: stop and report.
-3. Merge: `gh pr merge <n> --squash --delete-branch` (or the configured method).
+3. Merge: exactly `gh pr merge <n> --squash` (or the configured method), as its own Bash call with nothing chained, piped or redirected, and without `--delete-branch`. GitHub deletes the remote branch, and step 4 handles the local one. Auto mode honours the allow rule only for a single plain command.
    - Merging closes the PR, so there's no separate close step.
 4. Confirm the merge: `gh pr view <n> --json state,mergedAt`. The state should be `MERGED`.
 
@@ -92,6 +92,7 @@ With no argument, it uses the current branch. It does the fiddly checks so they'
 - It deletes the remote branch if the merge left it behind, and handles one that's already gone.
 - It refuses to switch branches with a dirty working tree, so uncommitted work doesn't silently move to the base branch.
 - It switches to the base branch, prunes, and fast-forwards with `--ff-only`, so there's no accidental merge commit.
+- If the base branch is checked out in another worktree (as in Orca), it can't switch. It fetches and prunes, then detaches this worktree at `origin/<base>` (clean tree only, so the local branch can go) and doesn't pull.
 - It deletes the local branch only if the branch tip is part of the PR's final head. Rebase and squash merges rewrite hashes, so `git branch -d` wrongly reports the branch as unmerged; the script checks against the PR instead.
 
 | Exit code | Meaning                        | What to do                                                                                                                                                               |

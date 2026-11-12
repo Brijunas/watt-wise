@@ -3,7 +3,9 @@
 # Usage: finish-pr.sh <pr-number | branch-name>
 #
 # Deletes the PR's head branch (remote and local), switches to the base
-# branch and fast-forwards it. Refuses to delete anything unless GitHub
+# branch and fast-forwards it. If the base branch is checked out in another
+# worktree it cannot be switched to here: the script then only fetches and
+# prunes, and detaches this worktree at origin/<base> (clean tree only). Refuses to delete anything unless GitHub
 # reports the PR as MERGED, and refuses to delete a local branch that holds
 # commits the merged PR did not contain.
 #
@@ -48,21 +50,43 @@ else
 fi
 
 # Switch to base. A dirty tree would either block the switch or travel along.
+# A branch checked out in another worktree cannot be checked out here too.
 current="$(git branch --show-current)"
+here="$(git rev-parse --show-toplevel)"
+base_elsewhere=""
+if [[ "$current" != "$base" ]]; then
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) wt_path="${line#worktree }" ;;
+      "branch refs/heads/$base")
+        if [[ "$wt_path" != "$here" ]]; then base_elsewhere="$wt_path"; fi
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+fi
+
 if [[ "$current" != "$base" ]]; then
   if [[ -n "$(git status --porcelain)" ]]; then
     echo "Working tree has uncommitted changes; not switching to $base." >&2
     git status --short >&2
     exit 3
   fi
-  git switch --quiet "$base"
+  if [[ -n "$base_elsewhere" ]]; then
+    echo "$base is checked out in another worktree ($base_elsewhere); not switching. Fetched and pruned only."
+    git switch --quiet --detach "origin/$base"
+    echo "Detached this worktree at origin/$base ($(git log -1 --format='%h %s'))."
+  else
+    git switch --quiet "$base"
+  fi
 fi
 
-if ! git pull --ff-only --quiet origin "$base"; then
-  echo "$base cannot fast-forward to origin/$base (local commits on $base?)." >&2
-  exit 5
+if [[ -z "$base_elsewhere" ]]; then
+  if ! git pull --ff-only --quiet origin "$base"; then
+    echo "$base cannot fast-forward to origin/$base (local commits on $base?)." >&2
+    exit 5
+  fi
+  echo "On $base at $(git log -1 --format='%h %s')."
 fi
-echo "On $base at $(git log -1 --format='%h %s')."
 
 # Local branch: rebase/squash merges change commit hashes, so `git branch -d`
 # can't tell it was merged. Compare against the PR's final head commit instead.
