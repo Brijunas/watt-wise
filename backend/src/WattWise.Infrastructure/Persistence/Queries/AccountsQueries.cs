@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
+using NodaTime;
+
 using WattWise.Application.Accounts;
 using WattWise.Domain.Accounts;
 using WattWise.Domain.Localization;
@@ -55,6 +57,17 @@ internal sealed class AccountsQueries(AppDbContext context) : IAccountsQueries
 
         IReadOnlyList<string> permissions = await GetPermissionsAsync(accountId, cancellationToken);
         return new Me(account.Email!, LanguageText(account.PreferredLanguage), roles, permissions);
+    }
+
+    public async Task<IReadOnlyList<SessionListItem>> GetSessionsAsync(Guid accountId, Instant now, CancellationToken cancellationToken)
+    {
+        return await context.Set<Session>().AsNoTracking()
+            .Where(session => session.AccountId == accountId
+                && context.Set<RefreshToken>().Any(token => token.SessionId == session.Id && token.ExpiresAt > now))
+            .OrderByDescending(session => session.LastUsedAt)
+            .ThenBy(session => session.Id)
+            .Select(session => new SessionListItem(session.Id, session.DeviceLabel, session.SignedInAt, session.LastUsedAt))
+            .ToListAsync(cancellationToken);
     }
 
     private static string LanguageText(Language language)

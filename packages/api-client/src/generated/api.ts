@@ -54,6 +54,15 @@ const injectedRtkApi = api.injectEndpoints({
         body: queryArg.body,
       }),
     }),
+    listSessions: build.query<ListSessionsApiResponse, ListSessionsApiArg>({
+      query: () => ({ url: `/api/v1/auth/sessions` }),
+    }),
+    endSession: build.mutation<EndSessionApiResponse, EndSessionApiArg>({
+      query: (queryArg) => ({ url: `/api/v1/auth/sessions/${queryArg.id}`, method: 'DELETE' }),
+    }),
+    signOutEverywhere: build.mutation<SignOutEverywhereApiResponse, SignOutEverywhereApiArg>({
+      query: () => ({ url: `/api/v1/auth/sign-out-everywhere`, method: 'POST' }),
+    }),
   }),
   overrideExisting: false,
 })
@@ -94,6 +103,14 @@ export type ChangePasswordApiResponse = /** status 200 OK */ SignedInResponse
 export type ChangePasswordApiArg = {
   body: (null | null) | ChangePasswordRequest
 }
+export type ListSessionsApiResponse = /** status 200 OK */ SessionResponse[]
+export type ListSessionsApiArg = void
+export type EndSessionApiResponse = unknown
+export type EndSessionApiArg = {
+  id: string
+}
+export type SignOutEverywhereApiResponse = unknown
+export type SignOutEverywhereApiArg = void
 export type AboutResponse = {
   name: string
   version: string
@@ -153,6 +170,13 @@ export type ChangePasswordRequest = {
   currentPassword: string | null
   newPassword: string | null
 }
+export type SessionResponse = {
+  id: string
+  deviceLabel: string
+  signedInAt: string
+  lastUsedAt: string
+  current: boolean
+}
 export const {
   useGetAboutQuery,
   useGetMeQuery,
@@ -165,4 +189,7 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useChangePasswordMutation,
+  useListSessionsQuery,
+  useEndSessionMutation,
+  useSignOutEverywhereMutation,
 } = injectedRtkApi

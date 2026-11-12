@@ -10,6 +10,7 @@ public static class AccountErrors
     public const string LockedOutCode = "Accounts.LockedOut";
     public const string InvalidRefreshTokenCode = "Accounts.InvalidRefreshToken";
     public const string AccountNotFoundCode = "Accounts.AccountNotFound";
+    public const string SessionNotFoundCode = "Accounts.SessionNotFound";
 
     public const string InvalidCurrentPasswordCode = "Accounts.InvalidCurrentPassword";
     public const string InvalidEmailLinkCode = "Accounts.InvalidEmailLink";
@@ -53,6 +54,12 @@ public static class AccountErrors
     public static Error InvalidRefreshToken()
     {
         return Error.Unauthorized(InvalidRefreshTokenCode, "The refresh token is missing, invalid or expired.");
+    }
+
+    /// <summary>The same for an unknown id and another account's, so the answer reveals nothing about other accounts.</summary>
+    public static Error SessionNotFound()
+    {
+        return Error.NotFound(SessionNotFoundCode, "The session does not exist.");
     }
 
     public static Error AccountNotFound()
