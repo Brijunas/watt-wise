@@ -48,7 +48,7 @@ Use `--filter` with the package name (`frontend`, `admin` or `@wattwise/<name>`)
 
 ## Running the apps
 
-Each app's dev server and preview get their settings from 1Password through the app's own `.env.op.development`: the address to listen on (the `frontend` or `admin` item's `url`, the origin the Api's CORS allows) and the Api's URL, which they serve to the app as `/config.js` ([frontend/docs/architecture.md](../frontend/docs/architecture.md#runtime-config)). The app shows data only while the Api runs ([Running the hosts](#running-the-hosts)). Swap `frontend` for `admin` for the admin app. Vite's log shows the address as `<concealed by 1Password>`, like the hosts; the URLs are in the items.
+Each app's dev server and preview get their settings from 1Password through the app's own `.env.op.development`: the address to listen on (the `frontend` or `admin` item's `url`, the origin the Api's CORS allows) and the Api's URL, which they serve to the app as `/config.js` ([frontend/docs/architecture.md](../frontend/docs/architecture.md#runtime-config)). The app shows data only while the Api runs ([Running the hosts](#running-the-hosts)). Swap `frontend` for `admin` for the admin app; its `.env.op.development` also gives the frontend's address (`FRONTEND_URL`, the `frontend` item's `url`) for the forgot-password link. Vite's log shows the address as `<concealed by 1Password>`, like the hosts; the URLs are in the items.
 
 | Command                                                                            | What it does                                                                                    |
 | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -167,6 +167,7 @@ The pre-commit hook (`.husky/pre-commit`) runs two checks on the staged changes.
 | Backend tests fail with `DockerUnavailableException`             | Docker isn't running. Start it and run the tests again.                                                                                          |
 | A host stops with `Database configuration is missing or invalid` | It was started without `op run --env-file …/.env.development`.                                                                                   |
 | An app stops with an error about `/config.js` or `API_BASE_URL`  | Its dev server or preview was started without `op run --env-file <app>/.env.op.development`.                                                     |
+| The admin's `/config.js` throws about `FRONTEND_URL`             | Its dev server or preview was started without `op run --env-file admin/.env.op.development`.                                                     |
 | An app's dev server exits with "Port … is already in use"        | Another process holds the app's port. Stop it; the server doesn't move to another port ([why](../frontend/docs/architecture.md#runtime-config)). |
 
 For tool, install and hook-setup problems, see "Troubleshooting" in [setup.md](setup.md).

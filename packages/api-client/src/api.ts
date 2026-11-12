@@ -42,11 +42,19 @@ export const api = generatedApi.enhanceEndpoints({
   addTagTypes: ['About', 'Session'],
   endpoints: {
     getAbout: { providesTags: ['About'] },
+    // The answer starts the session only if nothing changed it since the request was sent: a late
+    // answer can't undo a sign-out or replace a newer sign-in.
     signIn: {
       transformErrorResponse: withRetryAfter,
-      onQueryStarted: async (_arg, { dispatch, queryFulfilled }) => {
+      onQueryStarted: async (_arg, thunk) => {
+        const { dispatch, queryFulfilled } = thunk
+        const revision = revisionOf(thunk)
         await queryFulfilled.then(
-          ({ data }) => dispatch(sessionStarted({ accessToken: data.accessToken })),
+          ({ data }) => {
+            if (revisionOf(thunk) === revision) {
+              dispatch(sessionStarted({ accessToken: data.accessToken }))
+            }
+          },
           () => undefined,
         )
       },

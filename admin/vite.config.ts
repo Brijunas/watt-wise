@@ -15,7 +15,7 @@ export default defineConfig({
   plugins: [
     react(),
     colorSchemeScript(),
-    runtimeConfig(),
+    runtimeConfig({ frontendUrl: true }),
     VitePWA({
       // The user decides when to switch to a new version: `PwaUpdatePrompt` registers the worker.
       registerType: 'prompt',

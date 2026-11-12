@@ -3,8 +3,11 @@ import { runtimeConfig, serverAddress } from './vite'
 
 type Middleware = (req: object, res: object, next: () => void) => void
 
-function getMiddleware(hook: 'configureServer' | 'configurePreviewServer'): Middleware {
-  const plugin = runtimeConfig()
+function getMiddleware(
+  hook: 'configureServer' | 'configurePreviewServer',
+  options: { frontendUrl?: boolean } = {},
+): Middleware {
+  const plugin = runtimeConfig(options)
   let registered: Middleware | undefined
   const server = { middlewares: { use: (fn: Middleware) => (registered = fn) } }
   const fn = plugin[hook]
@@ -50,6 +53,32 @@ describe.each(['configureServer', 'configurePreviewServer'] as const)(
       expect(res.statusCode).toBe(500)
       expect(res.body).toContain('throw new Error(')
       expect(res.body).toContain('op run --env-file')
+    })
+
+    it('serves FRONTEND_URL when it is set', () => {
+      vi.stubEnv('API_BASE_URL', 'http://localhost:4999')
+      vi.stubEnv('FRONTEND_URL', 'http://localhost:5174')
+      const { res } = call(getMiddleware(hook), '/config.js')
+      expect(res.body).toBe(
+        'window.__WATTWISE_CONFIG__ = {"apiBaseUrl":"http://localhost:4999","frontendUrl":"http://localhost:5174"};',
+      )
+    })
+
+    it('answers 500 naming FRONTEND_URL when the admin needs it and it is unset', () => {
+      vi.stubEnv('API_BASE_URL', 'http://localhost:4999')
+      vi.stubEnv('FRONTEND_URL', '')
+      const { res } = call(getMiddleware(hook, { frontendUrl: true }), '/config.js')
+      expect(res.statusCode).toBe(500)
+      expect(res.body).toContain('FRONTEND_URL is not set')
+      expect(res.body).toContain('op run --env-file')
+    })
+
+    it('serves both when the admin needs FRONTEND_URL and it is set', () => {
+      vi.stubEnv('API_BASE_URL', 'http://localhost:4999')
+      vi.stubEnv('FRONTEND_URL', 'http://localhost:5174')
+      const { res } = call(getMiddleware(hook, { frontendUrl: true }), '/config.js')
+      expect(res.statusCode).toBe(200)
+      expect(res.body).toContain('"frontendUrl":"http://localhost:5174"')
     })
 
     it('checks the variable on each request', () => {

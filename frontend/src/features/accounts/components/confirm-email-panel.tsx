@@ -8,9 +8,8 @@ import { Link as RouterLink } from 'react-router'
 import { useConfirmEmailMutation } from '@wattwise/api-client'
 import { errorCode } from '@wattwise/core'
 import { paths } from '@/config/routes'
-import useErrorText from '../use-error-text'
-import AccountPage from './account-page'
 import ResendConfirmationForm from './resend-confirmation-form'
+import { AccountPage, useErrorText } from '@wattwise/ui'
 
 /** `id` and `token` come from the email link's query; a missing one makes the link invalid. */
 const ConfirmEmailPanel = ({

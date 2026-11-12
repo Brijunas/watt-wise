@@ -9,14 +9,17 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink, useNavigate } from 'react-router'
 import { useRegisterMutation } from '@wattwise/api-client'
-import { FormPasswordField, FormTextField } from '@wattwise/ui'
+import {
+  AccountPage,
+  FormPasswordField,
+  FormTextField,
+  useErrorText,
+  useMounted,
+} from '@wattwise/ui'
 import { paths } from '@/config/routes'
-import useErrorText from '../use-error-text'
-import useMounted from '@/hooks/use-mounted'
 import { signUpSchema } from '../schemas/sign-up-schema'
 import type { SignUpInput, SignUpValues } from '../schemas/sign-up-schema'
 import applyFieldErrors from '../utils/apply-field-errors'
-import AccountPage from './account-page'
 
 const SignUpForm = () => {
   const { t, i18n } = useTranslation('accounts')

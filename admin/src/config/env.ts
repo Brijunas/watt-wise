@@ -1,3 +1,3 @@
-import { readRuntimeConfig } from '@wattwise/core'
+import { readAdminRuntimeConfig } from '@wattwise/core'
 
-export const env = readRuntimeConfig()
+export const env = readAdminRuntimeConfig()

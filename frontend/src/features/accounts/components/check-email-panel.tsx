@@ -5,9 +5,7 @@ import Typography from '@mui/material/Typography'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useResendConfirmationMutation } from '@wattwise/api-client'
-import useErrorText from '../use-error-text'
-import useMounted from '@/hooks/use-mounted'
-import AccountPage from './account-page'
+import { AccountPage, useErrorText, useMounted } from '@wattwise/ui'
 
 /** `email` is the address the user signed up with; without it (a reload) the text is generic. */
 const CheckEmailPanel = ({ email }: { email: string | undefined }) => {

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, matchPath, Outlet, useLocation } from 'react-router'
 import { AppShell, LanguageSwitch, ModeSwitch } from '@wattwise/ui'
 import type { AppShellNavItem } from '@wattwise/ui'
+import SignOutButton from '@/components/sign-out-button'
 import { paths } from '@/config/routes'
 
 const RootLayout = () => {
@@ -33,6 +34,7 @@ const RootLayout = () => {
       linkComponent={Link}
       actions={
         <>
+          <SignOutButton />
           <LanguageSwitch />
           <ModeSwitch />
         </>

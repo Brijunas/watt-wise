@@ -15,6 +15,7 @@
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
     "@fontsource-variable/roboto": "catalog:",
+    "@hookform/resolvers": "catalog:",
     "@mui/icons-material": "catalog:",
     "@mui/material": "catalog:",
     "@reduxjs/toolkit": "catalog:",

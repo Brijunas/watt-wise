@@ -1,10 +1,8 @@
-import { cleanup, screen, within } from '@testing-library/react'
+import { act, cleanup, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { sessionEnded } from '@wattwise/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryRouter } from 'react-router'
-import { RouterProvider } from 'react-router/dom'
-import stubMatchMedia from '@/testing/match-media'
-import renderWithProviders from '@/testing/test-utils'
+import { renderRoutesAt } from '@/testing/test-utils'
 import { routes } from '../router'
 
 beforeEach(() => {
@@ -18,10 +16,15 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderAt(path: string, width: number) {
-  stubMatchMedia({ width })
-  const router = createMemoryRouter(routes, { initialEntries: [path] })
-  return renderWithProviders(<RouterProvider router={router} />)
+function renderAt(
+  path: string,
+  width: number,
+  session: 'signedIn' | 'signedOut' | 'restoring' = 'signedIn',
+) {
+  return renderRoutesAt(routes, path, {
+    width,
+    ...(session === 'restoring' ? {} : { session }),
+  })
 }
 
 describe('RootLayout', () => {
@@ -138,5 +141,28 @@ describe('RootLayout', () => {
     await screen.findByRole('heading', { level: 1, name: 'Pradžia' })
     const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
     expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
+  })
+
+  it('shows the Sign out button only while signed in', async () => {
+    const { store } = renderAt('/', 360)
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
+    act(() => {
+      store.dispatch(sessionEnded())
+    })
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' })
+    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
+  })
+
+  it('has no Sign out button when signed out', async () => {
+    renderAt('/sign-in', 360, 'signedOut')
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' })
+    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
+  })
+
+  it('has no Sign out button while the session restores', async () => {
+    renderAt('/sign-in', 360, 'restoring')
+    await screen.findByRole('progressbar', { name: 'Loading' })
+    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
   })
 })

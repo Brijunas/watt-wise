@@ -36,49 +36,6 @@ export const meResponse = {
   permissions: [],
 }
 
-export interface ProblemOptions {
-  /** The HTTP status. */
-  status: number
-  /** The machine-readable ProblemDetails `code`, such as `Accounts.LockedOut`. */
-  code: string
-  /** Field errors of a validation problem: camelCase field path to messages. */
-  errors?: Record<string, string[]>
-  /** Sent as the `Retry-After` header, in seconds. */
-  retryAfterSeconds?: number
-}
-
-/** A ProblemDetails answer like the Api's: `status`, `code`, and `errors` for a validation problem. */
-export const problemResponse = ({ status, code, errors, retryAfterSeconds }: ProblemOptions) =>
-  HttpResponse.json(
-    { type: 'about:blank', title: code, status, code, ...(errors && { errors }) },
-    {
-      status,
-      headers: retryAfterSeconds === undefined ? {} : { 'Retry-After': String(retryAfterSeconds) },
-    },
-  )
-
-/**
- * A deferred answer: a handler awaits `gate.wait` and the test calls `gate.open()` when the
- * response may go out, so it can assert the in-flight state first.
- *
- * ```ts
- * const gate = createGate()
- * server.use(http.post(authUrl('/sign-in'), async () => {
- *   await gate.wait
- *   return HttpResponse.json(signedInResponse)
- * }))
- * // ... assert the busy state, then:
- * gate.open()
- * ```
- */
-export const createGate = () => {
-  let open: () => void = () => undefined
-  const wait = new Promise<void>((resolve) => {
-    open = resolve
-  })
-  return { wait, open }
-}
-
 const noContent = () => new HttpResponse(null, { status: 204 })
 
 export const authHandlers = [
