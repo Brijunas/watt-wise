@@ -186,6 +186,38 @@ describe('api', () => {
       expect(store.getState().session.status).toBe('signedOut')
     })
 
+    it('ends the session when a password reset succeeds', async () => {
+      server.use(
+        http.post(
+          'http://api.test/api/v1/auth/reset-password',
+          () => new HttpResponse(null, { status: 204 }),
+        ),
+      )
+      const store = signedInStore()
+
+      await store.dispatch(
+        api.endpoints.resetPassword.initiate({ body: { id: 'a', token: 't', newPassword: 'x' } }),
+      )
+
+      expect(store.getState().session).toMatchObject({ status: 'signedOut', accessToken: null })
+    })
+
+    it('keeps the session when a password reset fails', async () => {
+      server.use(
+        http.post(
+          'http://api.test/api/v1/auth/reset-password',
+          () => new HttpResponse(null, { status: 400 }),
+        ),
+      )
+      const store = signedInStore()
+
+      await store.dispatch(
+        api.endpoints.resetPassword.initiate({ body: { id: 'a', token: 't', newPassword: 'x' } }),
+      )
+
+      expect(store.getState().session).toMatchObject({ status: 'signedIn', accessToken: 'token-1' })
+    })
+
     it('keeps the session when signing out everywhere fails', async () => {
       server.use(
         http.post(

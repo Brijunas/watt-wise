@@ -92,6 +92,9 @@ describe('Change-password route', () => {
     expect(
       screen.getByLabelText('Current password', { selector: 'input' }).getAttribute('aria-invalid'),
     ).toBe('true')
+    expect(screen.getAllByText('The current password is wrong.')).toHaveLength(1)
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByText('This value is not valid')).toBeNull()
     expect(screen.queryByText(successText)).toBeNull()
   })
 

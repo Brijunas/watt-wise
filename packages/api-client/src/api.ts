@@ -75,6 +75,24 @@ export const api = generatedApi.enhanceEndpoints({
         )
       },
     },
+    // A reset ends every session on the server, so a browser still signed in drops its own session
+    // and cache. Only a success does: on a failure the sessions are still alive.
+    resetPassword: {
+      onQueryStarted: async (_arg, thunk) => {
+        const { dispatch, queryFulfilled } = thunk
+        const revision = revisionOf(thunk)
+        await queryFulfilled.then(
+          () => {
+            if (revisionOf(thunk) !== revision) {
+              return
+            }
+            dispatch(sessionEnded())
+            dispatch(api.util.resetApiState())
+          },
+          () => undefined,
+        )
+      },
+    },
     // Signing out always ends the session here, even when the request failed (a network error):
     // the user asked to leave. The server succeeds with no or an unknown cookie.
     signOut: {

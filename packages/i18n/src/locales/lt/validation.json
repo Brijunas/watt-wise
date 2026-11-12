@@ -8,5 +8,6 @@
     "digit": "Slaptažodyje turi būti skaitmuo",
     "symbol": "Slaptažodyje turi būti simbolis"
   },
-  "invalid": "Neteisinga reikšmė"
+  "invalid": "Neteisinga reikšmė",
+  "invalidCurrentPassword": "Dabartinis slaptažodis neteisingas."
 }

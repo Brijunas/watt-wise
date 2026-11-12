@@ -55,6 +55,18 @@ describe('Reset-password route', () => {
     expect(body).toEqual({ id: 'abc', token: 't+k', newPassword: strongPassword })
   })
 
+  it('ends the session of a signed-in user and shows sign-in with the notice', async () => {
+    const user = userEvent.setup()
+    server.use(http.post(authUrl('/reset-password'), () => new HttpResponse(null, { status: 204 })))
+    const { router } = renderRoutesAt(routes, link, { language: 'en', session: 'signedIn' })
+    await fillAndSubmit(user)
+
+    expect(
+      await screen.findByText('Your password was changed. Sign in with the new one.'),
+    ).toBeTruthy()
+    expect(router.state.location.pathname).toBe('/sign-in')
+  })
+
   it('shows the password rules and sends nothing for a weak password', async () => {
     const user = userEvent.setup()
     let calls = 0
