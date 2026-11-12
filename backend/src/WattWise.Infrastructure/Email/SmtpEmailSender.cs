@@ -59,7 +59,7 @@ internal sealed partial class SmtpEmailSender(
             using SmtpClient client = new() { LocalDomain = domain, Timeout = timeoutMilliseconds };
             await client.ConnectAsync(host, _settings.Port, SocketOptions(_settings.Security), cancellationToken);
             await client.AuthenticateAsync(username, password, cancellationToken);
-            await client.SendAsync(message, cancellationToken);
+            await client.SendAsync(new SmtpSendRequest(message), cancellationToken);
             await client.DisconnectAsync(quit: true, cancellationToken);
 
             LogSent(emailKind, email.Language);

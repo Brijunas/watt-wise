@@ -96,7 +96,7 @@ The default is `StartTls`, so an environment that forgets the key doesn't send i
 
 ## Telemetry
 
-`AddInfrastructure()` switches on MailKit's own telemetry, once per process. Its sources and meters, `mailkit.net.smtp` and `mailkit.net.socket`, are in the shared setup ([observability.md](observability.md#shared-setup)). MailKit 4.18's SMTP spans carry only `url.scheme`, `server.address`, `server.port`, `network.peer.address`, `network.operation` (connect, authenticate or send) and `error.type` (the exception's type name). They hold no recipient, no server reply and no exception message, so the activity source is exported; a test pins that.
+`AddInfrastructure()` switches on MailKit's own telemetry, once per process. Its sources and meters, `mailkit.net.smtp` and `mailkit.net.socket`, are in the shared setup ([observability.md](observability.md#shared-setup)). MailKit 5's SMTP spans describe connect, authenticate and send operations with connection metadata and success or failure status. They hold no recipient, no server reply and no exception message, so the activity source is exported; a test pins that. Its metrics use protocol-specific `error.type` values, such as `rejected` or `server_disconnected`.
 
 ## Testing
 
