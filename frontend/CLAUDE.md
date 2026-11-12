@@ -11,13 +11,31 @@ Notes for Claude Code when working in `frontend/`, `admin/` or `packages/`. Both
 
 ## Async UI code
 
-The session rules are under [Session](docs/architecture.md#session); check each of these when code awaits something.
+Check [.claude/rules/async-session.md](.claude/rules/async-session.md) whenever code awaits something.
 
-- After every await that changes the session, check the session revision is unchanged before applying the answer.
-- Check the component is still mounted before `setState` or a refetch after an await.
-- Show a loader, not the sign-in form or a redirect, while the session is `restoring`.
-- Tests use deferred responses (`createGate`): a late answer after navigation, unmount or sign-out changes nothing.
-- RTK Query's `refetchOnMountOrArgChange` attaches to a request already pending for the same args instead of starting a new one: decide freshness by `requestId`, not by comparing `fulfilledTimeStamp` with `Date.now()`.
+## Claude Code tooling
+
+Sessions may start in `frontend/`, `admin/`, `packages/` or the root; each has its own `.claude/settings.json` (changed together with the root's). Hook scripts are in the root `.claude/hooks/`.
+
+- `frontend-lint` runs after every edit of a `.ts` or `.tsx` file and reports ESLint findings on it. Fix them before moving on.
+- `frontend-generated-guard` blocks edits under `packages/api-client/src/generated/`. Run `pnpm generate:api`.
+- Path rules in `.claude/rules/` load with the files they name: `files-and-exports`, `structure`, `async-session`, `tests` and `accessibility`. `admin/.claude/rules` is a symlink to them; `packages/.claude/rules/` holds adjusted copies. The docs own the rules; keep both in step.
+- The `frontend-developer` agent writes production code; its brief names the files it owns. Don't use a general-purpose agent for frontend code.
+- The `frontend-wcag` agent audits and fixes accessibility after `frontend-developer`, alone, when the story orchestrator decides ([docs/accessibility.md](docs/accessibility.md)).
+- The `frontend-test-writer` agent writes tests and owns `testing/` (MSW handlers, test-utils). Its reviewers are `frontend-reviewer` (code) and `frontend-test-reviewer` (tests, scoped StrykerJS), or Codex's reviewer in a Codex review (root `CLAUDE.md`, "Claude Code setup").
+- `/frontend-translations` holds the steps for adding, changing, moving or removing text.
+- `/smoke-check` drives a story's flows in a browser against the running system (root `CLAUDE.md`).
+- The Playwright MCP drives the apps for manual checks.
+
+## Testing rules
+
+The rules are in [docs/testing.md](docs/testing.md#writing-tests-that-catch-bugs). In short:
+
+- Lowest layer that reaches the behaviour. Every UI test runs in LT and EN with literal expectations written by hand.
+- Query like a user (`getByRole`, labels, `userEvent`); no snapshots.
+- Races use `createGate`; each mapped ProblemDetails error shows its localized message.
+- fast-check for pure rules; a `vitest-axe` test per new page and per `@wattwise/ui` component state.
+- Run StrykerJS alone: it mutates source files in place. Command in [docs/testing.md](docs/testing.md#mutation-testing).
 
 ## Before committing
 

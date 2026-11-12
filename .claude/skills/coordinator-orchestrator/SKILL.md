@@ -1,6 +1,6 @@
 ---
 name: coordinator-orchestrator
-description: Run a Watt-Wise epic, one story or a range of stories autonomously as the coordinator orchestrator. It grills the user once, then drives each story in its own Orca worktree through a worker story orchestrator, approves plans, answers questions, merges PRs, resumes after limits and restarts, smoke-tests the result in the browser and reports at the end. Only when the user types /coordinator-orchestrator.
+description: Run a Watt-Wise epic, one story or a range of stories autonomously as the coordinator orchestrator. It grills the user once, then drives each story in its own Orca worktree through a worker story orchestrator, approves plans, answers questions, merges PRs, resumes after limits and restarts, smoke-checks each story in the browser before merging it and reports at the end. Only when the user types /coordinator-orchestrator.
 argument-hint: '<E5 | S5.3 | S5.2-S5.4>'
 disable-model-invocation: true
 ---
@@ -41,7 +41,7 @@ After a compaction, a restart or an hourly resume, read the progress file before
 
 Use the `grilling` skill's method (rounds over a design tree), but ask through **AskUserQuestion**: one decision per question, recommended option first, up to four per call. Investigate before asking: don't ask what the code, the docs or `git log` can answer. Ask:
 
-- **Review flow, for the whole run:** Codex (Codex reviewer worker `gpt-6.1-sol` medium on the whole diff, Codex test-writer worker `gpt-6-astra` medium for backend tests, Claude `backend-test-reviewer`) or Claude only (`backend-reviewer`, `backend-test-writer`, `backend-test-reviewer`). Always ask; no default.
+- **Review flow, for the whole run, backend and frontend:** Codex (Codex reviewer worker `gpt-6.1-sol` medium on the whole diff, Codex test-writer worker `gpt-6-astra` medium for backend and frontend tests, Claude `backend-test-reviewer` and `frontend-test-reviewer`) or Claude (`backend-developer`/`frontend-developer`, `backend-test-writer`/`frontend-test-writer`, `backend-reviewer`/`frontend-reviewer`, `backend-test-reviewer`/`frontend-test-reviewer`). Always ask; no default.
 - **Signing window length**, in hours, if delegated signing is set up (see Setup).
 - **Every open decision in every story**: what the story text, its Done line and the docs leave open, per story. Settle the product and security choices here so the stories don't stop on them later.
 - **How the run behaves**, only what the CLAUDE.md rules don't already settle.
@@ -89,6 +89,16 @@ Orca wakes you with "You have N orchestration messages". Run `orca orchestration
 
 Notify the user (PushNotification) only when the run is blocked on them.
 
+### Before merge
+
+When the story session reports its PR ready (all checks green, review loop clean) and before anyone runs `gh pr merge <n> --squash`:
+
+1. Run the story's QUEUED OP STEPS yourself in the story worktree, as CLAUDE.md says for manual end-to-end checks (tell the user to approve 1Password; reset or migrate the database first when the story regenerated `Initial`).
+2. Run `/smoke-check` in the story worktree, with the flows from the story's Done criteria.
+3. Bugs go back to the story session (`orca orchestration send --to dispatch:<id>`); it fixes them, the review loop runs again on the fix, and you repeat steps 1-2 for the affected flows. Merge only when the smoke check is clean.
+
+Tell the story session to wait for your go-ahead before merging; after the smoke check you either merge with exactly `gh pr merge <n> --squash` or tell the session to.
+
 ### Merge blocked
 
 If a story's `gh pr merge <n> --squash` is denied even as a single call: start a separate Codex worker with `orchestration` (`worker-start --agent codex --model gpt-6-astra --effort medium --keep-open`) to review PR `<n>` on its own. Send its findings to the story session; when the re-review is clean, merge it yourself with exactly `gh pr merge <n> --squash`. Blocked again → stop, push-notify the user, wait.
@@ -107,8 +117,8 @@ On `worker_done`:
 
 After the last story merges:
 
-1. **Smoke tests.** Run every queued op step yourself, as CLAUDE.md says for manual end-to-end checks: hosts and dev servers through `op run` in the background (tell the user to approve 1Password), URLs through `op read`, the browser through the Playwright MCP, email links through Mailpit's API. Reset or migrate the database first when a story regenerated `Initial`. Stop every process and close the browser afterwards.
-2. **Fix what they find.** Each bug goes to a Sonnet agent on a branch from `origin/main` in this worktree; run the checks, open the PR, merge it. Report what was fixed.
+1. **Smoke tests.** Already run per story before each merge (see Before merge). Report the results per story: flows checked, bugs found and fixed.
+2. **Bug-fixes.** Bugs found after a merge go to a Sonnet agent on a branch from `origin/main` in this worktree; run the checks, open the PR, merge it. Report what was fixed.
 3. **Learnings.** List every learning the story reports gave, each with the file it would change, and let the user pick with AskUserQuestion (multi-select). Fold the picked ones into the files that own them through Sonnet agents (Codex twins too), then PR and merge.
 4. **Decisions report.** Tell the user every decision you took that the grilling didn't cover, story by story, with its reason, and which ones the user took when asked.
 5. **Clean up.** Remove the automation (`orca automations remove --id <id>`), stop the signing window (`systemctl --user stop delegated-signing`), write `<run name> DONE` as the last line of the progress file, and push-notify the user.

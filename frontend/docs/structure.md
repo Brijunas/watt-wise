@@ -121,6 +121,8 @@ Tags live in the package because they are part of the API contract: both apps ne
 - **One instance per app, made in `lib/i18n.ts`.** `createAppI18n()` calls `createI18n` from `@wattwise/i18n` with the app's namespaces: `app` from `locales/` and one per feature from `features/<f>/locales/`. The JSON is imported statically and bundled, so the instance is ready synchronously and no component waits for text. `main.tsx` uses the instance the module exports; `testing/test-utils.tsx` calls `createAppI18n()` for a fresh one per test.
 - **Keys are type-checked.** `@wattwise/i18n` declares its namespaces in i18next's `ResourceNamespaceMap`, and `lib/i18n.ts` adds the app's to the same interface with `declare module 'i18next'`, typed from the English file. A key that doesn't exist fails `pnpm typecheck`. Name the namespace in `useTranslation('<namespace>')`; without one, keys come from `common`.
 - **Both languages have the same keys.** `lib/i18n.test.ts` compares every pair of locale files with `flattenKeys` from `@wattwise/i18n/testing`; a new namespace is added to that test.
+- **Plurals use i18next suffixes.** Lithuanian has `_one`, `_few`, `_many` and `_other`; English `_one` and `_other`. The key check ignores the suffixes.
+- **Register.** Lithuanian uses the polite "jūs": imperative in body text, infinitive on buttons. Remove a key when its last use goes. The step-by-step is the `frontend-translations` skill.
 - **Detection, the stored choice and `<html lang>`** belong to `@wattwise/i18n` ([architecture.md](architecture.md#i18n)); the switch is `LanguageSwitch` in `@wattwise/ui`. Language names shown in the switch are endonyms from `languageNames`, not translated.
 
 ## Store

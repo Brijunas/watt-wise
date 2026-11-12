@@ -4,3 +4,6 @@ backend/**/obj/
 backend/**/TestResults/
 backend/openapi/
 .claude/worktrees/
+**/reports/mutation/
+**/.stryker-tmp/
+**/stryker-setup-*.js

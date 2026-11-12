@@ -144,7 +144,7 @@ The design (permissions in the token, the 15-minute window) is in [security.md](
 
 - **Seed.** The `Initial` migration seeds, through `HasData` in the `Role`, `Permission` and `RolePermission` configurations, the `Admin` role, the `admin.access` permission and the row that grants it. Their ids are fixed (`RoleNames.AdminId`, `PermissionNames.AdminAccessId`), so every environment has the same ones.
 - **Permission check.** `/api/v1/admin` is a route group mapped from every `IAdminEndpointModule` in DI and wrapped in `RequirePermission(PermissionNames.AdminAccess)` ([architecture.md](../architecture.md#http-surface)). `PermissionPolicies` holds one policy per permission, a `RequireClaim` on the token's `permission` claim; a new permission an endpoint checks must be added there. Endpoints never check role names. An anonymous call gets 401 and a signed-in account without the permission 403 `General.Forbidden`. No real admin endpoint exists yet; `TestAdminEndpointModule` in Api.IntegrationTests stands in ([testing.md](../testing.md)).
-- **Commands.** `WattWise.Cli admin grant <email>` and `admin revoke <email>` ([development.md](../../../docs/development.md#admin-role)) send `GrantAdminRoleCommand` and `RevokeAdminRoleCommand`. Both look the account up through `IAccountRoles.FindByEmailAsync` (the email is normalized like at sign-in) and need it to exist and have a confirmed email. The Cli connects as `cli` and switches to `owner` ([postgres.md](../../../deploy/docs/postgres.md)), which lets it write `account_roles` and delete sessions.
+- **Commands.** `WattWise.Cli admin grant <email>` and `admin revoke <email>` ([development.md](../../../docs/development.md#accounts-for-development)) send `GrantAdminRoleCommand` and `RevokeAdminRoleCommand`. Both look the account up through `IAccountRoles.FindByEmailAsync` (the email is normalized like at sign-in) and need it to exist and have a confirmed email. The Cli connects as `cli` and switches to `owner` ([postgres.md](../../../deploy/docs/postgres.md)), which lets it write `account_roles` and delete sessions.
 
 | Command  | Result                 | Does                                                                                                                                                                                   |
 | -------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -155,3 +155,21 @@ The design (permissions in the token, the 15-minute window) is in [security.md](
 
 - **Errors.** `Accounts.AccountNotFound` and `Accounts.EmailNotConfirmed`: the Cli prints `<code>: <description>` to stderr, exits 1 and changes nothing. An unexpected exception is logged and exits 1; Ctrl+C exits 130.
 - **Security stamp.** Untouched: a role change is not a password change. A grant takes effect at the account's next refresh or sign-in, when the permission enters its token.
+
+## Smoke accounts
+
+`WattWise.Cli seed smoke-accounts` ([development.md](../../../docs/development.md#accounts-for-development)) keeps the two accounts the `/smoke-check` skill signs in with in a known state. The rule that it runs only in Development and keeps the credentials in 1Password is in [security.md](../../../docs/security.md#smoke-accounts).
+
+- **Settings.** `SmokeAccounts:UserEmail`, `UserPassword`, `AdminEmail` and `AdminPassword`, filled from the 1Password item `smoke-accounts` through the Cli's `.env.development`.
+- **Command.** For each account the Cli sends `SeedSmokeAccountCommand`; its handler asks `ISmokeAccounts.EnsureAsync` for the account, then sets the `Admin` role (the admin account has it, the user account does not) with the same `IAccountRoles` and `IAccountSessions` ports as the admin commands, in one `ITransactionRunner` transaction.
+- **A new account** has its email confirmed, language `en` and no lockout, and no email is sent.
+- **Changes only what differs.** An existing account is corrected to: confirmed email, the configured password, no lockout, the role above.
+
+| Outcome     | Meaning                                        | Sessions                                                                                                                                                     |
+| ----------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `created`   | the account did not exist                      | none to end                                                                                                                                                  |
+| `changed`   | something differed and was corrected           | a changed password replaces the security stamp and ends every session; removing `Admin` from the user account ends every session; other corrections end none |
+| `unchanged` | the account already was in the state asked for | none ended                                                                                                                                                   |
+
+- **Output.** One line per account, `user: <outcome>` and `admin: <outcome>`; never an email or a password.
+- **Errors.** Outside Development the Cli prints that the command runs only in Development and exits 1 before touching the database; the Infrastructure adapter refuses too ([security.md](../../../docs/security.md#smoke-accounts)).

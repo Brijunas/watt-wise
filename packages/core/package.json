@@ -9,7 +9,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "mutation": "stryker run ../../stryker.config.json"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": "catalog:",
@@ -19,9 +20,11 @@
   },
   "devDependencies": {
     "@reduxjs/toolkit": "catalog:",
+    "fast-check": "catalog:",
     "jsdom": "catalog:",
     "msw": "catalog:",
     "vite": "catalog:",
+    "vitest-axe": "catalog:",
     "zod": "catalog:"
   },
   "dependencies": {

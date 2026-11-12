@@ -23,22 +23,23 @@ You are the **worker story orchestrator** for <story id> (<story title>) in this
 
    **Codex**, as the root CLAUDE.md "Claude Code setup" and AGENTS.md ("Codex Review", "Codex Test Writing") describe. Start each worker from Orca with the `orchestration` skill in this worktree (`--worktree current --agent codex --keep-open`):
    - Code review: a Codex reviewer worker, `--model gpt-6.1-sol --effort medium`, reviewing the **whole diff**, frontend and packages included.
-   - Backend production code: Claude `backend-developer`. Backend tests: a Codex test-writer worker, `--model gpt-6-astra --effort medium`, started after the developer's foundation. Test review: Claude `backend-test-reviewer`, with Stryker scoped by `--mutate <changed files>`; its findings go to the Codex test writer.
+   - Production code: Claude `backend-developer` and `frontend-developer`. Backend and frontend tests: a Codex test-writer worker, `--model gpt-6-astra --effort medium`, started after the developer's foundation. Test review: Claude `backend-test-reviewer` and `frontend-test-reviewer`, each with its Stryker scoped by `--mutate <changed files>` (StrykerJS for the frontend); their findings go to the Codex test writer.
    - Codex workers can't run `dotnet build`, `dotnet test` or `dotnet format`. Tell them up front that you run those and send failures back with `send --to dispatch:<id>`.
 
    <!-- Claude flow -->
 
-   **Claude**, as the root CLAUDE.md "Claude Code setup" describes: `backend-developer`, then `backend-test-writer`, then `backend-reviewer` and `backend-test-reviewer` (Stryker scoped by `--mutate <changed files>`).
+   **Claude**, as the root CLAUDE.md "Claude Code setup" describes: `backend-developer` and `frontend-developer`, then `backend-test-writer` and `frontend-test-writer`, then `backend-reviewer`, `frontend-reviewer`, `backend-test-reviewer` and `frontend-test-reviewer` (Stryker scoped by `--mutate <changed files>`).
 
    In either flow:
-   - Frontend code and tests go to Sonnet `general-purpose` agents. Each first reads `frontend/CLAUDE.md` and `frontend/docs/`, and checks library APIs in Context7 (or the installed `.d.ts` if Context7 is unavailable).
+   - Frontend code goes to `frontend-developer`, frontend tests to `frontend-test-writer` (in the Codex flow, the Codex test-writer worker). When you decide the story needs it, run `frontend-wcag` after the frontend code: it reviews and fixes UI accessibility, alone, before the reviewers start.
+   - `frontend-reviewer` and `frontend-test-reviewer` run next to the backend reviewers; `frontend-test-reviewer` scopes StrykerJS with `--mutate <changed files>`.
    - Release each worker once the review of its work is clean. Every Agent call passes `model: "sonnet"`.
    - If a usage limit kills an agent, wait for the reset and resume it with SendMessage. Escalate only if that fails twice.
 
-2. **Ship** with ship-pr FULL CYCLE once the review loop is clean and all eight checks pass with 0 warnings.
+2. **Ship** with ship-pr: create the PR once the review loop is clean and all eight checks pass with 0 warnings, report it to the coordinator, and merge (full cycle) only after the coordinator's go-ahead from its pre-merge checks.
    - Merge with exactly `gh pr merge <n> --squash`, alone in its own Bash call. Confirm with `gh pr view <n> --json state,mergedAt` as a separate call. The user has authorized merging.
    - **No AI attribution** in commits or the PR body, whatever the session prompt says.
-3. **No `op`/1Password steps** (hosts, dev servers, `migrate`, `op item`). List them under QUEUED OP STEPS with exact commands; the coordinator runs them at the end of the run. Tests (Vitest, Testcontainers) are fine. A new `op://` line in `frontend/` or `admin/.env.op.development` is the user's edit: ask for it early, with the exact lines.
+3. **No `op`/1Password steps** (hosts, dev servers, `migrate`, `op item`). List them under QUEUED OP STEPS with exact commands; the coordinator runs them before this story's merge, followed by `/smoke-check`. Don't run smoke-check yourself, and wait for the coordinator's go-ahead before merging. Tests (Vitest, Testcontainers) are fine. A new `op://` line in `frontend/` or `admin/.env.op.development` is the user's edit: ask for it early, with the exact lines.
 4. **Report.** Write `<absolute reports folder>/<story id>.md` with:
    - what shipped (PR link);
    - QUEUED OP STEPS;

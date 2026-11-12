@@ -9,7 +9,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "mutation": "stryker run ../../stryker.config.json"
   },
   "peerDependencies": {
     "@emotion/react": "catalog:",
@@ -40,6 +41,7 @@
     "@testing-library/user-event": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "fast-check": "catalog:",
     "i18next": "catalog:",
     "jsdom": "catalog:",
     "react": "catalog:",
@@ -47,6 +49,7 @@
     "react-hook-form": "catalog:",
     "react-i18next": "catalog:",
     "vite": "catalog:",
+    "vitest-axe": "catalog:",
     "zod": "catalog:"
   }
 }

@@ -8,7 +8,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc",
-    "generate": "mkdir -p src/generated && rtk-query-codegen-openapi openapi-config.json && prettier --write src/generated/api.ts"
+    "generate": "mkdir -p src/generated && rtk-query-codegen-openapi openapi-config.json && prettier --write src/generated/api.ts",
+    "mutation": "stryker run ../../stryker.config.json"
   },
   "peerDependencies": {
     "@reduxjs/toolkit": "catalog:",
@@ -21,9 +22,11 @@
     "@reduxjs/toolkit": "catalog:",
     "@rtk-query/codegen-openapi": "^2.2.0",
     "@types/react": "catalog:",
+    "fast-check": "catalog:",
     "msw": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-redux": "catalog:"
+    "react-redux": "catalog:",
+    "vitest-axe": "catalog:"
   }
 }

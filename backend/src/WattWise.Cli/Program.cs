@@ -6,6 +6,7 @@ RootCommand root = new("Watt-Wise maintenance CLI: migrations, one-off scripts a
 {
     MigrateCommand.Create(args),
     AdminCommand.Create(args),
+    SeedCommand.Create(args),
 };
 
 return await root.Parse(args).InvokeAsync();
