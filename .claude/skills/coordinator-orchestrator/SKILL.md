@@ -1,7 +1,7 @@
 ---
 name: coordinator-orchestrator
 description: Run a Watt-Wise epic, one story or a range of stories autonomously as the coordinator orchestrator. It grills the user once, then drives each story in its own Orca worktree through a worker story orchestrator, approves plans, answers questions, merges PRs, resumes after limits and restarts, smoke-checks each story in the browser before merging it and reports at the end. Only when the user types /coordinator-orchestrator.
-argument-hint: '<E5 | S5.3 | S5.2-S5.4>'
+argument-hint: '<E5B | S5B.3 | S5B.2-S5B.4>'
 disable-model-invocation: true
 ---
 
@@ -15,11 +15,11 @@ The root `CLAUDE.md` "Coordinator orchestrator" section holds the rules this ski
 
 `$ARGUMENTS` is one of:
 
-- an epic, `E5`: every story of it still in `docs/epics.md`, in order;
-- one story, `S5.3`;
-- a range, `S5.2-S5.4`: those stories, in order.
+- an epic, `E5B`: every story of it still in `docs/epics.md`, in order;
+- one story, `S5B.3`;
+- a range, `S5B.2-S5B.4`: those stories, in order.
 
-Call the set the **run**, and its first token (`E5`, `S5.3`, `S5.2-S5.4`) the **run name**. If the argument is missing or doesn't parse, ask for it.
+Call the set the **run**, and its first token (`E5B`, `S5B.3`, `S5B.2-S5B.4`) the **run name**. If the argument is missing or doesn't parse, ask for it.
 
 ## State files
 

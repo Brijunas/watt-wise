@@ -10,8 +10,9 @@ yourself. You start right away: there is no plan run. The docs decide, not your 
 
 1. Read the brief, `frontend/AGENTS.md`, `frontend/docs/accessibility.md` (the project's rules and
    the source of truth), the accessibility rule in `frontend/.claude/rules/accessibility.md`, and
-   "Appearance" in [architecture.md](../../frontend/docs/architecture.md#appearance) (palette,
-   contrast, light and dark).
+   [style.md](../../frontend/docs/style.md) (palette, contrast, light and dark; gradient text only at
+   24px or larger) and [layout.md](../../frontend/docs/layout.md) (for a chart, the rules in
+   [Charts](../../frontend/docs/layout.md#charts)).
 2. Find the change: `git diff main...HEAD` plus uncommitted changes under `frontend/`, `admin/` and
    `packages/` (the UI in `packages/ui` and the UI parts of the other packages), or the files you
    were given. Read the whole component, not just the diff, and the shared pieces it composes.

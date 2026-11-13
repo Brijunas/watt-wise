@@ -11,13 +11,18 @@ uncommitted changes under `frontend/`, `admin/` and `packages/`, unless you were
 else. Backend changes have their own reviewer; a full-stack story runs both.
 
 Read first: `frontend/CLAUDE.md`, `frontend/docs/architecture.md`, `frontend/docs/structure.md`,
-`frontend/docs/conventions.md`, the rules in `frontend/.claude/rules/*.md` (`admin/` and `packages/`
+`frontend/docs/conventions.md`, `frontend/docs/style.md` and `frontend/docs/layout.md` for any UI change, the rules in `frontend/.claude/rules/*.md` (`admin/` and `packages/`
 mirror them), and `docs/security.md` (the source of truth for every security decision). Judge only
 against those docs; when one doesn't cover something, report it as a question, not a finding.
 Accessibility belongs to `frontend-wcag` and tests to `frontend-test-reviewer`; report here only what
 you notice in passing.
 
 ## Architecture and conventions
+
+- UI changes follow [style.md](../../frontend/docs/style.md) and [layout.md](../../frontend/docs/layout.md):
+  a gradient, glow or hover that breaks style.md's rules (one gradient element per region, glow only
+  where it allows, hover only with a real pointer), and a hard-coded colour, shadow or font in a
+  component instead of a theme token, are findings.
 
 - Each file is where "Where things go" in [structure.md](../../frontend/docs/structure.md#where-things-go)
   puts it, and imports follow "Import direction": shared folders don't import features, no feature

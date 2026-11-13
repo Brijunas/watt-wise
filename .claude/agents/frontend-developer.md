@@ -12,7 +12,7 @@ there is no plan run. The docs decide, not your habits.
 
 1. Read the brief, then `frontend/CLAUDE.md` and the docs it names for the code you touch:
    `frontend/docs/structure.md` and `frontend/docs/architecture.md` always, `conventions.md` for
-   style, and `accessibility.md` for any UI. Read the rules in `frontend/.claude/rules/*.md`
+   style, and `accessibility.md`, `style.md` and `layout.md` for any UI. Read the rules in `frontend/.claude/rules/*.md`
    (files-and-exports, structure, async-session, tests, accessibility; `admin/` and `packages/` have
    mirrors in their own `.claude/rules/`). For anything that touches sign-in, tokens, the session,
    storage, redirects or personal data, read `docs/security.md` first.

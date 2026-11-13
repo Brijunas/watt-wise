@@ -11,4 +11,4 @@ Deployment configuration for Watt-Wise: Docker Compose files per environment, Po
 | `docs/lgtm.md`                   | Grafana LGTM: OTLP receiver and Grafana for traces, metrics and logs                                                                                                                                                                                                 |
 | `docs/mailpit.md`                | Mailpit: catches the Development Api's email                                                                                                                                                                                                                         |
 
-Compose files for Testing, Staging and Production and the cloudflared config come in E5 (see [epics.md](../docs/epics.md)). No secret value is ever committed; secrets come from 1Password at runtime.
+Compose files for Testing, Staging and Production and the cloudflared config come in E5B (see [epics.md](../docs/epics.md)). No secret value is ever committed; secrets come from 1Password at runtime.

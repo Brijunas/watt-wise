@@ -97,7 +97,7 @@ Because `i18n` imports nothing, `core` → `i18n` can't close a cycle. `core` ne
 
 | Thing                           | Place                                                                                                                                                                      |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Generic or themed UI            | `@wattwise/ui`. Only layouts and pieces used by one app go in `<app>/src/components/`.                                                                                     |
+| Generic or themed UI            | `@wattwise/ui`. Only layouts and pieces used by one app go in `<app>/src/components/`; the look is in [style.md](style.md).                                                |
 | A page                          | A route module in `app/routes/` that renders feature components. Pages hold no business logic.                                                                             |
 | Route guards                    | Layout routes in `app/routes/` that check the session from `@wattwise/core` (and, in admin, the `admin.access` permission from `/me`). Guards are not route loaders.       |
 | A component used by one feature | `features/<f>/components/`                                                                                                                                                 |
