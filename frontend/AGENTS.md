@@ -15,6 +15,7 @@ Path rules live in [.claude/rules](.claude/rules/); read the matching files expl
 | TypeScript/React code, filenames, exports, or lint configuration            | [Conventions](docs/conventions.md)                                    |
 | Unit/component tests, route integration tests, fixtures, or MSW handlers    | [Testing](docs/testing.md)                                            |
 | Pages, components, theme, or aria text                                      | [Accessibility](docs/accessibility.md)                                |
+| Colours, type, glow, logo, layout, charts or result states                  | [Style](docs/style.md), [Layout](docs/layout.md)                      |
 | Authentication, authorization, tokens, or personal data                     | Root [security](../docs/security.md)                                  |
 | Installing tools, starting apps, or running checks                          | Root [setup](../docs/setup.md), [development](../docs/development.md) |
 | Tool versions or compatibility workarounds                                  | Root [known issues](../docs/known-issues.md)                          |

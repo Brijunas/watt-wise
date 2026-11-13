@@ -2,6 +2,8 @@
 
 Notes for Claude Code when working in `frontend/`, `admin/` or `packages/`. Both apps and the `@wattwise/*` packages share one set of docs in [docs/](docs/): read [docs/structure.md](docs/structure.md) and [docs/architecture.md](docs/architecture.md) before writing code, and [docs/testing.md](docs/testing.md) before writing tests.
 
+Read [docs/style.md](docs/style.md) and [docs/layout.md](docs/layout.md) before changing anything a user sees.
+
 ## TypeScript files
 
 - Follow [docs/conventions.md](docs/conventions.md#files-and-naming): kebab-case file names, one component per file, no barrel files inside an app, the `@/` alias across folders, and arrow functions with a default export for single-function files.

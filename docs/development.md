@@ -15,7 +15,7 @@ dotnet format backend/WattWise.slnx --verify-no-changes
 dotnet test --solution backend/WattWise.slnx
 ```
 
-Run all eight before committing; CI enforces the same from E5. `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
+Run all eight before committing; CI enforces the same from E5B. `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
 
 ## Workspace (JS)
 
@@ -121,7 +121,7 @@ Only `WattWise.Cli migrate` changes the schema, in every environment; never use 
 | `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet ef migrations remove <infra>`                                                              | Removes the last migration if it isn't applied. Connects to check that.                                                                                                 |
 | `docker compose -f deploy/docker-compose.development.yml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d wattwise' < deploy/development/reset-app-tables.sql` | Drops the `app` tables and the migration history, after `Initial` was regenerated ([architecture.md](../backend/docs/architecture.md#persistence)). Then run `migrate`. |
 | `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet ef migrations list <infra>`                                                                | Lists the migrations and marks the ones not yet applied `(Pending)`. Without `op run` it can't show that.                                                               |
-| `dotnet ef migrations has-pending-model-changes <infra>`                                                                                                          | Fails if the model has changes no migration covers. CI runs it from E5.                                                                                                 |
+| `dotnet ef migrations has-pending-model-changes <infra>`                                                                                                          | Fails if the model has changes no migration covers. CI runs it from E5B.                                                                                                |
 | `dotnet ef migrations script --idempotent <infra> -o <file>.sql`                                                                                                  | Writes the SQL of every migration, for review.                                                                                                                          |
 
 ## Accounts for development

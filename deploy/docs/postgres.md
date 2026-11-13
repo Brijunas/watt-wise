@@ -66,7 +66,7 @@ Each environment has its own cluster, so role names carry no prefix.
 - it runs as `admin` against the `postgres` database;
 - it sets no passwords. Login roles are created without one and can't log in until an admin sets it.
 
-Development steps are under "Development database" in [setup.md](../../docs/setup.md). Testing, Staging and Production follow the same steps against their own vault (E5). After the bootstrap, `WattWise.Cli migrate` creates and updates the tables.
+Development steps are under "Development database" in [setup.md](../../docs/setup.md). Testing, Staging and Production follow the same steps against their own vault (E5B). After the bootstrap, `WattWise.Cli migrate` creates and updates the tables.
 
 ## Passwords
 

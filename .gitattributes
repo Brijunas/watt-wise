@@ -1,2 +1,15 @@
+# Binary files: no line-ending conversion, no text diff or merge.
 *.png binary
 *.ico binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.gz binary

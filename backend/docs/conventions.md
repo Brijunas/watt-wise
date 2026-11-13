@@ -26,7 +26,7 @@ Build settings, package management and code style for the .NET solution. The lay
 
 ## Package management
 
-Central package management: `backend/Directory.Packages.props` sets `ManagePackageVersionsCentrally` and holds one `PackageVersion` per NuGet package. A `.csproj` lists `<PackageReference Include="..." />` without a version. To add or bump a package, change the version in `Directory.Packages.props` only. The update policy (minimum release age, Renovate from E5) is in "Dependency updates" in the root [technical.md](../../docs/technical.md).
+Central package management: `backend/Directory.Packages.props` sets `ManagePackageVersionsCentrally` and holds one `PackageVersion` per NuGet package. A `.csproj` lists `<PackageReference Include="..." />` without a version. To add or bump a package, change the version in `Directory.Packages.props` only. The update policy (minimum release age, Renovate from E5B) is in "Dependency updates" in the root [technical.md](../../docs/technical.md).
 
 `backend/nuget.config` clears every inherited package source and adds only nuget.org. This keeps restores the same on every machine and in CI, whatever feeds a developer has configured for other work. With one source, NuGet also doesn't raise NU1507, the warning about central package management with several sources.
 
