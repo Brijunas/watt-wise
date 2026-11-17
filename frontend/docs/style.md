@@ -14,7 +14,7 @@ The visual language of `frontend/`, `admin/` and `@wattwise/ui`: "calm neon", ta
 
 - **Mark:** the user's original W with the lightning bolt, used as drawn: never redrawn, recoloured or stretched. The source renders are the reference: [brand/source-mark.png](brand/source-mark.png), [brand/source-lockup.png](brand/source-lockup.png).
 - **Lockup:** the mark with "WATT" over "WISE" in Red Hat Display. WATT is weight 800 with 0.14em tracking in the text colour; WISE is weight 700, 84% of WATT's width, in the gradient. WATT starts below the bolt tip; the wordmark is about 1.6 times the mark's width (the original lockup's 1.8 with its wider typeface).
-- **Files** in [brand/](brand/), transparent PNG: `logo-lockup-dark.png`, `logo-lockup-light.png` (no glow; the app adds glow as a theme filter so the switch turns it off), `logo-lockup-dark-glow.png` and `logo-mark-glow.png` (marketing and other use outside the app), `logo-mark.png` (edge cleaned for light pages), `app-icon.png` (the original render on a rounded dark tile; favicon and PWA icons).
+- **Files** in [brand/](brand/), transparent PNG: `logo-lockup-dark.png`, `logo-lockup-light.png` (no glow; the app adds glow as a theme filter so the switch turns it off), `logo-lockup-dark-glow.png` and `logo-mark-glow.png` (marketing and other use outside the app), `logo-mark.png` (edge cleaned for light pages), `logo-mark-mono.svg` (forced colours: `currentColor`, with the wordmark in the text colour), `app-icon.png` (the original render on a rounded dark tile; favicon and PWA icons).
 - **Clear space:** at least the cap height of WISE on every side. **Minimum size:** 32px lockup height.
 - Only assets that passed the independent design review are in `brand/`. No vector master exists yet; the PNGs come from the 1254px source render.
 
@@ -24,14 +24,16 @@ Still to be made by a designer (or a drawing agent), checked by the independent 
 
 Candidates for each are in [brand-production/](brand-production/), awaiting review.
 
-| Asset                                           | Needed for                               | Requirements                                                                                                    |
-| ----------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `logo-mark.svg`                                 | Vector master; small sizes               | Faithful to `source-mark.png`, no background, no baked glow, under 50 KB                                        |
-| `logo-lockup-dark.svg`, `logo-lockup-light.svg` | App bar at any density                   | The lockup above with the wordmark as outlined Red Hat Display paths; WISE gradient in the dark and light stops |
-| `favicon.svg`                                   | Browser tab, `generate:icons` input      | The mark legible at 16px on light and dark tab bars                                                             |
-| `maskable-icon.png` (1024px)                    | Android adaptive icon                    | The mark inside the 80% safe zone on `#05060E`                                                                  |
-| `logo-mark-mono.svg`                            | Forced colours, print, single-colour use | One-colour silhouette of the mark                                                                               |
-| `social-card.png` (1200×630)                    | Link previews                            | Lockup on `#05060E`, glow on                                                                                    |
+| Asset                                           | Needed for                                | Requirements                                                                                                    |
+| ----------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `logo-mark.svg`                                 | Vector master; small sizes                | Faithful to `source-mark.png`, no background, no baked glow, under 50 KB                                        |
+| `logo-lockup-dark.svg`, `logo-lockup-light.svg` | App bar at any density                    | The lockup above with the wordmark as outlined Red Hat Display paths; WISE gradient in the dark and light stops |
+| `favicon.svg`                                   | Browser tab, `generate:icons` input       | The mark legible at 16px on light and dark tab bars                                                             |
+| `maskable-icon.png` (1024px)                    | Android adaptive icon                     | The mark inside the 80% safe zone on `#05060E`                                                                  |
+| `admin-favicon.svg`                             | Admin browser tab, `generate:icons` input | The gear and mark legible at 16px on light and dark tab bars                                                    |
+| `admin-maskable-icon.png` (1024px)              | Admin Android adaptive icon               | The gear and mark inside the 80% safe zone on full-bleed `#05060E`                                              |
+| `logo-mark-mono.svg`                            | Forced colours, print, single-colour use  | One-colour silhouette of the mark                                                                               |
+| `social-card.png` (1200×630)                    | Link previews                             | Lockup on `#05060E`, glow on                                                                                    |
 
 ## Colour tokens
 
@@ -47,13 +49,14 @@ Every colour comes from the MUI theme in `packages/ui`; a component never hard-c
 | `text.primary`       | `#120F24`                     | `#F2F3FA`                     | Text                                                                                 |
 | `text.secondary`     | `#56546E`                     | `#A9AECB`                     | Secondary text, labels, units                                                        |
 | `primary.main`       | `#6D28D9`                     | `#A98BFF`                     | Links, selected states, focus ring                                                   |
+| `secondary.main`     | `#BE185D`                     | `#FF2BD6`                     | MUI's second accent, for a component that needs one; never for meaning               |
 | Gradient stops       | `#0891B2` `#6D28D9` `#DB2777` | `#00E5FF` `#7C4DFF` `#FF2BD6` | Brand gradient, 100°                                                                 |
 | Action gradient      | `#0E7490` `#5B21B6` `#BE185D` | same                          | Filled primary buttons and the "Lowest cost" chip; white text                        |
 | `success`            | `#047857` on `#E3F5EC`        | `#34D399` on 14% of itself    | Cheaper, savings                                                                     |
 | `error`              | `#C62828`                     | `#FF6B63`                     | Pricier, errors                                                                      |
 | `warning`            | `#A84B00`                     | `#FFB74D`                     | Caution, partial data                                                                |
 
-- Text tokens meet 4.5:1 on `background.default`, `background.paper` and `surface2` in both modes; `fieldOutline` and `primary.main` meet 3:1. The theme's tests check it.
+- Text tokens meet 4.5:1 on `background.default`, `background.paper` and `surface2` in both modes; `fieldOutline`, `primary.main` and `secondary.main` meet 3:1. The theme's tests check it.
 - The gradient stops don't all reach 4.5:1, so gradient text is used only at 24px or larger.
 - Green, red and amber always come with a text or icon companion (`↑ €2.00 more a month`).
 - Forced colors: gradients and glows give way to system colours; series, chips and the switch keep a visible system-colour fill or border.
