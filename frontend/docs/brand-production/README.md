@@ -9,6 +9,7 @@ Candidates for the assets listed under "Missing assets" in [style.md](../style.m
 - [favicon.svg](favicon.svg): same geometry and shading as logo-mark.svg.
 - [logo-mark-mono.svg](logo-mark-mono.svg): one `currentColor` fill.
 - [maskable-icon.png](maskable-icon.png): 1024×1024, the approved raster on #05060E inside the safe zone.
+- [admin-favicon.svg](admin-favicon.svg) and [admin-maskable-icon.png](admin-maskable-icon.png): the admin tab and adaptive icons. Both reuse the artwork from the [logo-mark.svg](logo-mark.svg) candidate and must be approved together with it.
 - [social-card.png](social-card.png): 1200×630, the approved lockup raster on #05060E with a soft halo.
 
 ## Known limitations

@@ -27,7 +27,9 @@ Every screen works from 320px wide and at 200% text without horizontal page scro
 | 1600–2399   | Drawer                      | Same                                                                                             | Max 1440px with a 340px side column |
 | 2400 and up | Drawer                      | Same                                                                                             | Max 1600px with a 380px side column |
 
-The current item's indicator uses the gradient. Focused content keeps clear of the fixed bars (`scroll-padding`). The theme button opens a menu (Light, Dark, Follow device); the account menu holds the language below 600px and Settings and Sign out at every width.
+The admin's app bar shows the same logo lockup followed by a small "Admin" chip (`surface2`, `text.secondary`, translated); the mark is untouched. The current item's indicator uses the gradient. Focused content keeps clear of the fixed bars (`scroll-padding`). The theme button opens a menu (Light, Dark, Follow device); the frontend's account menu holds Settings (a page linking to change password and devices) and Sign out at every width and the language below 600px, and for a visitor sign in and sign up; the admin's account menu holds Sign out and the language below 600px.
+
+**Signed-out pages** (sign-up, check email, confirm email, resend confirmation, sign-in, forgot and reset password, the admin's sign-in and no-access) have a minimal app bar (logo, glow switch, theme menu, language) with no account menu (the sign-in and sign-up forms link to each other), no bottom bar, rail or drawer, and centred content. The visitor menu (Sign in, Sign up) stays only on public pages that use the full shell, such as About.
 
 ## Comparison results
 
