@@ -49,13 +49,14 @@ Every colour comes from the MUI theme in `packages/ui`; a component never hard-c
 | `text.primary`       | `#120F24`                     | `#F2F3FA`                     | Text                                                                                 |
 | `text.secondary`     | `#56546E`                     | `#A9AECB`                     | Secondary text, labels, units                                                        |
 | `primary.main`       | `#6D28D9`                     | `#A98BFF`                     | Links, selected states, focus ring                                                   |
+| `secondary.main`     | `#BE185D`                     | `#FF2BD6`                     | MUI's second accent, for a component that needs one; never for meaning               |
 | Gradient stops       | `#0891B2` `#6D28D9` `#DB2777` | `#00E5FF` `#7C4DFF` `#FF2BD6` | Brand gradient, 100°                                                                 |
 | Action gradient      | `#0E7490` `#5B21B6` `#BE185D` | same                          | Filled primary buttons and the "Lowest cost" chip; white text                        |
 | `success`            | `#047857` on `#E3F5EC`        | `#34D399` on 14% of itself    | Cheaper, savings                                                                     |
 | `error`              | `#C62828`                     | `#FF6B63`                     | Pricier, errors                                                                      |
 | `warning`            | `#A84B00`                     | `#FFB74D`                     | Caution, partial data                                                                |
 
-- Text tokens meet 4.5:1 on `background.default`, `background.paper` and `surface2` in both modes; `fieldOutline` and `primary.main` meet 3:1. The theme's tests check it.
+- Text tokens meet 4.5:1 on `background.default`, `background.paper` and `surface2` in both modes; `fieldOutline`, `primary.main` and `secondary.main` meet 3:1. The theme's tests check it.
 - The gradient stops don't all reach 4.5:1, so gradient text is used only at 24px or larger.
 - Green, red and amber always come with a text or icon companion (`↑ €2.00 more a month`).
 - Forced colors: gradients and glows give way to system colours; series, chips and the switch keep a visible system-colour fill or border.
