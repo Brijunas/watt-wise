@@ -275,6 +275,7 @@ export default defineConfig(
     files: [...apps.map((app) => `${app}/src/**/*.{ts,tsx}`), 'packages/*/src/**/*.{ts,tsx}'],
     ignores: [
       'packages/ui/src/theme/**',
+      '{frontend,admin}/src/app/pwa-manifest.ts',
       '**/*.test.ts',
       '**/*.test.tsx',
       '**/testing/**',

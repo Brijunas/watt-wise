@@ -28,7 +28,6 @@ const RootLayout = () => {
 
   return (
     <AppShell
-      title="Watt-Wise"
       items={items}
       activeKey={active?.key ?? null}
       linkComponent={Link}

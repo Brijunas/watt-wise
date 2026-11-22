@@ -15,6 +15,7 @@ import FormTextField from '../form/form-text-field'
 import LanguageSwitch from '../i18n/language-switch'
 import IconMenu, { type IconMenuProps } from '../menu/icon-menu'
 import AppShell from '../shell/app-shell'
+import Logo, { type LogoProps } from '../shell/logo'
 import NotFound, { type NotFoundProps } from '../shell/not-found'
 import PageLoading from '../shell/page-loading'
 import UpdatePrompt, { type UpdatePromptProps } from '../shell/update-prompt'
@@ -73,6 +74,7 @@ const text = {
     hidePassword: 'Hide password',
     language: 'Language',
     appearance: 'Appearance',
+    logoHome: 'Watt-Wise home',
   },
   lt: {
     navigation: 'Pagrindinė navigacija',
@@ -89,6 +91,7 @@ const text = {
     hidePassword: 'Slėpti slaptažodį',
     language: 'Kalba',
     appearance: 'Išvaizda',
+    logoHome: 'Watt-Wise pradžia',
   },
 } as const
 
@@ -122,7 +125,6 @@ const SignInHarness = ({ busy }: { busy?: boolean }) => {
 
 const shell = (actions?: React.ReactNode) => (
   <AppShell
-    title="Watt-Wise"
     items={[{ key: 'home', label: 'Home page', icon: <HomeIcon />, to: '/' }]}
     activeKey="home"
     linkComponent={TestLink}
@@ -283,6 +285,71 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
       expect(
         marginTop(closestTo(screen.getByRole('switch', { name: glowName }), '.MuiSwitch-root')),
       ).toBe('11px')
+    })
+  })
+
+  describe('WwLogo', () => {
+    type Slot = 'root' | 'lightLockup' | 'darkLockup' | 'mono' | 'wordmark'
+    const components = {
+      WwLogo: {
+        styleOverrides: {
+          root: { marginTop: '11px' },
+          lightLockup: { marginTop: '12px' },
+          darkLockup: { marginTop: '13px' },
+          mono: { marginTop: '14px' },
+          wordmark: { marginTop: '15px' },
+        },
+      },
+    }
+    const logo = <Logo linkComponent={TestLink} to="/" />
+    const element = (container: HTMLElement, slot: Slot) =>
+      slot === 'root'
+        ? screen.getByRole('link', { name: t.logoHome })
+        : (Array.from(container.querySelectorAll('img, span')).find((found) =>
+            Array.from(found.classList).some((name) => name.endsWith('-WwLogo-' + slot)),
+          ) ?? null)
+
+    it.each([
+      { slot: 'root', expected: '11px' },
+      { slot: 'lightLockup', expected: '12px' },
+      { slot: 'darkLockup', expected: '13px' },
+      { slot: 'mono', expected: '14px' },
+      { slot: 'wordmark', expected: '15px' },
+    ] as const)('applies styleOverrides.$slot', ({ slot, expected }) => {
+      const { container } = renderWithComponents(logo, { components, lng })
+      expect(marginTop(element(container, slot))).toBe(expected)
+    })
+
+    it('uses defaultProps.to when the page passes none', () => {
+      renderWithComponents(<Logo {...withoutRequired<LogoProps>({ linkComponent: TestLink })} />, {
+        components: { WwLogo: { defaultProps: { to: '/start' } } },
+        lng,
+      })
+      expect(screen.getByRole('link', { name: t.logoHome }).getAttribute('href')).toBe('/start')
+    })
+
+    it('lets an explicit to win over defaultProps.to', () => {
+      renderWithComponents(logo, {
+        components: { WwLogo: { defaultProps: { to: '/start' } } },
+        lng,
+      })
+      expect(screen.getByRole('link', { name: t.logoHome }).getAttribute('href')).toBe('/')
+    })
+
+    it('hands the props to styleOverrides as ownerState', () => {
+      renderWithComponents(logo, {
+        components: {
+          WwLogo: {
+            styleOverrides: {
+              root: ({ ownerState }) => ({
+                marginTop: ownerState.to === '/' ? '21px' : '22px',
+              }),
+            },
+          },
+        },
+        lng,
+      })
+      expect(marginTop(screen.getByRole('link', { name: t.logoHome }))).toBe('21px')
     })
   })
 

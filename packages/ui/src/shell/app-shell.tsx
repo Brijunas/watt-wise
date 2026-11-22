@@ -11,19 +11,18 @@ import ListItemText from '@mui/material/ListItemText'
 import Paper from '@mui/material/Paper'
 import { styled, useTheme, useThemeProps } from '@mui/material/styles'
 import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ElementType, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AppShellNavItem } from './app-shell-nav-item'
 import { bottomBarHeight } from './bottom-bar-height'
+import Logo from './logo'
 
 const drawerWidth = 240
 
 export type AppShellClassKey = 'root' | 'appBar' | 'drawer' | 'bottomBar' | 'main'
 
 export interface AppShellProps {
-  title: string
   items: readonly AppShellNavItem[]
   /** `null` when no item matches, for example on the not-found page. */
   activeKey: string | null
@@ -80,7 +79,7 @@ const AppShellMain = styled('main', { name, slot: 'main' })<{ ownerState: OwnerS
 
 const AppShell = (inProps: AppShellProps) => {
   const props = useThemeProps({ props: inProps, name })
-  const { title, items, activeKey, linkComponent, actions, children } = props
+  const { items, activeKey, linkComponent, actions, children } = props
   const { t } = useTranslation('shell')
   const theme = useTheme()
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'))
@@ -91,9 +90,7 @@ const AppShell = (inProps: AppShellProps) => {
     <AppShellRoot ownerState={ownerState}>
       <AppShellAppBar position="fixed" ownerState={ownerState}>
         <Toolbar>
-          <Typography component="div" variant="h6" noWrap>
-            {title}
-          </Typography>
+          <Logo linkComponent={linkComponent} to="/" />
           {/* Plain Box with sx: stays until S5A.4 reworks the shell's layout. */}
           <Box sx={{ flexGrow: 1 }} />
           {actions}

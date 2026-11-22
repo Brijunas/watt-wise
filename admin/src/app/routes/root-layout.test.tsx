@@ -39,7 +39,7 @@ describe('RootLayout', () => {
   it('renders the phone shell with the Home page', async () => {
     renderAt('/', 360)
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
-    expect(screen.getByText('Watt-Wise Admin')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Watt-Wise home' }).getAttribute('href')).toBe('/')
     const nav = screen.getByRole('navigation', { name: 'Main navigation' })
     expect(screen.getAllByRole('navigation')).toHaveLength(1)
     expect(nav.querySelector('.MuiBottomNavigation-root')).toBeTruthy()
@@ -52,7 +52,7 @@ describe('RootLayout', () => {
   it('renders the side navigation from md up', async () => {
     renderAt('/', 900)
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
-    expect(screen.getByText('Watt-Wise Admin')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Watt-Wise home' }).getAttribute('href')).toBe('/')
     const nav = screen.getByRole('navigation', { name: 'Main navigation' })
     expect(screen.getAllByRole('navigation')).toHaveLength(1)
     expect(within(nav).getByRole('list')).toBeTruthy()

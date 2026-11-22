@@ -3,6 +3,7 @@ import { appearanceScript } from '@wattwise/ui/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import pwaManifest from './src/app/pwa-manifest.ts'
 
 // In Development, 1Password supplies APP_URL (see .env.op.development); without it (CI, tests,
 // builds) Vite's defaults apply.
@@ -20,30 +21,7 @@ export default defineConfig({
       // The user decides when to switch to a new version: `PwaUpdatePrompt` registers the worker.
       registerType: 'prompt',
       injectRegister: false,
-      manifest: {
-        name: 'Watt-Wise',
-        short_name: 'Watt-Wise',
-        description:
-          'Supraskite ir sumažinkite elektros sąskaitas pagal valandines kainas ir išmaniuosius planus.',
-        lang: 'lt',
-        start_url: '/',
-        scope: '/',
-        display: 'standalone',
-        theme_color: '#5235D8',
-        // The light theme's page background (packages/ui/src/theme/theme.ts).
-        background_color: '#F8F7FD',
-        icons: [
-          { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          {
-            src: 'maskable-icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-        ],
-      },
+      manifest: pwaManifest,
       workbox: {
         // The app shell: scripts, styles, the HTML, icons and the bundled Red Hat Display font files.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
