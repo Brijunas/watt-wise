@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { runtimeConfig, serverAddress } from './vite'
+import { runtimeConfig, serverAddress, vendorChunks } from './vite'
 
 type Middleware = (req: object, res: object, next: () => void) => void
 
@@ -138,5 +138,79 @@ describe('serverAddress', () => {
 
   it('throws a clear error for an invalid URL', () => {
     expect(() => serverAddress('not a url')).toThrow(/APP_URL is not a valid URL/)
+  })
+})
+
+describe('vendorChunks', () => {
+  const group = (name: string) => {
+    const found = vendorChunks.groups.find((candidate) => candidate.name === name)
+    if (!found) throw new Error(`Missing group ${name}`)
+    return found
+  }
+
+  it('has a react group and a mui group', () => {
+    expect(vendorChunks.groups.map((candidate) => candidate.name)).toEqual(['react', 'mui'])
+  })
+
+  it('ranks react above mui', () => {
+    expect([group('react').priority, group('mui').priority]).toEqual([2, 1])
+  })
+
+  it.each([
+    '/x/node_modules/.pnpm/react@19.0.0/node_modules/react/index.js',
+    '/x/node_modules/react/index.js',
+    'C:\\x\\node_modules\\react\\index.js',
+    '/x/node_modules/.pnpm/react-dom@19.0.0_react@19.0.0/node_modules/react-dom/client.js',
+    '/x/node_modules/react-dom/client.js',
+    'C:\\x\\node_modules\\react-dom\\client.js',
+    '/x/node_modules/.pnpm/react-router@7.0.0/node_modules/react-router/dist/index.js',
+    '/x/node_modules/react-router/dist/index.js',
+    'C:\\x\\node_modules\\react-router\\dist\\index.js',
+    '/x/node_modules/.pnpm/scheduler@0.25.0/node_modules/scheduler/index.js',
+    '/x/node_modules/scheduler/index.js',
+    'C:\\x\\node_modules\\scheduler\\index.js',
+  ])('puts %s in the react group', (path) => {
+    expect(group('react').test.test(path)).toBe(true)
+  })
+
+  it.each([
+    '/x/node_modules/.pnpm/@mui+material@7.0.0/node_modules/@mui/material/Button/Button.js',
+    '/x/node_modules/@mui/material/Button/Button.js',
+    'C:\\x\\node_modules\\@mui\\material\\Button\\Button.js',
+    '/x/node_modules/@mui/icons-material/HomeRounded.js',
+    '/x/node_modules/.pnpm/@emotion+react@11.0.0/node_modules/@emotion/react/dist/emotion-react.js',
+    '/x/node_modules/@emotion/styled/dist/emotion-styled.js',
+    'C:\\x\\node_modules\\@emotion\\cache\\dist\\emotion-cache.js',
+  ])('puts %s in the mui group', (path) => {
+    expect(group('mui').test.test(path)).toBe(true)
+  })
+
+  it.each([
+    '/x/node_modules/react-redux/dist/react-redux.js',
+    '/x/node_modules/react-i18next/dist/index.js',
+    '/x/node_modules/react-hook-form/dist/index.js',
+    '/x/node_modules/react-routerx/index.js',
+    '/x/node_modules/react-dom-extras/index.js',
+    '/x/node_modules/schedulerx/index.js',
+    '/x/node_modules/@mui-x/charts/index.js',
+    '/x/node_modules/@emotionx/react/index.js',
+    '/x/node_modules/@mui/material/Button.js',
+    '/x/node_modules/@emotion/react/dist/emotion-react.js',
+    '/x/src/react/index.js',
+    '/x/src/features/about/about-panel.tsx',
+  ])('keeps %s out of the react group', (path) => {
+    expect(group('react').test.test(path)).toBe(false)
+  })
+
+  it.each([
+    '/x/node_modules/react/index.js',
+    '/x/node_modules/react-router/dist/index.js',
+    '/x/node_modules/react-i18next/dist/index.js',
+    '/x/node_modules/@mui-x/charts/index.js',
+    '/x/node_modules/@emotionx/react/index.js',
+    '/x/src/mui/index.js',
+    '/x/src/features/about/about-panel.tsx',
+  ])('keeps %s out of the mui group', (path) => {
+    expect(group('mui').test.test(path)).toBe(false)
   })
 })

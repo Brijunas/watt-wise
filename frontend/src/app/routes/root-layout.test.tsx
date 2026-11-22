@@ -54,15 +54,32 @@ describe('RootLayout', () => {
     )
   })
 
-  it('renders the side navigation from md up', async () => {
-    renderAt('/', 900)
+  it.each([600, 900, 1199])('renders the rail at %i px', async (width) => {
+    renderAt('/', width)
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Watt-Wise home' }).getAttribute('href')).toBe('/')
     const nav = screen.getByRole('navigation', { name: 'Main navigation' })
     expect(screen.getAllByRole('navigation')).toHaveLength(1)
-    expect(within(nav).getByRole('list')).toBeTruthy()
     expect(nav.querySelector('.MuiBottomNavigation-root')).toBeNull()
+    expect(nav.closest('.MuiDrawer-root')?.className).toContain('-WwAppShell-rail')
     expect(within(nav).getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBe(
+      'page',
+    )
+  })
+
+  it.each([1200, 1366])('renders the drawer at %i px', async (width) => {
+    renderAt('/', width)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+    expect(screen.getAllByRole('navigation')).toHaveLength(1)
+    expect(nav.closest('.MuiDrawer-root')?.className).toContain('-WwAppShell-drawer')
+  })
+
+  it('keeps the full shell for the About page and marks it current', async () => {
+    renderAt('/about', 900)
+    expect(await screen.findByRole('heading', { level: 1, name: 'About' })).toBeTruthy()
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+    expect(within(nav).getByRole('link', { name: 'About' }).getAttribute('aria-current')).toBe(
       'page',
     )
   })
@@ -126,11 +143,13 @@ describe('RootLayout', () => {
     expect(localStorage.getItem('wattwise-mode')).toBe('dark')
   })
 
-  it.each([360, 900])('switches the shell to Lithuanian at %i px', async (width) => {
+  // Below 600px the app bar has no language button: the account menu holds the language.
+  it('switches the shell to Lithuanian from the account menu at 360 px', async () => {
     const user = userEvent.setup()
-    renderAt('/', width)
+    renderAt('/', 360)
     await screen.findByRole('heading', { level: 1, name: 'Home' })
-    await user.click(screen.getByRole('button', { name: 'Language' }))
+    expect(screen.queryByRole('button', { name: 'Language: EN' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Account' }))
     await user.click(screen.getByRole('menuitemradio', { name: 'Lietuvių' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Pradžia' })).toBeTruthy()
     const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
@@ -138,15 +157,48 @@ describe('RootLayout', () => {
     expect(within(nav).getByRole('link', { name: 'Pavyzdys' })).toBeTruthy()
     expect(within(nav).getByRole('link', { name: 'Apie' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Išvaizda' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Kalba' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Paskyra' })).toBeTruthy()
     expect(localStorage.getItem('wattwise-language')).toBe('lt')
     expect(document.documentElement.lang).toBe('lt')
   })
 
-  it('shows no account menu while the session is restored', async () => {
+  it.each([600, 900])(
+    'switches the shell to Lithuanian from the language button at %i px',
+    async (width) => {
+      const user = userEvent.setup()
+      renderAt('/', width)
+      await screen.findByRole('heading', { level: 1, name: 'Home' })
+      await user.click(screen.getByRole('button', { name: 'Language: EN' }))
+      await user.click(screen.getByRole('menuitemradio', { name: 'Lietuvių' }))
+      expect(screen.getByRole('heading', { level: 1, name: 'Pradžia' })).toBeTruthy()
+      const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
+      expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Išvaizda' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Kalba: LT' })).toBeTruthy()
+      expect(localStorage.getItem('wattwise-language')).toBe('lt')
+      expect(document.documentElement.lang).toBe('lt')
+    },
+  )
+
+  it('shows only the language in the account menu at 360 px while the session is restored', async () => {
+    const user = userEvent.setup()
     renderAt('/', 360)
     await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    const menu = screen.getByRole('menu')
+    expect(within(menu).queryAllByRole('menuitem')).toHaveLength(0)
+    expect(
+      within(menu)
+        .getAllByRole('menuitemradio')
+        .map((item) => item.textContent),
+    ).toEqual(['English', 'Lietuvių'])
+  })
+
+  it('shows no account menu at 900 px while the session is restored', async () => {
+    renderAt('/', 900)
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
     expect(screen.queryByRole('button', { name: 'Account' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Language: EN' })).toBeTruthy()
   })
 
   it('offers Sign in and Sign up to a signed-out visitor', async () => {
@@ -167,33 +219,46 @@ describe('RootLayout', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
-  it('offers Devices, Change password and Sign out to a signed-in user', async () => {
+  it('offers Sign in and Sign up to a signed-out visitor at 900 px, with no language', async () => {
     const user = userEvent.setup()
-    const { router } = renderAt('/', 900, 'signedIn')
+    renderAt('/', 900, 'signedOut')
     await screen.findByRole('heading', { level: 1, name: 'Home' })
     await user.click(screen.getByRole('button', { name: 'Account' }))
-    const menu = screen.getByRole('menu')
-    expect(
-      within(menu)
-        .getAllByRole('menuitem')
-        .map((item) => item.textContent),
-    ).toEqual(['Devices', 'Change password', 'Sign out'])
-    await user.click(within(menu).getByRole('menuitem', { name: 'Devices' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Devices' })).toBeTruthy()
-    expect(router.state.location.pathname).toBe('/devices')
+    expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Sign in',
+      'Sign up',
+    ])
   })
 
-  it('opens the change-password page from the menu', async () => {
+  it.each([360, 900])(
+    'offers Settings and Sign out to a signed-in user at %i px',
+    async (width) => {
+      const user = userEvent.setup()
+      const { router } = renderAt('/', width, 'signedIn')
+      await screen.findByRole('heading', { level: 1, name: 'Home' })
+      await user.click(screen.getByRole('button', { name: 'Account' }))
+      const menu = screen.getByRole('menu')
+      expect(
+        within(menu)
+          .getAllByRole('menuitem')
+          .map((item) => item.textContent),
+      ).toEqual(['Settings', 'Sign out'])
+      await user.click(within(menu).getByRole('menuitem', { name: 'Settings' }))
+      expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeTruthy()
+      expect(router.state.location.pathname).toBe('/settings')
+    },
+  )
+
+  it('no longer lists Devices or Change password in the account menu', async () => {
     const user = userEvent.setup()
-    const { router } = renderAt('/', 360, 'signedIn')
+    renderAt('/', 900, 'signedIn')
     await screen.findByRole('heading', { level: 1, name: 'Home' })
     await user.click(screen.getByRole('button', { name: 'Account' }))
-    await user.click(screen.getByRole('menuitem', { name: 'Change password' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Change password' })).toBeTruthy()
-    expect(router.state.location.pathname).toBe('/change-password')
+    expect(screen.queryAllByRole('menuitem', { name: /Devices|Change password/ })).toHaveLength(0)
   })
 
-  it('signs out from the menu, lands on sign-in and then offers Sign in', async () => {
+  it('signs out from the menu and lands on the sign-in page without an account menu', async () => {
     const user = userEvent.setup()
     const { router, store } = renderAt('/', 360, 'signedIn')
     await screen.findByRole('heading', { level: 1, name: 'Home' })
@@ -205,12 +270,9 @@ describe('RootLayout', () => {
     expect(router.state.historyAction).toBe('REPLACE')
     expect(selectSessionStatus(store.getState())).toBe('signedOut')
 
-    await user.click(screen.getByRole('button', { name: 'Account' }))
-    expect(
-      within(screen.getByRole('menu'))
-        .getAllByRole('menuitem')
-        .map((item) => item.textContent),
-    ).toEqual(['Sign in', 'Sign up'])
+    // The sign-in page has the minimal app bar: the language button, no account menu.
+    expect(screen.queryByRole('button', { name: 'Account' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Language: EN' })).toBeTruthy()
   })
 
   it('signs out even when the request fails', async () => {
@@ -240,7 +302,7 @@ describe('RootLayout', () => {
       within(screen.getByRole('menu'))
         .getAllByRole('menuitem')
         .map((item) => item.textContent),
-    ).toEqual(['Įrenginiai', 'Keisti slaptažodį', 'Atsijungti'])
+    ).toEqual(['Nustatymai', 'Atsijungti'])
   })
 
   it('starts in Lithuanian when the browser prefers it', async () => {

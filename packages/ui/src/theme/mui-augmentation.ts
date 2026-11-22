@@ -6,6 +6,7 @@ import type { CSSProperties } from 'react'
 import type { FieldValues } from 'react-hook-form'
 import type { AppShellClassKey, AppShellProps } from '../shell/app-shell'
 import type { IconMenuClassKey, IconMenuProps } from '../menu/icon-menu'
+import type { AccountMenuClassKey, AccountMenuProps } from '../menu/account-menu'
 import type { LanguageSwitchClassKey, LanguageSwitchProps } from '../i18n/language-switch'
 import type { ModeSwitchClassKey, ModeSwitchProps } from './mode-switch'
 import type { GlowSwitchClassKey, GlowSwitchProps } from './glow-switch'
@@ -104,6 +105,7 @@ declare module '@mui/material/styles' {
   interface ComponentNameToClassKey {
     WwAppShell: AppShellClassKey
     WwIconMenu: IconMenuClassKey
+    WwAccountMenu: AccountMenuClassKey
     WwLanguageSwitch: LanguageSwitchClassKey
     WwModeSwitch: ModeSwitchClassKey
     WwGlowSwitch: GlowSwitchClassKey
@@ -120,6 +122,7 @@ declare module '@mui/material/styles' {
   interface ComponentsPropsList {
     WwAppShell: AppShellProps
     WwIconMenu: IconMenuProps<string>
+    WwAccountMenu: AccountMenuProps
     WwLanguageSwitch: LanguageSwitchProps
     WwModeSwitch: ModeSwitchProps
     WwGlowSwitch: GlowSwitchProps
@@ -143,6 +146,11 @@ declare module '@mui/material/styles' {
       defaultProps?: Partial<ComponentsPropsList['WwIconMenu']>
       styleOverrides?: ComponentsOverrides<Theme>['WwIconMenu']
       variants?: ComponentsVariants<Theme>['WwIconMenu']
+    }
+    WwAccountMenu?: {
+      defaultProps?: Partial<ComponentsPropsList['WwAccountMenu']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwAccountMenu']
+      variants?: ComponentsVariants<Theme>['WwAccountMenu']
     }
     WwLanguageSwitch?: {
       defaultProps?: Partial<ComponentsPropsList['WwLanguageSwitch']>

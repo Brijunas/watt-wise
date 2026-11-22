@@ -11,4 +11,5 @@ export const paths = {
   resetPassword: '/reset-password',
   changePassword: '/change-password',
   devices: '/devices',
+  settings: '/settings',
 } as const

@@ -5,15 +5,16 @@ import { paths } from '@/config/routes'
 import AdminLayout from './routes/admin-layout'
 import NotFoundRoute from './routes/not-found'
 import RootLayout from './routes/root-layout'
+import SignedOutLayout from './routes/signed-out-layout'
 
 // `lazy` is a function, not an object of loaders: React Router empties a `lazy` object once it has
 // loaded, so a second router built from these routes (each test builds one) would match nothing.
 // `HydrateFallback` sits on the lazy pages, not on the root: React Router renders the fallback in
 // place of the route that has it, so on the root it would replace the whole shell on first load.
+// Sign-in and no-access have their own layout (the minimal app bar).
 export const routes: RouteObject[] = [
   {
-    path: paths.home,
-    Component: RootLayout,
+    Component: SignedOutLayout,
     children: [
       {
         path: paths.signIn,
@@ -25,6 +26,12 @@ export const routes: RouteObject[] = [
         HydrateFallback: PageLoading,
         lazy: async () => ({ Component: (await import('./routes/no-access')).default }),
       },
+    ],
+  },
+  {
+    path: paths.home,
+    Component: RootLayout,
+    children: [
       {
         Component: AdminLayout,
         children: [

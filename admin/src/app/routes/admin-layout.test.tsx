@@ -20,6 +20,12 @@ const signedInEn = { session: 'signedIn', language: 'en' } as const
 const signedOutEn = { session: 'signedOut', language: 'en' } as const
 const tick = () => new Promise((resolve) => setTimeout(resolve, 50))
 
+/** Signs out through the account menu, the only place the Sign out action lives. */
+const signOutFromMenu = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getByRole('button', { name: 'Account' }))
+  await user.click(screen.getByRole('menuitem', { name: 'Sign out' }))
+}
+
 const home = () => screen.findByRole('heading', { level: 1, name: 'Home' })
 const signInHeading = () => screen.findByRole('heading', { level: 1, name: 'Sign in' })
 
@@ -239,7 +245,7 @@ describe('Admin guard deferred answers', () => {
     const signOuts = countSignOuts()
     const { router } = renderRoutesAt(routes, '/', signedInEn)
     await screen.findByRole('progressbar', { name: 'Loading' })
-    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+    await signOutFromMenu(user)
     expect(await signInHeading()).toBeTruthy()
     gate.open()
     await waitFor(() => {
@@ -257,7 +263,7 @@ describe('Admin guard deferred answers', () => {
     const { gate, state } = gatedMe(adminMeResponse)
     const { router, store } = renderRoutesAt(routes, '/', signedInEn)
     await screen.findByRole('progressbar', { name: 'Loading' })
-    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+    await signOutFromMenu(user)
     expect(await signInHeading()).toBeTruthy()
     gate.open()
     await waitFor(() => {
@@ -271,13 +277,13 @@ describe('Admin guard deferred answers', () => {
   })
 })
 
-describe('Sign-out button', () => {
+describe('Sign out from the account menu', () => {
   it('signs out and sends the user to sign-in', async () => {
     const user = userEvent.setup()
     const signOuts = countSignOuts()
     const { router, store } = renderRoutesAt(routes, '/about', signedInEn)
     await screen.findByRole('heading', { level: 1, name: 'About' })
-    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+    await signOutFromMenu(user)
 
     expect(await signInHeading()).toBeTruthy()
     expect(router.state.location.pathname).toBe('/sign-in')
@@ -285,7 +291,8 @@ describe('Sign-out button', () => {
     expect(signOuts.value).toBe(1)
   })
 
-  it('is not shown after the session ends', async () => {
+  it('is not offered after the session ends, and is again once it starts', async () => {
+    const user = userEvent.setup()
     const { store } = renderRoutesAt(routes, '/about', signedInEn)
     await screen.findByRole('heading', { level: 1, name: 'About' })
     act(() => {
@@ -293,11 +300,12 @@ describe('Sign-out button', () => {
     })
 
     await signInHeading()
-    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Account' })).toBeNull()
     act(() => {
       store.dispatch(sessionStarted({ accessToken: 't' }))
     })
-    expect(await screen.findByRole('button', { name: 'Sign out' })).toBeTruthy()
+    await user.click(await screen.findByRole('button', { name: 'Account' }))
+    expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeTruthy()
   })
 })
 

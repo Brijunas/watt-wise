@@ -61,6 +61,23 @@ export const runtimeConfig = (options: RuntimeConfigOptions = {}): Plugin => {
   }
 }
 
+const nodeModule = (names: readonly string[]): RegExp =>
+  new RegExp(`node_modules[\\\\/](?:${names.join('|')})[\\\\/]`)
+
+// Rolldown's `output.codeSplitting` for the apps' builds: the vendor libraries get their own
+// chunks, so the app chunk stays under Vite's 500 kB warning and a code change doesn't invalidate
+// the libraries' cached files.
+export const vendorChunks = {
+  groups: [
+    {
+      name: 'react',
+      test: nodeModule(['react', 'react-dom', 'react-router', 'scheduler']),
+      priority: 2,
+    },
+    { name: 'mui', test: nodeModule(['@mui', '@emotion']), priority: 1 },
+  ],
+}
+
 // The address `vite dev` and `vite preview` listen on, taken from the app's own URL. The port is
 // strict so a busy port fails loudly instead of moving to one the API's CORS doesn't allow. An URL
 // without a port gets its scheme's default (80 or 443). Unset means Vite's defaults apply.

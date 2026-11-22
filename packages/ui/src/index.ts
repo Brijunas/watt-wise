@@ -1,5 +1,12 @@
 export { default as LanguageSwitch } from './i18n/language-switch'
 export type { LanguageSwitchProps } from './i18n/language-switch'
+export { default as AccountMenu } from './menu/account-menu'
+export type {
+  AccountMenuActionItem,
+  AccountMenuItem,
+  AccountMenuLinkItem,
+  AccountMenuProps,
+} from './menu/account-menu'
 export { default as AppThemeProvider } from './theme/app-theme-provider'
 export { default as ModeSwitch } from './theme/mode-switch'
 export type { ModeSwitchProps } from './theme/mode-switch'

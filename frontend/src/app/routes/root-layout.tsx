@@ -3,7 +3,7 @@ import WidgetsIcon from '@mui/icons-material/WidgetsRounded'
 import HomeIcon from '@mui/icons-material/HomeRounded'
 import { useTranslation } from 'react-i18next'
 import { Link, matchPath, Outlet, useLocation } from 'react-router'
-import { AppShell, GlowSwitch, LanguageSwitch, ModeSwitch } from '@wattwise/ui'
+import { AppShell } from '@wattwise/ui'
 import type { AppShellNavItem } from '@wattwise/ui'
 import AccountMenu from '@/components/account-menu'
 import { paths } from '@/config/routes'
@@ -31,14 +31,7 @@ const RootLayout = () => {
       items={items}
       activeKey={active?.key ?? null}
       linkComponent={Link}
-      actions={
-        <>
-          <AccountMenu />
-          <LanguageSwitch />
-          <GlowSwitch />
-          <ModeSwitch />
-        </>
-      }
+      accountMenu={<AccountMenu />}
     >
       <Outlet />
     </AppShell>

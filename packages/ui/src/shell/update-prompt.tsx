@@ -2,7 +2,7 @@ import Button from '@mui/material/Button'
 import Snackbar from '@mui/material/Snackbar'
 import { styled, useThemeProps } from '@mui/material/styles'
 import { useTranslation } from 'react-i18next'
-import { bottomBarHeight } from './bottom-bar-height'
+import { shellInset } from './shell-insets'
 
 export interface UpdatePromptProps {
   open: boolean
@@ -17,8 +17,15 @@ const name = 'WwUpdatePrompt'
 const UpdatePromptRoot = styled(Snackbar, { name, slot: 'root' })<{
   ownerState: UpdatePromptProps
 }>(({ theme }) => ({
-  bottom: `calc(${bottomBarHeight} + env(safe-area-inset-bottom) + ${theme.spacing(1)})`,
-  [theme.breakpoints.up('md')]: { bottom: theme.spacing(3) },
+  // The prompt renders outside the shell, which publishes the insets on <html>; without a shell the
+  // fallbacks are 0px. Under 600px it sits above the bottom bar.
+  bottom: `calc(${shellInset('bottom', '0px')} + ${theme.spacing(1)})`,
+  // From 600px it is centred in the space beside the rail or drawer, not the whole viewport.
+  [theme.breakpoints.up('sm')]: {
+    bottom: theme.spacing(3),
+    left: `calc(50% + ${shellInset('start', '0px')} / 2)`,
+    maxWidth: `calc(100vw - ${shellInset('start', '0px')} - ${theme.spacing(6)})`,
+  },
 }))
 
 const UpdatePromptReloadButton = styled(Button, { name, slot: 'reloadButton' })<{

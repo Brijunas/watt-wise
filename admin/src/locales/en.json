@@ -1,1 +1,5 @@
-{ "nav": { "home": "Home", "catalogReview": "Catalog review", "about": "About" } }
+{
+  "nav": { "home": "Home", "catalogReview": "Catalog review", "about": "About" },
+  "shell": { "adminChip": "Admin" },
+  "accountMenu": { "label": "Account" }
+}

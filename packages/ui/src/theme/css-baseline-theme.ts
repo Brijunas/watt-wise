@@ -18,6 +18,8 @@ export const cssBaselineTheme: ThemeOptions['components'] = {
         [`--${theme.cssVarPrefix}-glow-text`]: 'none',
         [`--${theme.cssVarPrefix}-glow-logo`]: 'none',
       },
+      // A long unbroken string (a version, an id, a URL) wraps instead of widening the page.
+      body: { overflowWrap: 'break-word' },
       // Changes are instant when the device asks for less motion (style.md, "Motion").
       '@media (prefers-reduced-motion: reduce)': {
         '*, *::before, *::after': {
