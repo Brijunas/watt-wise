@@ -1,3 +1,5 @@
+import Card from '@mui/material/Card'
+import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
 import { expect, expectTypeOf, it } from 'vitest'
 import { theme } from './theme'
@@ -12,6 +14,7 @@ it.each([
   ['--mui-gradient-brand', vars.gradient.brand],
   ['--mui-gradient-action', vars.gradient.action],
   ['--mui-glow-halo', vars.glow.halo],
+  ['--mui-glow-hover', vars.glow.hover],
   ['--mui-glow-text', vars.glow.text],
   ['--mui-glow-logo', vars.glow.logo],
   ['--mui-glow-haloOff', vars.glow.haloOff],
@@ -45,6 +48,16 @@ it('types the palette and typography at the theme root', () => {
   expect(vars.glow.undeclared).toBeUndefined()
   // @ts-expect-error Typography rejects undeclared variants.
   expectTypeOf(<Typography variant="undeclared" />)
+})
+
+it('types the highlighted card and the two chip variants', () => {
+  expectTypeOf(<Card variant="highlighted" />).toEqualTypeOf<React.JSX.Element>()
+  expectTypeOf(<Chip variant="lowestCost" />).toEqualTypeOf<React.JSX.Element>()
+  expectTypeOf(<Chip variant="pastPrices" />).toEqualTypeOf<React.JSX.Element>()
+  // @ts-expect-error Card rejects undeclared variants.
+  expectTypeOf(<Card variant="undeclared" />)
+  // @ts-expect-error Chip rejects undeclared variants.
+  expectTypeOf(<Chip variant="undeclared" />)
 })
 
 it('accepts the wide breakpoint', () => {

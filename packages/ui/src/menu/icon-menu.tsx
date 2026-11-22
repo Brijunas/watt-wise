@@ -1,4 +1,6 @@
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import IconButton from '@mui/material/IconButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import { useId, useState, type ReactNode } from 'react'
@@ -58,6 +60,9 @@ const IconMenu = <Key extends string>({ label, icon, options, onSelect }: IconMe
               setAnchor(null)
             }}
           >
+            <ListItemIcon>
+              {option.selected ? <CheckRoundedIcon fontSize="small" /> : null}
+            </ListItemIcon>
             {option.content}
           </MenuItem>
         ))}

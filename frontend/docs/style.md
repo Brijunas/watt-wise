@@ -54,14 +54,15 @@ The logo; the filled primary button; the page's one hero figure (gradient text, 
 ## Glow
 
 - **Strength:** medium. Dark: `0 0 28px -6px` cyan `#00E5FF` at 55% plus `0 0 56px -10px` magenta `#FF2BD6` at 45%; light: the same at half the opacity. Gradient text gets `drop-shadow(0 0 18px)` violet `#7C4DFF` at 60%, dark mode only; the logo gets `drop-shadow(0 0 10px)` in the same violet, 50% in dark and 25% in light.
-- **Where:** only on gradient elements and the filled primary button; never on chart bars.
+- **Hover halo:** a hovered clickable card gets `0 0 24px -8px` `primary.main` at 50% in dark and 25% in light (`glow.hover`); it follows the glow switch like the halo.
+- **Where:** only on gradient elements, the filled primary button and the hover halo of a clickable card; never on chart bars.
 - **Off:** halos become ordinary elevation (light `0 1px 2px` and `0 8px 24px -12px` of the text colour at 6% and 14%; dark `0 1px 2px` black at 50%); text and logo glow go away; gradients stay.
 - **The switch:** a real switch (`role="switch"`, `aria-checked`, Space toggles) named "Glow effects"; its label never changes, the track's position and colour show the state (no changing On/Off text). Bulb icon at every width, the word "Glow" from 840px. On by default, off by default when the device asks for more contrast or forced colours; stored per browser ([architecture.md](architecture.md#appearance)).
 - **Motion:** no pulsing or flicker; changes fade within 0.25s, instantly under `prefers-reduced-motion`.
 
 ## Hover and focus
 
-Hover applies only with a real pointer (`@media (hover: hover) and (pointer: fine)`) and never reveals information. A hovered card lifts 2px and gets a 1px `primary.main` outline with a soft one-colour halo (a plain shadow when glow is off) — never the gradient border that marks the lowest-cost item. Keyboard focus shows the same outline plus a 2px `primary.main` focus ring at a 3px offset.
+Hover applies only with a real pointer (`@media (hover: hover) and (pointer: fine)`) and never reveals information. Only a clickable card (a `Card` holding a `CardActionArea`, or a `Card` that is a link or button) reacts: it lifts 2px and gets a 1px `primary.main` outline with the soft one-colour `glow.hover` halo (a plain shadow when glow is off), never the gradient border that marks the lowest-cost item. A static card never changes on hover. Keyboard focus on a clickable card shows the same outline; every other focusable shows a 2px `primary.main` focus ring at a 3px offset (inset inside menus, lists and the bottom bar so an edge doesn't clip it).
 
 ## Typography
 
@@ -91,21 +92,21 @@ Radius 24px hero card, 20px cards, 16px inset panels, 14px buttons, 12px fields,
 
 Each component is the MUI one in the second column, styled by its theme override or variant ([theme.md](theme.md)).
 
-| Component                     | MUI component                                           | Style                                                                                                               |
-| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Primary button (`contained`)  | `Button` `variant="contained"`                          | Action gradient, white text, glow; one per region                                                                   |
-| Secondary button (`outlined`) | `Button` `variant="outlined"`                           | Transparent, text colour, 1.5px `fieldOutline`                                                                      |
-| Card                          | `Card`                                                  | `background.paper`, 1px `divider`, elevation                                                                        |
-| Highlighted card              | `Card` custom variant `highlighted`                     | 1.5px gradient border, glow; one per group                                                                          |
-| Inset panel                   | `Paper` `elevation={0}`, on `surface2`                  | `surface2`, no border                                                                                               |
-| Chips                         | `Chip`; custom variants `lowestCost` and `pastPrices`   | `surface2` with `text.secondary`; "Lowest cost" in the action gradient; "Past prices" in `primary.main` on its tint |
-| Fields                        | `TextField` `variant="outlined"`                        | 12px radius, `fieldOutline`, `primary.main` when focused; disabled fields dimmed                                    |
-| Segmented choice              | `RadioGroup` with `Radio`s in `FormControlLabel`s       | Radios styled as a pill group; the selected one filled with `primary.main`                                          |
-| Menus                         | `Menu` with `MenuItem`s                                 | `background.paper`, 16px radius, items 44px high, the checked item ticked                                           |
-| Glow switch                   | `Switch`                                                | Track gradient while on ([Glow](#glow))                                                                             |
-| Bottom bar                    | `BottomNavigation` with `BottomNavigationAction`s       | Under 600px ([layout.md](layout.md))                                                                                |
-| Drawer                        | `Drawer` `variant="permanent"`                          | From 1200px ([layout.md](layout.md))                                                                                |
-| Rail                          | Narrow (88px) permanent `Drawer` with `ListItemButton`s | 600-1199px; MUI has no rail component                                                                               |
+| Component                     | MUI component                                           | Style                                                                                                                                |
+| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Primary button (`contained`)  | `Button` `variant="contained"`                          | Action gradient, white text, glow; one per region                                                                                    |
+| Secondary button (`outlined`) | `Button` `variant="outlined"`                           | Transparent, text colour, 1.5px `fieldOutline`                                                                                       |
+| Card                          | `Card`                                                  | `background.paper`, 1px `divider`, elevation                                                                                         |
+| Highlighted card              | `Card` custom variant `highlighted`                     | 1.5px gradient border, glow; one per group                                                                                           |
+| Inset panel                   | `Paper` `elevation={0}`, on `surface2`                  | `surface2`, no border                                                                                                                |
+| Chips                         | `Chip`; custom variants `lowestCost` and `pastPrices`   | `surface2` with `text.secondary`; "Lowest cost" in the action gradient; "Past prices" in `primary.main` on its tint                  |
+| Fields                        | `TextField` `variant="outlined"`                        | 12px radius, `fieldOutline`, `primary.main` when focused; disabled fields dimmed                                                     |
+| Segmented choice              | `RadioGroup row` with `Radio`s in `FormControlLabel`s   | Pill group; the selected one filled with `primary.main`. The variant sits on `MuiFormGroup` ([theme.md](theme.md#themed-components)) |
+| Menus                         | `Menu` with `MenuItem`s                                 | `background.paper`, 16px radius, items 44px high, the checked item ticked (`IconMenu` adds the `CheckRounded`)                       |
+| Glow switch                   | `Switch`                                                | Track gradient while on ([Glow](#glow))                                                                                              |
+| Bottom bar                    | `BottomNavigation` with `BottomNavigationAction`s       | Under 600px ([layout.md](layout.md))                                                                                                 |
+| Drawer                        | `Drawer` `variant="permanent"`                          | From 1200px ([layout.md](layout.md))                                                                                                 |
+| Rail                          | Narrow (88px) permanent `Drawer` with `ListItemButton`s | 600-1199px; MUI has no rail component                                                                                                |
 
 ## Don'ts
 

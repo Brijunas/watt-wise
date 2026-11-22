@@ -22,6 +22,9 @@ const violet = '#7C4DFF'
 const halo = (cyanOpacity: number, magentaOpacity: number) =>
   `0 0 28px -6px ${alpha(cyan, cyanOpacity)}, 0 0 56px -10px ${alpha(magenta, magentaOpacity)}`
 
+// The one-colour halo of a hovered clickable card.
+const hoverHalo = (opacity: number) => `0 0 24px -8px ${channelAlpha('primary-main', opacity)}`
+
 // Tabular numerals for every figure that is an amount.
 const amount = (size: number, lineHeight: number) => ({
   fontFamily,
@@ -56,6 +59,7 @@ export const brandedTokens: ThemeOptions = {
         halo: halo(0.275, 0.225),
         text: 'none',
         logo: `drop-shadow(0 0 10px ${alpha(violet, 0.25)})`,
+        hover: hoverHalo(0.25),
         haloOff: `0 1px 2px ${channelAlpha('text-primary', 0.06)}, 0 8px 24px -12px ${channelAlpha('text-primary', 0.14)}`,
       },
     },
@@ -81,6 +85,7 @@ export const brandedTokens: ThemeOptions = {
         halo: halo(0.55, 0.45),
         text: `drop-shadow(0 0 18px ${alpha(violet, 0.6)})`,
         logo: `drop-shadow(0 0 10px ${alpha(violet, 0.5)})`,
+        hover: hoverHalo(0.5),
         haloOff: `0 1px 2px ${alpha('#000000', 0.5)}`,
       },
     },

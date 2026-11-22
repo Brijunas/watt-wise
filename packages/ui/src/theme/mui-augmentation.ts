@@ -8,10 +8,12 @@ export interface Gradient {
   action: string
 }
 
-// `halo` is a box-shadow, `text` and `logo` are drop-shadow filters. `haloOff` is the plain
-// elevation `halo` falls back to under `data-glow="off"` (see css-baseline-theme.ts).
+// `halo` and `hover` are box-shadows, `text` and `logo` are drop-shadow filters. `hover` is the
+// one-colour halo of a hovered clickable card. `haloOff` is the plain elevation `halo` and `hover`
+// fall back to under `data-glow="off"` (see css-baseline-theme.ts).
 export interface Glow {
   halo: string
+  hover: string
   text: string
   logo: string
   haloOff: string
@@ -86,6 +88,20 @@ declare module '@mui/material/styles' {
 
   interface BreakpointOverrides {
     xxl: true
+  }
+}
+
+// `Card` shares Paper's variant prop, so `highlighted` types both.
+declare module '@mui/material/Paper' {
+  interface PaperPropsVariantOverrides {
+    highlighted: true
+  }
+}
+
+declare module '@mui/material/Chip' {
+  interface ChipPropsVariantOverrides {
+    lowestCost: true
+    pastPrices: true
   }
 }
 
