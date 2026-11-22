@@ -1,4 +1,4 @@
-import '@fontsource-variable/roboto'
+import '@fontsource-variable/red-hat-display'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import type { ReactNode } from 'react'

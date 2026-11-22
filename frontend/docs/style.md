@@ -39,8 +39,8 @@ Every colour comes from the MUI theme in `packages/ui`; a component never hard-c
 | Gradient stops       | `#0891B2` `#6D28D9` `#DB2777` | `#00E5FF` `#7C4DFF` `#FF2BD6` | Brand gradient, 100°                                                                 |
 | Action gradient      | `#0E7490` `#5B21B6` `#BE185D` | same                          | Filled primary buttons and the "Lowest cost" chip; white text                        |
 | `success`            | `#047857` on `#E3F5EC`        | `#34D399` on 14% of itself    | Cheaper, savings                                                                     |
-| `error`              | `#C62828`                     | `#FF6B63`                     | Pricier, errors                                                                      |
-| `warning`            | `#A84B00`                     | `#FFB74D`                     | Caution, partial data                                                                |
+| `error`              | `#C62828` on 12% of itself    | `#FF6B63` on 14% of itself    | Pricier, errors                                                                      |
+| `warning`            | `#A84B00` on 12% of itself    | `#FFB74D` on 14% of itself    | Caution, partial data                                                                |
 
 - Text tokens meet 4.5:1 on `background.default`, `background.paper` and `surface2` in both modes; `fieldOutline`, `primary.main` and `secondary.main` meet 3:1. The theme's tests check it.
 - The gradient stops don't all reach 4.5:1, so gradient text is used only at 24px or larger.
@@ -53,7 +53,7 @@ The logo; the filled primary button; the page's one hero figure (gradient text, 
 
 ## Glow
 
-- **Strength:** medium. Dark: `0 0 28px -6px` cyan `#00E5FF` at 55% plus `0 0 56px -10px` magenta `#FF2BD6` at 45%; light: the same at half the opacity. Gradient text gets `drop-shadow(0 0 18px)` violet at 60%, dark mode only; the logo a soft drop-shadow.
+- **Strength:** medium. Dark: `0 0 28px -6px` cyan `#00E5FF` at 55% plus `0 0 56px -10px` magenta `#FF2BD6` at 45%; light: the same at half the opacity. Gradient text gets `drop-shadow(0 0 18px)` violet `#7C4DFF` at 60%, dark mode only; the logo gets `drop-shadow(0 0 10px)` in the same violet, 50% in dark and 25% in light.
 - **Where:** only on gradient elements and the filled primary button; never on chart bars.
 - **Off:** halos become ordinary elevation (light `0 1px 2px` and `0 8px 24px -12px` of the text colour at 6% and 14%; dark `0 1px 2px` black at 50%); text and logo glow go away; gradients stay.
 - **The switch:** a real switch (`role="switch"`, `aria-checked`, Space toggles) named "Glow effects"; its label never changes, the track's position and colour show the state (no changing On/Off text). Bulb icon at every width, the word "Glow" from 840px. On by default, off by default when the device asks for more contrast or forced colours; stored per browser ([architecture.md](architecture.md#appearance)).

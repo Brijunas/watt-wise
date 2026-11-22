@@ -1,10 +1,11 @@
-import HomeIcon from '@mui/icons-material/Home'
-import InboxIcon from '@mui/icons-material/Inbox'
+import HomeIcon from '@mui/icons-material/HomeRounded'
+import InboxIcon from '@mui/icons-material/InboxRounded'
 import { createI18n } from '@wattwise/i18n'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import type { AnchorHTMLAttributes } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { axe } from 'vitest-axe'
 import AppThemeProvider from '../theme/app-theme-provider'
 import createMatchMedia from '../testing/create-match-media'
 import AppShell from './app-shell'
@@ -32,13 +33,15 @@ function renderShell({
   width,
   activeKey = 'home',
   lng,
+  prefersDark = false,
 }: {
   width: number
   activeKey?: string | null
   lng?: 'en' | 'lt'
+  prefersDark?: boolean
 }) {
-  vi.stubGlobal('matchMedia', createMatchMedia({ width }))
-  render(
+  vi.stubGlobal('matchMedia', createMatchMedia({ width, prefersDark }))
+  return render(
     <I18nextProvider i18n={createI18n({ lng })}>
       <AppThemeProvider>
         <AppShell
@@ -56,17 +59,26 @@ function renderShell({
 }
 
 describe('AppShell', () => {
-  it('shows the bottom navigation on a phone', () => {
-    renderShell({ width: 360 })
+  describe.each(['en', 'lt'] as const)('%s accessibility', (lng) => {
+    describe.each(['light', 'dark'])('%s mode', (mode) => {
+      it.each([839, 840])('has accessible navigation at %ipx', async (width) => {
+        const { container } = renderShell({ width, lng, prefersDark: mode === 'dark' })
+        expect(document.documentElement.classList.contains(mode)).toBe(true)
+        expect((await axe(container)).violations).toEqual([])
+      })
+    })
+  })
+  it.each([360, 839])('shows the bottom navigation at %ipx', (width) => {
+    renderShell({ width })
     const nav = screen.getByRole('navigation', { name: 'Main navigation' })
     expect(screen.getAllByRole('navigation')).toHaveLength(1)
     expect(nav.querySelector('.MuiBottomNavigation-root')).toBeTruthy()
     expect(within(nav).queryByRole('list')).toBeNull()
   })
 
-  it('shows the side list from md up', () => {
-    renderShell({ width: 900 })
-    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+  it.each([840, 900])('shows the side list at %ipx in Lithuanian', (width) => {
+    renderShell({ width, lng: 'lt' })
+    const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
     expect(screen.getAllByRole('navigation')).toHaveLength(1)
     expect(within(nav).getByRole('list')).toBeTruthy()
     expect(nav.querySelector('.MuiBottomNavigation-root')).toBeNull()

@@ -1,6 +1,6 @@
-import FactCheckIcon from '@mui/icons-material/FactCheck'
-import HomeIcon from '@mui/icons-material/Home'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import FactCheckIcon from '@mui/icons-material/FactCheckRounded'
+import HomeIcon from '@mui/icons-material/HomeRounded'
+import InfoIcon from '@mui/icons-material/InfoRounded'
 import { useTranslation } from 'react-i18next'
 import { Link, matchPath, Outlet, useLocation } from 'react-router'
 import { AppShell, LanguageSwitch, ModeSwitch } from '@wattwise/ui'
@@ -20,7 +20,7 @@ const RootLayout = () => {
       icon: <FactCheckIcon />,
       to: paths.catalogReview,
     },
-    { key: 'about', label: t('nav.about'), icon: <InfoOutlinedIcon />, to: paths.about },
+    { key: 'about', label: t('nav.about'), icon: <InfoIcon />, to: paths.about },
   ]
   const active = items.find((item) =>
     matchPath({ path: item.to, end: item.to === paths.home }, pathname),

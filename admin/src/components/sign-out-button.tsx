@@ -1,4 +1,4 @@
-import LogoutIcon from '@mui/icons-material/Logout'
+import LogoutIcon from '@mui/icons-material/LogoutRounded'
 import IconButton from '@mui/material/IconButton'
 import { useTranslation } from 'react-i18next'
 import { useSignOutMutation } from '@wattwise/api-client'
