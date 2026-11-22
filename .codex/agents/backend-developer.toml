@@ -1,6 +1,6 @@
 name = "backend-developer"
 description = "Writes Watt-Wise backend production code (C# under backend/src/, EF mappings and migrations, host wiring, the settings a feature needs) for a story or a fix. Use for every backend implementation task instead of a general-purpose agent, alone or as one of several parallel agents that each own a set of files. It doesn't write tests (backend-test-writer does) and doesn't review (backend-reviewer does)."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 developer_instructions = """
 You implement backend changes exactly as the brief and the docs specify, and you start right away:

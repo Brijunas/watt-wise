@@ -7,7 +7,7 @@ description: Whole-system manual end-to-end check of a story through the browser
 
 Drive the story's flows in a real browser against the running system. The coordinator runs this in the story's worktree after the story's QUEUED OP STEPS; without a coordinator the story orchestrator runs it before ship-pr. Commands are in [docs/development.md](../../../docs/development.md); Mailpit is in [deploy/docs/mailpit.md](../../../deploy/docs/mailpit.md); the account vocabulary is in [accounts.md](../../../backend/docs/features/accounts.md).
 
-Tell the user before each step that runs `op`: they approve it in the 1Password app.
+Tell the user before each step that runs `op`: they approve it in the 1Password app. Inside a coordinator window nobody is prompted: run each documented `op run --env-file <f> -- <cmd>` as `set -a; . $XDG_RUNTIME_DIR/agentic-window/<name>.env; set +a; <cmd>`, with `<name>` the file for `<f>` (`api`, `jobs`, `cli`, `frontend`, `admin`; window commands in `~/.config/git/delegated-signing.md`), and read the URLs and the smoke-account logins from those files.
 
 ## 1. Setup
 
@@ -15,11 +15,11 @@ Tell the user before each step that runs `op`: they approve it in the 1Password 
 2. `migrate`. After a regenerated `Initial`, run the `reset-app-tables.sql` command first.
 3. Seed the fixed accounts: `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- seed smoke-accounts`. It is idempotent: both accounts exist, confirmed, unlocked, with the 1Password password and the right role.
 4. Start the Api, the Jobs host (only when a flow sends email) and the dev servers the flows need (`frontend`, `admin`), each through `op run` in the background.
-5. Read URLs with `op read "op://Watt Wise Development/<item>/url"`.
+5. Read URLs with `op read "op://Watt Wise Development/<item>/url"`, or in a window from the variables of the matching file.
 
 ## 2. Accounts
 
-- Fixed accounts (a `permissions.allow` rule `Bash(op read "op://Watt Wise Development/smoke-accounts/*")` in all five `settings.json` files allows exactly these reads; any other `op read` of a secret stays denied): `op read "op://Watt Wise Development/smoke-accounts/<user-email|user-password|admin-email|admin-password>"`.
+- Fixed accounts (a `permissions.allow` rule `Bash(op read "op://Watt Wise Development/smoke-accounts/*")` in all five `settings.json` files allows exactly these reads; any other `op read` of a secret stays denied): `op read "op://Watt Wise Development/smoke-accounts/<user-email|user-password|admin-email|admin-password>"`. Inside a window, read them from the `cli` file instead (`SmokeAccounts__UserEmail`, `SmokeAccounts__UserPassword`, `SmokeAccounts__AdminEmail`, `SmokeAccounts__AdminPassword`), with no `op read`.
 - Flows that need a new account (sign-up, confirmation) use a fresh `smoke-<timestamp>@example.test`. Take the email links from Mailpit's API: `<mailpit>/api/v1/search?query=to:<email>`, then `/api/v1/message/<ID>`.
 - **Rerun the seed** after any flow that changes a fixed account: password change or reset, lockout, sign-out-everywhere, admin revoke.
 

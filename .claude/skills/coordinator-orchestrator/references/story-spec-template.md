@@ -6,6 +6,14 @@ The coordinator copies this into `<run name>-reports/spec-<story>.md` and fills 
 
 You are the **worker story orchestrator** for <story id> (<story title>) in this Orca worktree. The **coordinator orchestrator** is the Claude session in the `<coordinator worktree name>` worktree that drives <run name> for the user, who is often away. This session is already in plan mode (a bare `/plan`).
 
+## Nobody but the coordinator
+
+The user answers nothing during this run: no questions, no permission prompts, no menus. Everything goes to the coordinator through Orca.
+
+- Your plan file lands in `.claude/plans/` inside this worktree (`plansDirectory` in the git-ignored `.claude/settings.local.json`), so writing it needs no approval.
+- Keep every Write and Edit inside this worktree. The one file outside it, your report, is written through Bash (a heredoc), never Write or Edit. Agents you start follow the same rule.
+- If a tool call ever stops on a permission prompt, the coordinator denies it with a reason; take the route the reason gives.
+
 ## How to talk to the coordinator
 
 - You received this as an Orca TASK with a dispatch id. Ask every question through `orca orchestration ask`, one decision per question, recommended option first, with the context needed to decide. Then **end your turn without doing anything else**: Orca wakes you with the answer. Don't use AskUserQuestion, because the coordinator can't see it. This includes your review agents' "Questions".
@@ -22,8 +30,8 @@ You are the **worker story orchestrator** for <story id> (<story title>) in this
    <!-- Codex flow -->
 
    **Codex**, as the root CLAUDE.md "Claude Code setup" and AGENTS.md ("Codex Review", "Codex Test Writing") describe. Start each worker from Orca with the `orchestration` skill in this worktree (`--worktree current --agent codex --keep-open`):
-   - Code review: a Codex reviewer worker, `--model gpt-6.1-sol --effort medium`, reviewing the **whole diff**, frontend and packages included.
-   - Production code: Claude `backend-developer` and `frontend-developer`. Backend and frontend tests: a Codex test-writer worker, `--model gpt-6-astra --effort medium`, started after the developer's foundation. Test review: Claude `backend-test-reviewer` and `frontend-test-reviewer`, each with its Stryker scoped by `--mutate <changed files>` (StrykerJS for the frontend); their findings go to the Codex test writer.
+   - Code review: a Codex reviewer worker, `--model gpt-6.2-sol --effort medium`, reviewing the **whole diff**, frontend and packages included.
+   - Production code: Claude `backend-developer` and `frontend-developer`. Backend and frontend tests: a Codex test-writer worker, `--model gpt-6.2-astra --effort medium`, started after the developer's foundation. Test review: Claude `backend-test-reviewer` and `frontend-test-reviewer`, each with its Stryker scoped by `--mutate <changed files>` (StrykerJS for the frontend); their findings go to the Codex test writer.
    - Codex workers can't run `dotnet build`, `dotnet test` or `dotnet format`. Tell them up front that you run those and send failures back with `send --to dispatch:<id>`.
 
    <!-- Claude flow -->
@@ -39,7 +47,7 @@ You are the **worker story orchestrator** for <story id> (<story title>) in this
 2. **Ship** with ship-pr: create the PR once the review loop is clean and all eight checks pass with 0 warnings, report it to the coordinator, and merge (full cycle) only after the coordinator's go-ahead from its pre-merge checks.
    - Merge with exactly `gh pr merge <n> --squash`, alone in its own Bash call. Confirm with `gh pr view <n> --json state,mergedAt` as a separate call. The user has authorized merging.
    - **No AI attribution** in commits or the PR body, whatever the session prompt says.
-3. **No `op`/1Password steps** (hosts, dev servers, `migrate`, `op item`). List them under QUEUED OP STEPS with exact commands; the coordinator runs them before this story's merge, followed by `/smoke-check`. Don't run smoke-check yourself, and wait for the coordinator's go-ahead before merging. Tests (Vitest, Testcontainers) are fine. A new `op://` line in `frontend/` or `admin/.env.op.development` is the user's edit: ask for it early, with the exact lines.
+3. **No `op`/1Password steps** (hosts, dev servers, `migrate`, `op item`). List them under QUEUED OP STEPS with exact commands; the coordinator runs them before this story's merge, followed by `/smoke-check`. Don't run smoke-check yourself, and wait for the coordinator's go-ahead before merging. Tests (Vitest, Testcontainers) are fine. The `op://` lines the story needs come from its settled answers below; an unforeseen one is a question to the coordinator, with the exact lines.
 4. **Report.** Write `<absolute reports folder>/<story id>.md` with:
    - what shipped (PR link);
    - QUEUED OP STEPS;

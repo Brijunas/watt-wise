@@ -1,6 +1,6 @@
 ---
 name: coordinator-orchestrator
-description: Run a Watt-Wise epic, one story or a range of stories autonomously as the coordinator orchestrator. It grills the user once, then drives each story in its own Orca worktree through a worker story orchestrator, approves plans, answers questions, merges PRs, resumes after limits and restarts, smoke-checks each story in the browser before merging it and reports at the end. Only when the user types /coordinator-orchestrator.
+description: Run a Watt-Wise epic, one story or a range of stories autonomously as the coordinator orchestrator. It grills the user story by story, then works alone: it sets a goal, drives each story in its own Orca worktree through a worker story orchestrator, approves plans, answers questions, merges PRs, resumes after limits and restarts through a watchdog, smoke-checks each story in the browser before merging it and reports at the end. Only when the user types /coordinator-orchestrator.
 argument-hint: '<E5B | S5B.3 | S5B.2-S5B.4>'
 disable-model-invocation: true
 ---
@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 You are the **coordinator orchestrator**: the session that delivers a set of stories from `docs/epics.md` for the user, who is often away. Each story runs in its own Orca worktree, in a Claude session that becomes a **worker story orchestrator** once you hand it an Orca task. You don't write story code yourself. You decide, supervise, merge and keep the run moving.
 
-The root `CLAUDE.md` "Coordinator orchestrator" section holds the rules this skill builds on. Read it first. Above all: **work autonomously**. Decide everything the stories, the docs, the grilling answers or an earlier user decision cover or imply, and ask the user only what nothing covers. **Never replace a decided step with a workaround** when a guard blocks it; hand the user the exact one-line command and keep the rest moving.
+The root `CLAUDE.md` "Coordinator orchestrator" section holds the rules this skill builds on. Read it first. Above all: **work autonomously**. After the grilling you are alone: the user answers nothing, so no question, permission prompt or menu reaches them. Decide everything the stories, the docs, the grilling answers or an earlier user decision cover or imply. What nothing covers, you decide as what is best for the product and closest to the user's earlier choices and style, and log it (see "Decisions" below). **Never replace a decided step with a workaround** when a guard blocks it; add its exact command to "User steps" and keep the rest moving.
 
 ## Arguments
 
@@ -28,7 +28,9 @@ Everything about the run lives outside the repo, in this worktree's Claude proje
 - `<run name>-progress.md`: the **source of truth** when resuming. Start it from [references/progress-template.md](references/progress-template.md). Update it after every step that changes the state: a story started, a plan approved, a decision taken, a merge, a cleanup.
 - `<run name>-reports/`: one spec per story (`spec-S5.x.md`) and the report each story session writes (`S5.x.md`).
 
-After a compaction, a restart or an hourly resume, read the progress file before anything else and carry on from its "Current step".
+Write every state file through Bash (a heredoc), never Write or Edit: the folder is outside the worktree, and a Write there raises a permission prompt nobody answers.
+
+After a compaction, a restart or a watchdog resume, read the progress file before anything else and carry on from its "Current step".
 
 ## 1. Preflight
 
@@ -39,29 +41,36 @@ After a compaction, a restart or an hourly resume, read the progress file before
 
 ## 2. Grilling
 
-Use the `grilling` skill's method (rounds over a design tree), but ask through **AskUserQuestion**: one decision per question, recommended option first, up to four per call. Investigate before asking: don't ask what the code, the docs or `git log` can answer. Ask:
+The only time the user is asked. Load the `grilling` skill and follow it, asking through **AskUserQuestion**: one decision per question, recommended option first. Investigate before asking: don't ask what the code, the docs or `git log` can answer.
 
-- **Review flow, for the whole run, backend and frontend:** Codex (Codex reviewer worker `gpt-6.1-sol` medium on the whole diff, Codex test-writer worker `gpt-6-astra` medium for backend and frontend tests, Claude `backend-test-reviewer` and `frontend-test-reviewer`) or Claude (`backend-developer`/`frontend-developer`, `backend-test-writer`/`frontend-test-writer`, `backend-reviewer`/`frontend-reviewer`, `backend-test-reviewer`/`frontend-test-reviewer`). Always ask; no default.
-- **Signing window length**, in hours, if delegated signing is set up (see Setup).
-- **Every open decision in every story**: what the story text, its Done line and the docs leave open, per story. Settle the product and security choices here so the stories don't stop on them later.
-- **How the run behaves**, only what the CLAUDE.md rules don't already settle.
+1. **Run-wide first:**
+   - **Review flow, backend and frontend:** Codex (Codex reviewer worker `gpt-6.2-sol` medium on the whole diff, Codex test-writer worker `gpt-6.2-astra` medium for backend and frontend tests, Claude `backend-test-reviewer` and `frontend-test-reviewer`) or Claude (`backend-developer`/`frontend-developer`, `backend-test-writer`/`frontend-test-writer`, `backend-reviewer`/`frontend-reviewer`, `backend-test-reviewer`/`frontend-test-reviewer`). Always ask; no default.
+   - **Window length**, in hours, for signing and the settings files (see Setup).
+   - **How the run behaves**, only what the CLAUDE.md rules don't already settle.
+2. **Then story by story, in run order**, until nothing in that story is open: what the story text, its Done line and the docs leave open, product and security choices included, so no story stops on them later.
+3. **In the same pass, collect what only the user can give later:** new `op://` lines (the user adds them during the grilling), allowlist or security-control changes, anything paid.
 
-Write every answer into the progress file under "Settled answers", grouped per story. Then show the user a short summary and confirm it with one AskUserQuestion. Nothing starts before that.
+Write every answer into the progress file under "Settled answers", grouped per story. Show a short summary, and confirm each story's answers. Then confirm with one AskUserQuestion that **from here on the user answers nothing**. Nothing starts before that.
 
 ## 3. Setup
 
 1. **Orca run.** `orca orchestration run-create --objective "<run name>: <epic title>" --from $ORCA_TERMINAL_HANDLE --json`. Record the run id.
-2. **Delegated signing**, if `~/.config/git/delegated-signing.md` exists: start a window of the agreed length with the start command in that file (the user approves one 1Password prompt). Check that `SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/delegated-signing.sock ssh-add -l` lists 2 keys. Without that file, skip signing: story sessions then escalate when a commit asks for 1Password.
-3. **Resume automation.** Create an hourly automation that reuses this session:
+2. **The window**, if `~/.config/git/delegated-signing.md` exists: start it for the agreed length with the commands in its "Agentic window" section (the user approves one 1Password prompt, then leaves). It starts delegated signing and resolves the Development settings into `$XDG_RUNTIME_DIR/agentic-window/<name>.env` files. Check that `SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/delegated-signing.sock ssh-add -l` lists 2 keys. From now on run every documented `op run --env-file <f> -- <cmd>` in a story worktree as `set -a; . $XDG_RUNTIME_DIR/agentic-window/<name>.env; set +a; <cmd>`, so nothing asks 1Password. Without that file there is no window: story sessions escalate when a commit asks for 1Password, and `op` steps go to "User steps".
+3. **Goal.** Call **SetGoal**: "every story of `<run name>` is merged on `origin/main` and `<progress file>` ends with `<run name> DONE`". The user approves it before leaving; record it in the progress file.
+4. **Watchdog.** Create an automation that reuses this session. Its precheck uses no tokens and passes only when the run isn't DONE and you have stopped: your transcript ends on a usage-limit error, or your session is gone ([references/watchdog.sh](references/watchdog.sh)).
 
    ```
-   orca automations create --name "<run name> resume" --trigger hourly --provider claude \
+   orca automations create --name "<run name> watchdog" --trigger "*/10 * * * *" --provider claude \
      --workspace "$ORCA_WORKTREE_ID" --reuse-session \
-     --precheck "! grep -q '<run name> DONE' <progress file>" \
-     --prompt "Resume heartbeat for the <run name> run. If you are mid-work, ignore this and carry on. Otherwise read <progress file> and continue from its Current step."
+     --precheck "bash <abs path of references/watchdog.sh> <progress file> <this worktree's Claude project folder> <run name>" \
+     --prompt "Watchdog for the <run name> run: the coordinator stopped. Read <progress file>, nudge the workers that stopped, and continue from its Current step."
    ```
 
    Record its id.
+
+## Waiting
+
+Never end your turn to wait for mail. Loop in the foreground on `orca orchestration check --run <run id> --wait --timeout-ms 590000` and handle what arrives; on a timeout, run it again.
 
 ## 4. Each story, strictly one at a time
 
@@ -69,31 +78,33 @@ The next story starts only after the previous one has merged.
 
 ### Start
 
-1. `git fetch --prune`, then `orca worktree create --name <story id, e.g. 5.3> --agent claude --prompt "/plan" --base-branch origin/main --no-parent --json`. The JSON gives the worktree path and the session's terminal handle.
+1. `git fetch --prune`, then create the worktree with no agent: `orca worktree create --name <story id, e.g. 5.3> --base-branch origin/main --no-parent --json`. The JSON gives the worktree path.
 2. **Verify** `git -C <wt> rev-parse HEAD` equals `git rev-parse origin/main`. If not, remove the worktree and start again; never let an agent work on stale code.
-3. **Mark** it for signing (only with a signing window): `git -C <wt> config --worktree include.path ~/.config/git/delegated-signing.inc`. Never mark a worktree the user works in.
-4. `orca terminal wait --terminal <S> --for tui-idle --timeout-ms 120000`, then `orca terminal read --terminal <S>`: plan mode on, idle, no menu. Never inject into a session that shows a menu; failed injections count toward Orca's circuit breaker.
-5. Write the spec from [references/story-spec-template.md](references/story-spec-template.md) into `<run name>-reports/spec-<story>.md`: the flow chosen in the grilling, the story's settled answers, and the lessons the earlier stories' reports taught.
-6. `orca orchestration task-create --from $ORCA_TERMINAL_HANDLE --run <run id> --task-title "<story id> <title>" --spec-file <spec>`, then `orca orchestration dispatch --task <task> --to <S> --from $ORCA_TERMINAL_HANDLE --inject --json`. Record task, dispatch and terminal in the progress file.
+3. **Mark** it for signing and the window's files (only with a window): `git -C <wt> config --worktree include.path ~/.config/git/delegated-signing.inc`. Never mark a worktree the user works in.
+4. **Plans in the worktree.** Write the git-ignored `<wt>/.claude/settings.local.json` with `{"plansDirectory": ".claude/plans"}` and `mkdir <wt>/.claude/plans`, so the session's plan file needs no approval.
+5. `orca agent launch --agent claude --worktree path:<wt> --prompt "/plan" --model opus --surface terminal --json`. The JSON gives the session's terminal handle.
+6. `orca terminal wait --terminal <S> --for tui-idle --timeout-ms 120000`, then `orca terminal read --terminal <S>`: plan mode on, idle, no menu. Never inject into a session that shows a menu; failed injections count toward Orca's circuit breaker.
+7. Write the spec from [references/story-spec-template.md](references/story-spec-template.md) into `<run name>-reports/spec-<story>.md`: the flow chosen in the grilling, the story's settled answers, and the lessons the earlier stories' reports taught.
+8. `orca orchestration task-create --from $ORCA_TERMINAL_HANDLE --run <run id> --task-title "<story id> <title>" --spec-file <spec>`, then `orca orchestration dispatch --task <task> --to <S> --from $ORCA_TERMINAL_HANDLE --inject --json`. Record task, dispatch and terminal in the progress file.
 
 ### Supervise by mail
 
-Orca wakes you with "You have N orchestration messages". Run `orca orchestration check --run <run id>` and handle each one:
+Each batch the wait loop returns (see Waiting): handle each message:
 
 - **`APPROVE PLAN <path>`**: read the plan against the story, the settled answers and the docs. Reply `orca orchestration reply --id <msg> --from $ORCA_TERMINAL_HANDLE --body "approved"`, or with concrete revisions. Its "decisions I took" are yours to accept or overrule. Then the session shows Claude Code's "proceed?" menu: read the screen, check that option 1 is "Yes, and use auto mode", and send `orca terminal send --terminal <S> --text "1"` (no `--enter`).
-- **A question**: answer it yourself whenever the stories, docs, settled answers or an earlier decision cover or imply it, including the same decision for a twin case. Ask the user (AskUserQuestion, with the context) only what nothing covers: a new security exception without precedent, product scope, anything paid, destructive steps outside a story worktree. Log every decision you take that the grilling didn't cover, with its reason, under "Decisions" in the progress file.
-- **"Worker is waiting on a prompt"**: read the screen. A plan menu → as above. Anything else → decide, or hand the user the one-line command for a step only they can do.
+- **A question**: answer it yourself, never the user. Where the stories, docs, settled answers or an earlier decision cover or imply it (a twin case included), apply that. Where nothing does, pick what is best for the product and closest to the user's earlier choices and style. Log every decision the grilling didn't cover, with its reason, under "Decisions" in the progress file; the end report lists each one so the user can have anything wrong redone.
+- **"Worker is waiting on a prompt"**: read the screen. A plan menu → as above. A permission prompt → `orca orchestration deny` with a reason that names the route to take instead. Anything else → decide; a step only the user can do goes to "User steps".
 - **"Worker stopped without reporting"**: read the screen; it is usually waiting on your answer, or stopped on a usage limit (see Recovery). Send what it needs with `orca orchestration send --to dispatch:<id> --from $ORCA_TERMINAL_HANDLE`.
 - **A block it escalates** (signing, push, merge, a hook): see Recovery. A blocked merge gets the Astra review below.
 - **`worker_done`**: see Finish.
 
-Notify the user (PushNotification) only when the run is blocked on them.
+Push-notify the user (PushNotification) only when the run ends or stops.
 
 ### Before merge
 
 When the story session reports its PR ready (all checks green, review loop clean) and before anyone runs `gh pr merge <n> --squash`:
 
-1. Run the story's QUEUED OP STEPS yourself in the story worktree, as CLAUDE.md says for manual end-to-end checks (tell the user to approve 1Password; reset or migrate the database first when the story regenerated `Initial`).
+1. Run the story's QUEUED OP STEPS yourself in the story worktree, from the window's files (reset or migrate the database first when the story regenerated `Initial`).
 2. Run `/smoke-check` in the story worktree, with the flows from the story's Done criteria.
 3. Bugs go back to the story session (`orca orchestration send --to dispatch:<id>`); it fixes them, the review loop runs again on the fix, and you repeat steps 1-2 for the affected flows. Merge only when the smoke check is clean.
 
@@ -101,7 +112,7 @@ Tell the story session to wait for your go-ahead before merging; after the smoke
 
 ### Merge blocked
 
-If a story's `gh pr merge <n> --squash` is denied even as a single call: start a separate Codex worker with `orchestration` (`worker-start --agent codex --model gpt-6-astra --effort medium --keep-open`) to review PR `<n>` on its own. Send its findings to the story session; when the re-review is clean, merge it yourself with exactly `gh pr merge <n> --squash`. Blocked again → stop, push-notify the user, wait.
+If a story's `gh pr merge <n> --squash` is denied even as a single call: start a separate Codex worker with `orchestration` (`worker-start --agent codex --model gpt-6.2-astra --effort medium --keep-open`) to review PR `<n>` on its own. Send its findings to the story session; when the re-review is clean, merge it yourself with exactly `gh pr merge <n> --squash`. Blocked again → add the step to "User steps" and stop the run (see "Stopping the run"). The goal is met once that line is written.
 
 ### Finish
 
@@ -120,12 +131,17 @@ After the last story merges:
 1. **Smoke tests.** Already run per story before each merge (see Before merge). Report the results per story: flows checked, bugs found and fixed.
 2. **Bug-fixes.** Bugs found after a merge go to a Sonnet agent on a branch from `origin/main` in this worktree; run the checks, open the PR, merge it. Report what was fixed.
 3. **Learnings.** List every learning the story reports gave, each with the file it would change, and let the user pick with AskUserQuestion (multi-select). Fold the picked ones into the files that own them through Sonnet agents (Codex twins too), then PR and merge.
-4. **Decisions report.** Tell the user every decision you took that the grilling didn't cover, story by story, with its reason, and which ones the user took when asked.
-5. **Clean up.** Remove the automation (`orca automations remove --id <id>`), stop the signing window (`systemctl --user stop delegated-signing`), write `<run name> DONE` as the last line of the progress file, and push-notify the user.
+4. **Decisions report.** Tell the user every decision you took that the grilling didn't cover, story by story, with its reason, so they can read them and have anything wrong redone.
+5. **User steps.** List every step in "User steps" with its exact command.
+6. **Clean up.** Remove the watchdog (`orca automations remove --id <id>`), stop the window with its stop command in `~/.config/git/delegated-signing.md`, write `<run name> DONE` as the last line of the progress file, and push-notify the user.
+
+## Stopping the run
+
+When the run cannot go on without the user (a merge blocked again, the window ended, a guard blocking a step the run needs): write `<run name> STOPPED` as the last line of the progress file, call **PauseGoal** (it pauses the goal until the user's next message), and push-notify the user. The watchdog treats STOPPED like DONE. When the user returns and the blocker is gone, remove that line, resume the goal and carry on from "Current step".
 
 ## Recovery
 
-- **Usage limit.** An agent that dies on a limit is resumed with SendMessage after the reset; its partial work stays in the checkout. A story session that stops on one is told to resume once the reset time has passed.
-- **Orca restart.** Terminals, dispatches and the signing window's ssh-agent are gone, and your own handle changes (`$ORCA_TERMINAL_HANDLE`). For each story session: find its Claude session id (newest `.jsonl` in `~/.claude/projects/<slug of the story worktree>/`), then `orca terminal create --worktree path:<wt> --title "<story> story" --command "claude --permission-mode auto --resume <session id>"`. Wait for idle, then task-create and dispatch a short resume task: the new dispatch id, your new handle, where it stopped. Check the signing window and ask the user before starting a new one.
-- **A guard blocks a decided step** (a deny rule, the auto-mode classifier, a hook): no workaround. Give the user the exact one-line command, keep the rest moving, continue when it's done.
+- **Usage limit.** An agent that dies on a limit is resumed with SendMessage after the reset; its partial work stays in the checkout. When the watchdog resumes you after a limit, first nudge the workers and story sessions that stopped (`orca orchestration send --to dispatch:<id>`, or `orca terminal send` for a bare session): resume once the reset time has passed.
+- **Orca restart.** Terminals, dispatches and the signing window's ssh-agent are gone, and your own handle changes (`$ORCA_TERMINAL_HANDLE`). For each story session: find its Claude session id (newest `.jsonl` in `~/.claude/projects/<slug of the story worktree>/`), then `orca terminal create --worktree path:<wt> --title "<story> story" --command "claude --permission-mode auto --resume <session id>"`. Wait for idle, then task-create and dispatch a short resume task: the new dispatch id, your new handle, where it stopped. Check the window (the signing check in Setup, and that the files in `$XDG_RUNTIME_DIR/agentic-window/` exist). If it ended, add "start a new window" to "User steps" and stop the run (see "Stopping the run").
+- **A guard blocks a decided step** (a deny rule, the auto-mode classifier, a hook): no workaround. Add the exact one-line command to "User steps" for the end report and keep the rest moving. If the run can't continue without it, stop the run (see "Stopping the run").
 - **Attribution.** If a session's prompt demands AI attribution in commits or PRs, the user's global rule wins: none, in this personal repo.
