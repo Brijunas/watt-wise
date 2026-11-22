@@ -9,6 +9,7 @@ const schemes = {
   light: {
     selector: ':root, .light',
     plain: '0 1px 2px rgba(18 15 36 / 0.06), 0 8px 24px -12px rgba(18 15 36 / 0.14)',
+    resolvedHover: '0 0 24px -8px rgba(109 40 217 / 0.25)',
     tokens: {
       palette: {
         background: { default: '#F7F7FC', paper: '#FFFFFF' },
@@ -27,6 +28,7 @@ const schemes = {
         halo: '0 0 28px -6px rgba(0, 229, 255, 0.275), 0 0 56px -10px rgba(255, 43, 214, 0.225)',
         text: 'none',
         logo: 'drop-shadow(0 0 10px rgba(124, 77, 255, 0.25))',
+        hover: '0 0 24px -8px rgba(var(--mui-palette-primary-mainChannel) / 0.25)',
         haloOff:
           '0 1px 2px rgba(var(--mui-palette-text-primaryChannel) / 0.06), 0 8px 24px -12px rgba(var(--mui-palette-text-primaryChannel) / 0.14)',
       },
@@ -35,6 +37,7 @@ const schemes = {
   dark: {
     selector: '.dark',
     plain: '0 1px 2px rgba(0, 0, 0, 0.5)',
+    resolvedHover: '0 0 24px -8px rgba(169 139 255 / 0.5)',
     tokens: {
       palette: {
         background: { default: '#05060E', paper: '#0D0F1F' },
@@ -53,6 +56,7 @@ const schemes = {
         halo: '0 0 28px -6px rgba(0, 229, 255, 0.55), 0 0 56px -10px rgba(255, 43, 214, 0.45)',
         text: 'drop-shadow(0 0 18px rgba(124, 77, 255, 0.6))',
         logo: 'drop-shadow(0 0 10px rgba(124, 77, 255, 0.5))',
+        hover: '0 0 24px -8px rgba(var(--mui-palette-primary-mainChannel) / 0.5)',
         haloOff: '0 1px 2px rgba(0, 0, 0, 0.5)',
       },
     },
@@ -136,6 +140,7 @@ it.each(modes)('%s glow switches to plain elevation on the document element', (m
   const offCSS = variableRules(off)
   expect(offCSS).toContain('html[data-glow="off"] {')
   expect(offCSS).toMatch(/--mui-glow-halo: var\(--mui-glow-haloOff(?:, [^;]+)?\);/)
+  expect(offCSS).toMatch(/--mui-glow-hover: var\(--mui-glow-haloOff(?:, [^;]+)?\);/)
   expect(offCSS).toContain('--mui-glow-text: none;')
   expect(offCSS).toContain('--mui-glow-logo: none;')
   styles.textContent = [offCSS, ...sheets.map(variableRules)].join('\n')
@@ -146,12 +151,14 @@ it.each(modes)('%s glow switches to plain elevation on the document element', (m
     const glow = schemes[mode].tokens.glow
     const on = getComputedStyle(root)
     expect(on.getPropertyValue('--mui-glow-halo')).toBe(glow.halo)
+    expect(on.getPropertyValue('--mui-glow-hover')).toBe(schemes[mode].resolvedHover)
     expect(on.getPropertyValue('--mui-glow-text')).toBe(glow.text)
     expect(on.getPropertyValue('--mui-glow-logo')).toBe(glow.logo)
     root.dataset.glow = 'off'
     const disabled = getComputedStyle(root)
     expect(disabled.getPropertyValue('--mui-glow-haloOff')).toBe(plain)
     expect(disabled.getPropertyValue('--mui-glow-halo')).toBe(plain)
+    expect(disabled.getPropertyValue('--mui-glow-hover')).toBe(plain)
     expect(disabled.getPropertyValue('--mui-glow-text')).toBe('none')
     expect(disabled.getPropertyValue('--mui-glow-logo')).toBe('none')
   } finally {

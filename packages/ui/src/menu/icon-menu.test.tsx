@@ -1,6 +1,7 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { axe } from 'vitest-axe'
 import IconMenu from './icon-menu'
 
 afterEach(cleanup)
@@ -69,5 +70,62 @@ describe('IconMenu', () => {
       expect(screen.queryByRole('menu')).toBeNull()
     })
     expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  describe.each([
+    { language: 'en', label: 'Appearance', names: ['Light', 'Dark'] },
+    { language: 'lt', label: 'Išvaizda', names: ['Šviesi', 'Tamsi'] },
+  ])('in $language', ({ label, names }) => {
+    const open = async () => {
+      const user = userEvent.setup()
+      const view = render(
+        <IconMenu
+          label={label}
+          icon={<span>icon</span>}
+          options={[
+            { key: 'a', selected: false, content: names[0] },
+            { key: 'b', selected: true, content: names[1] },
+          ]}
+          onSelect={vi.fn()}
+        />,
+      )
+      await user.click(screen.getByRole('button', { name: label }))
+      return view
+    }
+
+    it('shows the tick on the selected item only', async () => {
+      await open()
+
+      const [first, second] = screen.getAllByRole('menuitemradio')
+
+      expect([
+        within(first ?? document.body).queryAllByTestId('CheckRoundedIcon').length,
+        within(second ?? document.body).queryAllByTestId('CheckRoundedIcon').length,
+      ]).toEqual([0, 1])
+    })
+
+    it('hides the tick from assistive technology', async () => {
+      await open()
+
+      expect(screen.getByTestId('CheckRoundedIcon').getAttribute('aria-hidden')).toBe('true')
+    })
+
+    it('keeps the item names and checked state unchanged by the tick', async () => {
+      await open()
+
+      const items = screen.getAllByRole('menuitemradio')
+
+      expect(items.map((item) => item.getAttribute('aria-checked'))).toEqual(['false', 'true'])
+      expect(screen.getAllByRole('menuitemradio', { name: names[1] })).toHaveLength(1)
+    })
+
+    it('has no accessibility violations with the menu open', async () => {
+      await open()
+
+      // The open menu is a portal fragment, not a page: the landmark rule doesn't apply.
+      const results = await axe(document.body, { rules: { region: { enabled: false } } })
+
+      expect(results.violations).toEqual([])
+    })
   })
 })
