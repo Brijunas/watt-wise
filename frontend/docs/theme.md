@@ -91,7 +91,7 @@ Components in `@wattwise/ui` that MUI does not have (the glow switch, `Logo`, th
 - The component is registered in the theme's types: `ComponentNameToClassKey`, `ComponentsPropsList` and `Components`. All registrations live in `mui-augmentation.ts`; each component's file exports its `<Name>Props` and `<Name>ClassKey`.
 - A component's styles are written in its slots from theme values only (no `sx` prop on the component). A page sets a component's look only through `theme.components.Ww<Name>`, never with its own styles.
 - Theme `variants` apply only to a component's `root` slot, so a non-root slot (`main`, `toggleButton`...) takes `styleOverrides` only.
-- Slots: `WwAppShell` `root`, `appBar`, `drawer`, `bottomBar`, `main`; `WwIconMenu` `root`, `menu`; `WwLanguageSwitch` and `WwModeSwitch` `root` (a styled `IconMenu`); `WwGlowSwitch` `root`, `icon`, `label`, `switch`; `WwAccountPage` `root`, `title`; `WwUpdatePrompt` `root`, `reloadButton`; `WwFormPasswordField` `root` (a styled `FormTextField`, so it also carries `WwFormTextField-root`), `toggleButton`; `WwNotFound`, `WwPageLoading`, `WwFormTextField` and `WwSignInFields` `root`.
+- Slots: `WwAppShell` `root`, `appBar`, `drawer`, `bottomBar`, `main`; `WwIconMenu` `root`, `menu`; `WwLogo` `root`, `lightLockup`, `darkLockup`, `mono`, `wordmark`; `WwLanguageSwitch` and `WwModeSwitch` `root` (a styled `IconMenu`); `WwGlowSwitch` `root`, `icon`, `label`, `switch`; `WwAccountPage` `root`, `title`; `WwUpdatePrompt` `root`, `reloadButton`; `WwFormPasswordField` `root` (a styled `FormTextField`, so it also carries `WwFormTextField-root`), `toggleButton`; `WwNotFound`, `WwPageLoading`, `WwFormTextField` and `WwSignInFields` `root`.
 
 ## MUI v9
 

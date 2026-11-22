@@ -45,7 +45,6 @@ function renderShell({
     <I18nextProvider i18n={createI18n({ lng })}>
       <AppThemeProvider>
         <AppShell
-          title="Watt-Wise"
           items={items}
           activeKey={activeKey}
           linkComponent={TestLink}
@@ -109,12 +108,17 @@ describe('AppShell', () => {
     }
   })
 
-  it.each([360, 900])('renders the title, actions and children at %i px', (width) => {
+  it.each([360, 900])('renders the logo link, actions and children at %i px', (width) => {
     renderShell({ width })
-    expect(screen.getByText('Watt-Wise')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Watt-Wise home' }).getAttribute('href')).toBe('/')
     expect(screen.queryByRole('heading')).toBeNull()
     expect(screen.getByRole('button', { name: 'Action' })).toBeTruthy()
     expect(within(screen.getByRole('main')).getByText('Page content')).toBeTruthy()
+  })
+
+  it('names the logo link in Lithuanian', () => {
+    renderShell({ width: 360, lng: 'lt' })
+    expect(screen.getByRole('link', { name: 'Watt-Wise pradžia' }).getAttribute('href')).toBe('/')
   })
 
   it('names the landmark in Lithuanian', () => {

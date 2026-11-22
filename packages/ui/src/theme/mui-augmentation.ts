@@ -10,6 +10,7 @@ import type { LanguageSwitchClassKey, LanguageSwitchProps } from '../i18n/langua
 import type { ModeSwitchClassKey, ModeSwitchProps } from './mode-switch'
 import type { GlowSwitchClassKey, GlowSwitchProps } from './glow-switch'
 import type { AccountPageClassKey, AccountPageProps } from '../auth/account-page'
+import type { LogoClassKey, LogoProps } from '../shell/logo'
 import type { NotFoundClassKey, NotFoundProps } from '../shell/not-found'
 import type { PageLoadingClassKey, PageLoadingProps } from '../shell/page-loading'
 import type { UpdatePromptClassKey, UpdatePromptProps } from '../shell/update-prompt'
@@ -106,6 +107,7 @@ declare module '@mui/material/styles' {
     WwLanguageSwitch: LanguageSwitchClassKey
     WwModeSwitch: ModeSwitchClassKey
     WwGlowSwitch: GlowSwitchClassKey
+    WwLogo: LogoClassKey
     WwAccountPage: AccountPageClassKey
     WwNotFound: NotFoundClassKey
     WwPageLoading: PageLoadingClassKey
@@ -121,6 +123,7 @@ declare module '@mui/material/styles' {
     WwLanguageSwitch: LanguageSwitchProps
     WwModeSwitch: ModeSwitchProps
     WwGlowSwitch: GlowSwitchProps
+    WwLogo: LogoProps
     WwAccountPage: AccountPageProps
     WwNotFound: NotFoundProps
     WwPageLoading: PageLoadingProps
@@ -155,6 +158,11 @@ declare module '@mui/material/styles' {
       defaultProps?: Partial<ComponentsPropsList['WwGlowSwitch']>
       styleOverrides?: ComponentsOverrides<Theme>['WwGlowSwitch']
       variants?: ComponentsVariants<Theme>['WwGlowSwitch']
+    }
+    WwLogo?: {
+      defaultProps?: Partial<ComponentsPropsList['WwLogo']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwLogo']
+      variants?: ComponentsVariants<Theme>['WwLogo']
     }
     WwAccountPage?: {
       defaultProps?: Partial<ComponentsPropsList['WwAccountPage']>

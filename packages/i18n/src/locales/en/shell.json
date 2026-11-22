@@ -1,4 +1,7 @@
 {
+  "logo": {
+    "home": "Watt-Wise home"
+  },
   "navigation": {
     "label": "Main navigation"
   },
