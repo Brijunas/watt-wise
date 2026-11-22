@@ -759,6 +759,13 @@ describe.each(languages)('accessibility of the themed components in %s', (lng) =
     ),
     'not-found page': () => <NotFound linkComponent={TestLink} homeTo="/start" />,
     'page loading': () => <PageLoading />,
+    'app shell with the glow switch and an icon menu in its actions': () =>
+      shell(
+        <>
+          <GlowSwitch />
+          {menu('Pick')}
+        </>,
+      ),
     'update prompt': () => <UpdatePrompt open onReload={vi.fn()} onClose={vi.fn()} />,
     'text field': () => (
       <FieldsHarness>

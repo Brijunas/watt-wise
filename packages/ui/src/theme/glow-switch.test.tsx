@@ -109,6 +109,13 @@ describe.each(['en', 'lt'] as const)('GlowSwitch in %s', (lng) => {
     expect(icon?.getAttribute('aria-hidden')).toBe('true')
   })
 
+  it('draws the icon in ButtonText under forced colours', () => {
+    const { container } = renderSwitch()
+    const icon = container.querySelector('svg[data-testid="LightbulbRoundedIcon"]')
+    if (icon === null) throw new Error('Missing icon')
+    expect(cssFor(icon, '(forced-colors: active)')).toContain('color:ButtonText')
+  })
+
   it('hides the visible word below md and shows it from md (840px)', () => {
     renderSwitch()
     const word = screen.getByText(t.word)

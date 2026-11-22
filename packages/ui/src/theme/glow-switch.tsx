@@ -24,6 +24,7 @@ const GlowSwitchRoot = styled('label', { name, slot: 'root' })<OwnerState>(({ th
 
 const GlowSwitchIcon = styled(LightbulbIcon, { name, slot: 'icon' })<OwnerState>(({ theme }) => ({
   color: theme.vars.palette.text.secondary,
+  '@media (forced-colors: active)': { color: 'ButtonText' },
 }))
 
 // The word shows from `md` up; below it the icon and the accessible name are enough.
