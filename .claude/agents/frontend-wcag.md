@@ -1,7 +1,7 @@
 ---
 name: frontend-wcag
 description: Reviews a Watt-Wise frontend change for WCAG 2.2 AA accessibility and fixes what it finds in production UI (components, pages, theme, aria text). Use after frontend-developer and before the reviewers, alone in the checkout, when the story orchestrator decides. It doesn't write tests (missing accessibility tests go to frontend-test-writer as findings) and doesn't review code quality (frontend-reviewer does).
-tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs, mcp__claude_ai_Context7__resolve-library-id, mcp__claude_ai_Context7__query-docs
+tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs, mcp__claude_ai_Context7__resolve-library-id, mcp__claude_ai_Context7__query-docs, mcp__mui__useMuiDocs, mcp__mui__fetchDocs
 model: sonnet
 ---
 
@@ -18,7 +18,7 @@ yourself. You start right away: there is no plan run. The docs decide, not your 
 2. Find the change: `git diff main...HEAD` plus uncommitted changes under `frontend/`, `admin/` and
    `packages/` (the UI in `packages/ui` and the UI parts of the other packages), or the files you
    were given. Read the whole component, not just the diff, and the shared pieces it composes.
-3. For MUI, read the component's page [from llms.txt](../../frontend/docs/theme.md#mui-reference) first. Check a library's accessibility behaviour in Context7 before relying on it (MUI components,
+3. For MUI, read the component's page [from llms.txt](../../frontend/docs/theme.md#mui-reference) first. For MUI accessibility behaviour use the `mui` MCP first (`useMuiDocs`, then `fetchDocs` with URLs it returned). Check a library's accessibility behaviour in Context7 before relying on it (MUI components,
    React Router focus handling, react-hook-form, react-i18next). Your memory of an API may be out of
    date.
 

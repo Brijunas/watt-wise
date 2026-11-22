@@ -11,6 +11,10 @@
     "github": {
       "command": "bash",
       "args": ["-c", "exec \"$(git rev-parse --show-toplevel)/.claude/mcp/github.sh\""]
+    },
+    "mui": {
+      "command": "npx",
+      "args": ["-y", "@mui/mcp@0.1.10"]
     }
   }
 }
