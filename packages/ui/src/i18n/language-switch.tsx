@@ -1,4 +1,4 @@
-import TranslateIcon from '@mui/icons-material/Translate'
+import TranslateIcon from '@mui/icons-material/TranslateRounded'
 import { languageNames, languages } from '@wattwise/i18n'
 import { useTranslation } from 'react-i18next'
 import IconMenu from '../menu/icon-menu'

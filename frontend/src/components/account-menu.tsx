@@ -1,4 +1,4 @@
-import AccountCircleIcon from '@mui/icons-material/AccountCircle'
+import AccountCircleIcon from '@mui/icons-material/AccountCircleRounded'
 import IconButton from '@mui/material/IconButton'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'

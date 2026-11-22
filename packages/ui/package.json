@@ -15,7 +15,7 @@
   "peerDependencies": {
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
-    "@fontsource-variable/roboto": "catalog:",
+    "@fontsource-variable/red-hat-display": "catalog:",
     "@mui/icons-material": "catalog:",
     "@mui/material": "catalog:",
     "i18next": "catalog:",
@@ -32,7 +32,7 @@
   "devDependencies": {
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
-    "@fontsource-variable/roboto": "catalog:",
+    "@fontsource-variable/red-hat-display": "catalog:",
     "@hookform/resolvers": "catalog:",
     "@mui/icons-material": "catalog:",
     "@mui/material": "catalog:",

@@ -7,7 +7,7 @@ beforeAll(() => {
 })
 afterEach(() => {
   cleanup()
-  localStorage.clear()
+  if (typeof window !== 'undefined') window.localStorage.clear()
   server.resetHandlers()
 })
 afterAll(() => {

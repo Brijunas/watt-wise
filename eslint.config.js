@@ -9,6 +9,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
+import noLiteralStyle from './eslint/rules/no-literal-style.js'
 
 const apps = ['frontend', 'admin']
 
@@ -102,6 +103,57 @@ const packageZones = Object.entries(forbiddenPackageImports).flatMap(([name, for
     message: 'Packages must not import an app.',
   })),
 ])
+
+// The style rule of "Files and naming" in frontend/docs/conventions.md (an exported function is a
+// const arrow function), the MUI v9 removals of theme.md "MUI v9", Rounded-only icons and no
+// `palette.mode`. Selectors for `@mui/icons-material` use \x2f for `/`: esquery regexes can't hold one.
+const iconSource = 'source.value=/^@mui\\x2ficons-material($|\\x2f)/'
+const roundedIconSource = 'source.value=/^@mui\\x2ficons-material\\x2f[A-Za-z0-9]+Rounded$/'
+const iconTemplateSource = 'source.quasis.0.value.cooked=/^@mui\\x2ficons-material($|\\x2f)/'
+const roundedIconTemplateSource =
+  'source.quasis.0.value.cooked=/^@mui\\x2ficons-material\\x2f[A-Za-z0-9]+Rounded$/'
+const removedProps = [
+  'components',
+  'componentsProps',
+  'PaperProps',
+  'TransitionProps',
+  'BackdropProps',
+]
+const restrictedSyntax = [
+  {
+    selector: 'ExportNamedDeclaration > FunctionDeclaration',
+    message:
+      'Declare it as a const arrow function and `export default` it. A file with several exports uses `export const name = () => ...`.',
+  },
+  {
+    selector: 'ExportDefaultDeclaration > FunctionDeclaration',
+    message: 'Declare it as a const arrow function, then `export default Name`.',
+  },
+  {
+    selector: `JSXAttribute[name.name=/^(${removedProps.join('|')})$/]`,
+    message: 'MUI v9 removed this prop. Use `slots` and `slotProps` (theme.md, "MUI v9").',
+  },
+  {
+    selector: `:matches(ImportDeclaration, ImportExpression, ExportAllDeclaration, ExportNamedDeclaration)[${iconSource}]:not([${roundedIconSource}])`,
+    message: 'Only Rounded icons: import `@mui/icons-material/<Name>Rounded` (theme.md, "Tokens").',
+  },
+  {
+    // import(`@mui/icons-material/Home`): a template source, compared on its first text part
+    selector: `ImportExpression[source.type="TemplateLiteral"][${iconTemplateSource}]:not([${roundedIconTemplateSource}])`,
+    message: 'Only Rounded icons: import `@mui/icons-material/<Name>Rounded` (theme.md, "Tokens").',
+  },
+  ...[
+    // palette.mode and palette['mode'], on any object or on a bare `palette`
+    `:matches(MemberExpression[object.property.name="palette"], MemberExpression[object.property.value="palette"], MemberExpression[object.name="palette"]):matches([property.name="mode"], [property.value="mode"])`,
+    // const { mode } = theme.palette, const { 'mode': m } = palette, const { palette: { mode } } = theme
+    `VariableDeclarator:matches([init.property.name="palette"], [init.property.value="palette"], [init.name="palette"]) > ObjectPattern > Property:matches([key.name="mode"], [key.value="mode"])`,
+    `Property:matches([key.name="palette"], [key.value="palette"]) > ObjectPattern > Property:matches([key.name="mode"], [key.value="mode"])`,
+  ].map((selector) => ({
+    selector,
+    message:
+      'Never check `palette.mode`: use `theme.applyStyles` or `useColorScheme` (theme.md, "CSS variables and colour schemes").',
+  })),
+]
 
 export default defineConfig(
   // backend/**/obj/ holds JS the .NET SDK generates (dotnet-watch browser tools since 11 rc.2).
@@ -211,23 +263,25 @@ export default defineConfig(
     },
   },
   {
-    // The style rule of "Files and naming" in frontend/docs/conventions.md: an exported function is
-    // a const arrow function.
+    // The structural checks of "Lint" in frontend/docs/conventions.md, tests included. They share one
+    // list because a later `no-restricted-syntax` block would replace this one for the same files.
     files: [...apps.map((app) => `${app}/src/**/*.{ts,tsx}`), 'packages/*/src/**/*.{ts,tsx}'],
     rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'ExportNamedDeclaration > FunctionDeclaration',
-          message:
-            'Declare it as a const arrow function and `export default` it. A file with several exports uses `export const name = () => ...`.',
-        },
-        {
-          selector: 'ExportDefaultDeclaration > FunctionDeclaration',
-          message: 'Declare it as a const arrow function, then `export default Name`.',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...restrictedSyntax],
     },
+  },
+  {
+    // Literal colours, shadows and font families belong in the theme folder; tests may use them.
+    files: [...apps.map((app) => `${app}/src/**/*.{ts,tsx}`), 'packages/*/src/**/*.{ts,tsx}'],
+    ignores: [
+      'packages/ui/src/theme/**',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/testing/**',
+      '**/testing.ts',
+    ],
+    plugins: { wattwise: { rules: { 'no-literal-style': noLiteralStyle } } },
+    rules: { 'wattwise/no-literal-style': 'error' },
   },
   prettier,
 )

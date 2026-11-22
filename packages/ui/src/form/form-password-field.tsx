@@ -1,5 +1,5 @@
-import Visibility from '@mui/icons-material/Visibility'
-import VisibilityOff from '@mui/icons-material/VisibilityOff'
+import Visibility from '@mui/icons-material/VisibilityRounded'
+import VisibilityOff from '@mui/icons-material/VisibilityOffRounded'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
 import type { FieldValues } from 'react-hook-form'

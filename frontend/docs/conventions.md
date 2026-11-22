@@ -9,7 +9,11 @@ ESLint runs once from the root `eslint.config.js` across both apps and every pac
 - typescript-eslint `strictTypeChecked` + `stylisticTypeChecked`, `@eslint-react` (`eslint-plugin-react` doesn't support ESLint 10), `eslint-plugin-react-hooks`, and `eslint-config-prettier` last.
 - ESLint runs on TypeScript 6 while `tsc` is TypeScript 7; why, and what to watch for, is in [known-issues.md](../../docs/known-issues.md).
 
-S5A.1 adds three checks, both outside `packages/ui/src/theme/`: a rule that fails on a literal colour (hex, `rgb`/`hsl`, named colour), box-shadow or font family in any component under `frontend/src`, `admin/src` and `packages/*/src`, and an import restriction that allows only `@mui/icons-material/*Rounded` icons ([theme.md](theme.md#tokens)), and a rule that fails on MUI props v9 removed (`components`, `componentsProps`, `PaperProps`, `TransitionProps`, `BackdropProps`; [theme.md](theme.md#mui-v9)).
+Three more checks guard the look ([style.md](style.md#donts), [theme.md](theme.md)):
+
+- **Structural checks** (`no-restricted-syntax` in the root config, one shared selector list for `frontend/src`, `admin/src` and `packages/*/src`, **test files included**): the const-arrow rule of [Files and naming](#files-and-naming); the MUI props [v9 removed](theme.md#mui-v9); an import or re-export from `@mui/icons-material` that isn't `@mui/icons-material/<Name>Rounded` (the barrel too); and any `palette.mode` access.
+- **No literal style** (`wattwise/no-literal-style`, a local rule in `eslint/rules/no-literal-style.js`): fails on a literal colour (hex, `rgb`/`hsl` and other CSS colour functions, named colours as a colour property or JSX attribute value), box or text shadow, and font family, also as `box-shadow:` or `font-family:` in a CSS string. `none`, `inherit`, `currentColor`, `transparent`, MUI palette names, numbers (indexes into `theme.shadows`) and colour functions fed by a channel token (`` `rgba(${…mainChannel} / 0.12)` ``) pass. It covers the same three folders except `packages/ui/src/theme/`, where the tokens live, and test files (`*.test.ts`, `*.test.tsx`, `testing/`, `testing.ts`).
+- **Rule tests** are in `eslint/style-rules.test.js`, run from the repo root by `pnpm test` (`eslint/vitest.config.js`). A lint-text test needs a path of a real file in the folder it checks, because the typed rules read the project.
 
 ## Code style
 

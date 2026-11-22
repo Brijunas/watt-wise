@@ -45,7 +45,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // The app shell: scripts, styles, the HTML, icons and the bundled Roboto font files.
+        // The app shell: scripts, styles, the HTML, icons and the bundled Red Hat Display font files.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api\//],
