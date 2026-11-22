@@ -9,7 +9,6 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc",
-    "generate:icons": "pwa-assets-generator",
     "mutation": "stryker run ../stryker.config.json"
   },
   "dependencies": {
@@ -39,7 +38,6 @@
     "@testing-library/user-event": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vite-pwa/assets-generator": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "fast-check": "catalog:",
     "jsdom": "catalog:",
