@@ -56,7 +56,6 @@ Each app's dev server and preview get their settings from 1Password through the 
 | `op run --env-file frontend/.env.op.development -- pnpm --filter frontend dev`     | Starts the dev server with hot reload on the `frontend` item's `url`. No service worker in dev. |
 | `pnpm --filter frontend build`                                                     | Type-checks and builds `frontend/dist/`. Needs no settings: the API address is read at runtime. |
 | `op run --env-file frontend/.env.op.development -- pnpm --filter frontend preview` | Serves the last build on the same address, service worker included, to try the PWA.             |
-| `pnpm --filter frontend generate:icons`                                            | Regenerates the PWA icons and `favicon.ico` from `public/favicon.svg`; commit the results.      |
 
 ## Backend
 
