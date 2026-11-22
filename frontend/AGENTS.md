@@ -8,17 +8,17 @@ Path rules live in [.claude/rules](.claude/rules/); read the matching files expl
 
 ## Required Documentation
 
-| Read before changing                                                        | Source                                                                |
-| --------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| App composition, stack, runtime configuration, PWA, or package dependencies | [Architecture](docs/architecture.md)                                  |
-| Features, routes, folders, import direction, Redux, or translations         | [Structure](docs/structure.md)                                        |
-| TypeScript/React code, filenames, exports, or lint configuration            | [Conventions](docs/conventions.md)                                    |
-| Unit/component tests, route integration tests, fixtures, or MSW handlers    | [Testing](docs/testing.md)                                            |
-| Pages, components, theme, or aria text                                      | [Accessibility](docs/accessibility.md)                                |
-| Colours, type, glow, logo, layout, charts or result states                  | [Style](docs/style.md), [Layout](docs/layout.md)                      |
-| Authentication, authorization, tokens, or personal data                     | Root [security](../docs/security.md)                                  |
-| Installing tools, starting apps, or running checks                          | Root [setup](../docs/setup.md), [development](../docs/development.md) |
-| Tool versions or compatibility workarounds                                  | Root [known issues](../docs/known-issues.md)                          |
+| Read before changing                                                        | Source                                                                                                                 |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| App composition, stack, runtime configuration, PWA, or package dependencies | [Architecture](docs/architecture.md)                                                                                   |
+| Features, routes, folders, import direction, Redux, or translations         | [Structure](docs/structure.md)                                                                                         |
+| TypeScript/React code, filenames, exports, or lint configuration            | [Conventions](docs/conventions.md)                                                                                     |
+| Unit/component tests, route integration tests, fixtures, or MSW handlers    | [Testing](docs/testing.md)                                                                                             |
+| Pages, components, theme, or aria text                                      | [Accessibility](docs/accessibility.md)                                                                                 |
+| Colours, type, glow, logo, layout, charts or result states                  | [Style](docs/style.md), [Theme](docs/theme.md), [Layout](docs/layout.md), [MUI reference](docs/theme.md#mui-reference) |
+| Authentication, authorization, tokens, or personal data                     | Root [security](../docs/security.md)                                                                                   |
+| Installing tools, starting apps, or running checks                          | Root [setup](../docs/setup.md), [development](../docs/development.md)                                                  |
+| Tool versions or compatibility workarounds                                  | Root [known issues](../docs/known-issues.md)                                                                           |
 
 Read architecture, structure, and conventions before implementation, then the task-specific sources. Keep frontend-only decisions in these docs, shared system decisions in root docs, and security decisions in the security specification.
 

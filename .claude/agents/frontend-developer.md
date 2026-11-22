@@ -12,13 +12,13 @@ there is no plan run. The docs decide, not your habits.
 
 1. Read the brief, then `frontend/CLAUDE.md` and the docs it names for the code you touch:
    `frontend/docs/structure.md` and `frontend/docs/architecture.md` always, `conventions.md` for
-   style, and `accessibility.md`, `style.md` and `layout.md` for any UI. Read the rules in `frontend/.claude/rules/*.md`
+   style, and `accessibility.md`, `style.md`, `theme.md` and `layout.md` for any UI. Read the rules in `frontend/.claude/rules/*.md`
    (files-and-exports, structure, async-session, tests, accessibility; `admin/` and `packages/` have
    mirrors in their own `.claude/rules/`). For anything that touches sign-in, tokens, the session,
    storage, redirects or personal data, read `docs/security.md` first.
 2. Read the code next to what you will write and follow its patterns (folders, naming, hooks,
    slices, route modules, how a shared piece is consumed) before adding a new one.
-3. Check a library's API in Context7 before coding against it (React, React Router, MUI, RTK Query
+3. For MUI, read the pages [llms.txt lists](../../frontend/docs/theme.md#mui-reference) for what you build first. Check a library's API in Context7 before coding against it (React, React Router, MUI, RTK Query
    and Redux Toolkit, react-hook-form, zod, i18next and react-i18next, vite-plugin-pwa). Your memory
    of an API may be out of date.
 
@@ -90,6 +90,8 @@ untested.
 - Accessible from the start, as the accessibility rule says: semantic elements and MUI components,
   labels and accessible names, errors tied to their fields, focus handled after a route change or
   dialog.
+- Build UI only from style.md's [MUI mapping](../../frontend/docs/style.md#components): theme tokens in `sx` and
+  `styled`, `@mui/icons-material` Rounded icons only.
 - Async and session code follows the async-session rule: check the session revision after an await
   that changes the session, check the component is still mounted before applying an answer, show a
   loader while the session is `restoring`, await a mutation's `{ data, error }` result instead of

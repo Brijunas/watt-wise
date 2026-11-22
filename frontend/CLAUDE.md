@@ -2,7 +2,7 @@
 
 Notes for Claude Code when working in `frontend/`, `admin/` or `packages/`. Both apps and the `@wattwise/*` packages share one set of docs in [docs/](docs/): read [docs/structure.md](docs/structure.md) and [docs/architecture.md](docs/architecture.md) before writing code, and [docs/testing.md](docs/testing.md) before writing tests.
 
-Read [docs/style.md](docs/style.md) and [docs/layout.md](docs/layout.md) before changing anything a user sees.
+Read [docs/style.md](docs/style.md), [docs/theme.md](docs/theme.md) and [docs/layout.md](docs/layout.md) before changing anything a user sees, and the [MUI reference](docs/theme.md#mui-reference) before building a token, variant or component.
 
 ## TypeScript files
 

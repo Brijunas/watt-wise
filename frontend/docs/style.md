@@ -1,6 +1,8 @@
 # Frontend style
 
-The visual language of `frontend/`, `admin/` and `@wattwise/ui`: "calm neon", taken from the Watt-Wise logo. A calm, readable base for the general public, with gradient and glow kept for the few things that matter on a screen. This doc owns the logo, colours, type, gradient, glow, hover, shapes and component styles; page layout, navigation, the chart and result states are in [layout.md](layout.md). How the mode and the glow setting are stored and applied is under "Appearance" in [architecture.md](architecture.md#appearance); contrast and motion rules are in [accessibility.md](accessibility.md). Epic E5A brings `packages/ui` to this doc; until it ships, the code still has the earlier Roboto theme.
+The visual language of `frontend/`, `admin/` and `@wattwise/ui`: "calm neon", taken from the Watt-Wise logo. A calm, readable base for the general public, with gradient and glow kept for the few things that matter on a screen. This doc owns the logo, colours, type, gradient, glow, hover, shapes and component styles; page layout, navigation, the chart and result states are in [layout.md](layout.md). How the mode and the glow setting are stored and applied is under "Appearance" in [architecture.md](architecture.md#appearance); contrast and motion rules are in [accessibility.md](accessibility.md).
+
+The MUI theme that implements this look (tokens, theme structure, variants, rules) is in [theme.md](theme.md).
 
 ## Principles
 
@@ -87,18 +89,24 @@ Radius 24px hero card, 20px cards, 16px inset panels, 14px buttons, 12px fields,
 
 ## Components
 
-| Component                     | Style                                                                                                               |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Primary button (`contained`)  | Action gradient, white text, glow; one per region                                                                   |
-| Secondary button (`outlined`) | Transparent, text colour, 1.5px `fieldOutline`                                                                      |
-| Card                          | `background.paper`, 1px `divider`, elevation                                                                        |
-| Highlighted card              | 1.5px gradient border, glow; one per group                                                                          |
-| Inset panel                   | `surface2`, no border                                                                                               |
-| Chips                         | `surface2` with `text.secondary`; "Lowest cost" in the action gradient; "Past prices" in `primary.main` on its tint |
-| Fields                        | 12px radius, `fieldOutline`, `primary.main` when focused; disabled fields dimmed                                    |
-| Segmented choice              | Radios styled as a pill group; the selected one filled with `primary.main`                                          |
-| Menus                         | `background.paper`, 16px radius, items 44px high, the checked item ticked                                           |
+Each component is the MUI one in the second column, styled by its theme override or variant ([theme.md](theme.md)).
+
+| Component                     | MUI component                                           | Style                                                                                                               |
+| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Primary button (`contained`)  | `Button` `variant="contained"`                          | Action gradient, white text, glow; one per region                                                                   |
+| Secondary button (`outlined`) | `Button` `variant="outlined"`                           | Transparent, text colour, 1.5px `fieldOutline`                                                                      |
+| Card                          | `Card`                                                  | `background.paper`, 1px `divider`, elevation                                                                        |
+| Highlighted card              | `Card` custom variant `highlighted`                     | 1.5px gradient border, glow; one per group                                                                          |
+| Inset panel                   | `Paper` `elevation={0}`, on `surface2`                  | `surface2`, no border                                                                                               |
+| Chips                         | `Chip`; custom variants `lowestCost` and `pastPrices`   | `surface2` with `text.secondary`; "Lowest cost" in the action gradient; "Past prices" in `primary.main` on its tint |
+| Fields                        | `TextField` `variant="outlined"`                        | 12px radius, `fieldOutline`, `primary.main` when focused; disabled fields dimmed                                    |
+| Segmented choice              | `RadioGroup` with `Radio`s in `FormControlLabel`s       | Radios styled as a pill group; the selected one filled with `primary.main`                                          |
+| Menus                         | `Menu` with `MenuItem`s                                 | `background.paper`, 16px radius, items 44px high, the checked item ticked                                           |
+| Glow switch                   | `Switch`                                                | Track gradient while on ([Glow](#glow))                                                                             |
+| Bottom bar                    | `BottomNavigation` with `BottomNavigationAction`s       | Under 600px ([layout.md](layout.md))                                                                                |
+| Drawer                        | `Drawer` `variant="permanent"`                          | From 1200px ([layout.md](layout.md))                                                                                |
+| Rail                          | Narrow (88px) permanent `Drawer` with `ListItemButton`s | 600-1199px; MUI has no rail component                                                                               |
 
 ## Don'ts
 
-No gradient or glow on more than one thing a region is about; no gradient text under 24px; no coloured page washes, scan lines, flicker or "terminal" fonts; no brand colours for meaning and no meaning by colour alone; no hard-coded colour, shadow or font in a component.
+No gradient or glow on more than one thing a region is about; no gradient text under 24px; no coloured page washes, scan lines, flicker or "terminal" fonts; no brand colours for meaning and no meaning by colour alone; no hard-coded colour, shadow or font in a component and no non-Rounded icon (a lint check enforces both: [conventions.md](conventions.md#lint)).
