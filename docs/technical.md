@@ -23,7 +23,7 @@ watt-wise/
 ├── admin/                     React admin PWA (Vite), follows frontend/docs/
 ├── packages/
 │   ├── api-client/            generated RTK Query client + types
-│   ├── ui/                    MUI theme (look in frontend/docs/style.md; light/dark color schemes, mode switch), shared components, charts
+│   ├── ui/                    MUI theme (built per frontend/docs/theme.md; light/dark color schemes, mode switch), shared components, charts
 │   ├── core/                  session and token handling, zod schemas, utilities
 │   └── i18n/                  react-i18next setup and shared resources
 ├── global.json                .NET SDK pin and test runner for the backend

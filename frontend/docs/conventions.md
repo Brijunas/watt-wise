@@ -9,6 +9,8 @@ ESLint runs once from the root `eslint.config.js` across both apps and every pac
 - typescript-eslint `strictTypeChecked` + `stylisticTypeChecked`, `@eslint-react` (`eslint-plugin-react` doesn't support ESLint 10), `eslint-plugin-react-hooks`, and `eslint-config-prettier` last.
 - ESLint runs on TypeScript 6 while `tsc` is TypeScript 7; why, and what to watch for, is in [known-issues.md](../../docs/known-issues.md).
 
+S5A.1 adds three checks, both outside `packages/ui/src/theme/`: a rule that fails on a literal colour (hex, `rgb`/`hsl`, named colour), box-shadow or font family in any component under `frontend/src`, `admin/src` and `packages/*/src`, and an import restriction that allows only `@mui/icons-material/*Rounded` icons ([theme.md](theme.md#tokens)), and a rule that fails on MUI props v9 removed (`components`, `componentsProps`, `PaperProps`, `TransitionProps`, `BackdropProps`; [theme.md](theme.md#mui-v9)).
+
 ## Code style
 
 - **KISS.** The simplest code that meets the story: no option, layer or abstraction nobody needs yet.

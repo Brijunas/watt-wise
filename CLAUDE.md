@@ -25,7 +25,7 @@ Each doc has one job. Read or update the one that matches the task:
 - `<project>/docs/`: technical decisions that belong to one project. Source of truth for that project, read before implementing in it.
   - `backend/docs/`: the .NET solution (architecture, domain model, testing, conventions, error handling, observability, jobs, email, email outbox).
   - `backend/docs/features/`: one doc per feature, each with the Vocabulary every other doc follows (`accounts.md`).
-  - `frontend/docs/`: both web apps and the `@wattwise/*` packages (architecture, structure, style, layout, testing, conventions, accessibility). `admin/` and `packages/` have no docs of their own; they follow these.
+  - `frontend/docs/`: both web apps and the `@wattwise/*` packages (architecture, structure, style, theme, layout, testing, conventions, accessibility). `admin/` and `packages/` have no docs of their own; they follow these.
   - `deploy/docs/`: the Compose stacks, PostgreSQL, Grafana LGTM and Mailpit.
 - `<project>/CLAUDE.md`: Claude's notes for one project, loaded when working in it. `backend/CLAUDE.md` for C#, `frontend/CLAUDE.md` for TypeScript; `admin/CLAUDE.md` and `packages/CLAUDE.md` import the frontend one.
 - `docs/epics.md`: the epics and stories still to do.

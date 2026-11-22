@@ -6,7 +6,7 @@ The stack of `frontend/` and `admin/` and how the shared `@wattwise/*` packages 
 
 - **Stack:** React + TypeScript, built with Vite, delivered as a PWA.
 - **PWA scope:** installable with a manifest; the app shell is cached by a service worker (`vite-plugin-pwa`). API data is always fetched online; no offline data and no push notifications in MVP. How it is set up is under [PWA](#pwa).
-- **Component library:** MUI.
+- **Component library:** MUI, styled only through the theme ([theme.md](theme.md#mui); where MUI's docs are: [MUI reference](theme.md#mui-reference)).
 - **Responsive design:** mobile-first. Layouts are built for the smallest MUI breakpoint first and enhanced upward; navigation, tables and charts must be usable on a phone.
 - **Data fetching / server state:** RTK Query (Redux Toolkit).
 - **Routing:** React Router 8 in data mode: `createBrowserRouter` with lazy page routes, `RouterProvider` from `react-router/dom` and everything else from `react-router`. The app shell (app bar, bottom navigation on a phone, side navigation from the `md` breakpoint up) and the not-found page come from `@wattwise/ui`; how they get their links is under "Import direction" in [structure.md](structure.md#import-direction).
@@ -18,7 +18,7 @@ The stack of `frontend/` and `admin/` and how the shared `@wattwise/*` packages 
 ## Appearance
 
 - **Modes:** light, dark and auto using MUI's CSS-variables theme with `colorSchemes` and `useColorScheme`. Auto follows `prefers-color-scheme`; the user's choice is stored in `localStorage` under `wattwise-mode` and applied before first paint to avoid a flash. The apps have no server rendering, so a Vite plugin from `@wattwise/ui/vite` writes MUI's own `InitColorSchemeScript` into each `index.html` `<head>` at build time.
-- **Look and layout:** colours, type, gradient, glow, hover and the logo are in [style.md](style.md); breakpoints, the app shell, results, charts and states are in [layout.md](layout.md). The theme in `packages/ui` implements them, and its tests check the contrast of every text and control token in both modes.
+- **Look and layout:** colours, type, gradient, glow, hover and the logo are in [style.md](style.md); breakpoints, the app shell, results, charts and states are in [layout.md](layout.md). The theme in `packages/ui` ([theme.md](theme.md#mui)) implements them, and its tests check the contrast of every text and control token in both modes.
 - **Browser colours:** each app's manifest `theme_color` and `background_color` are `#05060E`, and each `index.html` has two `<meta name="theme-color">` tags with `media="(prefers-color-scheme: light)"` and `(prefers-color-scheme: dark)`, set to `background.default` of each mode (`#F7F7FC`, `#05060E`).
 - **Glow:** on or off, on by default unless the device asks for more contrast or forced colours. It is stored in `localStorage` under `wattwise-glow` and applied before first paint the same way as the mode: the `@wattwise/ui/vite` head script sets `data-glow="off"` on `<html>`, and the theme's glow tokens read it. The switch is in the app bar.
 

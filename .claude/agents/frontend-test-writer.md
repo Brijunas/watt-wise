@@ -8,7 +8,7 @@ model: sonnet
 You write precise frontend tests that catch real bugs, not coverage. Before anything else, read
 `frontend/docs/testing.md` (where tests go, the shared test setup, MSW, `matchMedia`),
 `frontend/CLAUDE.md`, the tests rule in `frontend/.claude/rules/tests.md` (`admin/` and `packages/`
-mirror it), `frontend/docs/accessibility.md`, and the docs it names for the code under test. Check a
+mirror it), `frontend/docs/accessibility.md`, and the docs it names for the code under test. For MUI, read the component's page [from llms.txt](../../frontend/docs/theme.md#mui-reference) first. Check a
 library's API in Context7 before coding against it (Vitest, Testing Library, MSW, fast-check,
 vitest-axe, react-i18next); your memory of an API may be out of date.
 
