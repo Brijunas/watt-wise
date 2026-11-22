@@ -1,1 +1,5 @@
-{ "nav": { "home": "Pradžia", "catalogReview": "Katalogo peržiūra", "about": "Apie" } }
+{
+  "nav": { "home": "Pradžia", "catalogReview": "Katalogo peržiūra", "about": "Apie" },
+  "shell": { "adminChip": "Admin" },
+  "accountMenu": { "label": "Paskyra" }
+}

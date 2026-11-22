@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import createMatchMedia from './create-match-media'
 
 describe('createMatchMedia', () => {
@@ -35,6 +35,25 @@ describe('createMatchMedia', () => {
 
   it('does not match unknown queries', () => {
     expect(createMatchMedia({ width: 900 })('(orientation: portrait)').matches).toBe(false)
+  })
+
+  it('answers the new width after resize and tells the change listeners', () => {
+    const matchMedia = createMatchMedia({ width: 360 })
+    const listener = vi.fn()
+    matchMedia('(min-width:600px)').addEventListener('change', listener)
+    matchMedia.resize(900)
+    expect(matchMedia('(min-width:600px)').matches).toBe(true)
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops telling a removed listener', () => {
+    const matchMedia = createMatchMedia({ width: 360 })
+    const listener = vi.fn()
+    const list = matchMedia('(min-width:600px)')
+    list.addEventListener('change', listener)
+    list.removeEventListener('change', listener)
+    matchMedia.resize(900)
+    expect(listener).not.toHaveBeenCalled()
   })
 
   it('keeps the query as media and ignores listeners', () => {

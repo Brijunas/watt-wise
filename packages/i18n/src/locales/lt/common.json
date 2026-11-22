@@ -1,6 +1,6 @@
 {
   "appearance": { "label": "Išvaizda", "light": "Šviesi", "dark": "Tamsi", "auto": "Automatinė" },
   "glow": { "name": "Švytėjimas (efektai)", "label": "Švytėjimas" },
-  "language": { "label": "Kalba" },
+  "language": { "current": "Kalba: {{code}}" },
   "form": { "showPassword": "Rodyti slaptažodį", "hidePassword": "Slėpti slaptažodį" }
 }

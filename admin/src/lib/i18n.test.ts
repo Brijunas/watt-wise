@@ -36,8 +36,8 @@ describe('app i18n', () => {
   it('still resolves the shared namespaces', async () => {
     const i18n = createAppI18n()
     await i18n.changeLanguage('en')
-    expect(i18n.t('language.label', { ns: 'common' })).toBe('Language')
+    expect(i18n.t('language.current', { ns: 'common', code: 'EN' })).toBe('Language: EN')
     await i18n.changeLanguage('lt')
-    expect(i18n.t('language.label', { ns: 'common' })).toBe('Kalba')
+    expect(i18n.t('language.current', { ns: 'common', code: 'LT' })).toBe('Kalba: LT')
   })
 })

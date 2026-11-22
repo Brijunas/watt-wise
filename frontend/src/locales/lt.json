@@ -2,8 +2,7 @@
   "nav": { "home": "Pradžia", "placeholder": "Pavyzdys", "about": "Apie" },
   "accountMenu": {
     "label": "Paskyra",
-    "devices": "Įrenginiai",
-    "changePassword": "Keisti slaptažodį",
+    "settings": "Nustatymai",
     "signIn": "Prisijungti",
     "signUp": "Registruotis"
   }

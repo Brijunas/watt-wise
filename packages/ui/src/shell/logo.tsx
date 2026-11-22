@@ -24,6 +24,9 @@ const lockupWidth = 1908
 const lockupHeight = 606
 const monoAspectRatio = '871 / 745'
 
+// The logo's trailing space, as a share of its height.
+const clearSpace = 0.25
+
 // layout.md "App shell": 32px, 36 from 360, 40 from 400, 48 from `sm`.
 const heights = [
   { query: null, height: 32 },
@@ -48,12 +51,14 @@ const LogoRoot = styled(Link, { name, slot: 'root' })<
   OwnerState & { component: ElementType; to: string }
 >(({ theme }) => ({
   display: 'inline-flex',
+  // The logo keeps its size; whatever shares the app bar with it gives way.
+  flexShrink: 0,
   alignItems: 'center',
   gap: theme.spacing(1),
   color: 'inherit',
-  // Clear space: about the cap height of WISE, a quarter of the lockup.
-  marginInlineEnd: theme.spacing(1.5),
   textDecoration: 'none',
+  // Clear space: the cap height of WISE, a quarter of the lockup's height at each size.
+  ...atHeights(theme, (height) => ({ marginInlineEnd: height * clearSpace })),
 }))
 
 // Both lockups carry the glow as a filter; `glow.logo` is `none` while glow is off, so no

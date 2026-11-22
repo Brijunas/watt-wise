@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cssFor } from '../testing/theme-test-utils'
 import AppThemeProvider from '../theme/app-theme-provider'
 import UpdatePrompt from './update-prompt'
 
@@ -55,6 +56,42 @@ describe('UpdatePrompt', () => {
     expect(onClose).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Later' }))
     expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  // The prompt renders outside the shell, which publishes the insets on <html>; jsdom ignores media
+  // queries, so these read the emitted CSS.
+  describe('clears the shell bars through the inset variables', () => {
+    const snackbarCss = (media?: string) => {
+      const snackbar = screen.getByText('A new version is available.').closest('.MuiSnackbar-root')
+      if (snackbar === null) throw new Error('Missing snackbar')
+      return cssFor(snackbar, media)
+    }
+
+    it('sits above the bottom bar below 600px, with a 0px fallback', () => {
+      renderPrompt()
+      expect(snackbarCss()).toContain(
+        'bottom:calc(var(--ww-shell-inset-bottom, 0px) + var(--mui-spacing));',
+      )
+    })
+
+    it('sits 24px from the bottom from 600px', () => {
+      renderPrompt()
+      expect(snackbarCss('(min-width:600px)')).toContain('bottom:calc(3 * var(--mui-spacing));')
+    })
+
+    it('centres in the space beside the rail or drawer from 600px, with a 0px fallback', () => {
+      renderPrompt()
+      expect(snackbarCss('(min-width:600px)')).toContain(
+        'left:calc(50% + var(--ww-shell-inset-start, 0px) / 2);',
+      )
+    })
+
+    it('stays narrower than the space beside the rail or drawer from 600px', () => {
+      renderPrompt()
+      expect(snackbarCss('(min-width:600px)')).toContain(
+        'max-width:calc(100vw - var(--ww-shell-inset-start, 0px) - calc(6 * var(--mui-spacing)));',
+      )
+    })
   })
 
   it('renders nothing when closed', () => {

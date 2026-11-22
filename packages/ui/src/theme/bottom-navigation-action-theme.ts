@@ -9,6 +9,10 @@ export const bottomNavigationActionTheme: ThemeOptions['components'] = {
     styleOverrides: {
       root: ({ theme }) => ({
         position: 'relative',
+        // MUI's 80px minimum would overflow four actions at 320px; the label wraps instead.
+        minWidth: 0,
+        paddingBlock: theme.spacing(1),
+        paddingInline: theme.spacing(1),
         [`&.${buttonBaseClasses.focusVisible}`]: { outlineOffset: -4 },
         [`&.${bottomNavigationActionClasses.selected}`]: {
           color: theme.vars.palette.primary.main,
@@ -28,6 +32,15 @@ export const bottomNavigationActionTheme: ThemeOptions['components'] = {
               backgroundColor: 'Highlight',
             },
           },
+        },
+      }),
+      // The label wraps inside the bar and keeps 12px when selected (MUI grows it to 14px), so
+      // choosing an item does not reflow the bar.
+      label: ({ theme }) => ({
+        textAlign: 'center',
+        overflowWrap: 'anywhere',
+        [`&.${bottomNavigationActionClasses.selected}`]: {
+          fontSize: theme.typography.pxToRem(12),
         },
       }),
     },

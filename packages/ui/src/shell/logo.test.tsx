@@ -129,7 +129,23 @@ describe.each(['en', 'lt'] as const)('Logo in %s', (lng) => {
     expect(css).toContain('color:inherit;')
     expect(css).toContain('text-decoration:none;')
     expect(css).toContain('gap:var(--mui-spacing);')
-    expect(css).toContain('margin-inline-end:calc(1.5 * var(--mui-spacing));')
+  })
+
+  // The clear space is the cap height of WISE: 25% of the lockup's height at each size.
+  it('leaves 8px of clear space after the 32px lockup', () => {
+    renderLogo()
+    expect(cssFor(screen.getByRole('link', { name: t.name }))).toContain('margin-inline-end:8px;')
+  })
+
+  it.each([
+    { query: '(min-width:360px)', margin: '9px' },
+    { query: '(min-width:400px)', margin: '10px' },
+    { query: '(min-width:600px)', margin: '12px' },
+  ])('leaves $margin of clear space from $query', ({ query, margin }) => {
+    renderLogo()
+    expect(cssFor(screen.getByRole('link', { name: t.name }), query)).toContain(
+      'margin-inline-end:' + margin + ';',
+    )
   })
 
   it('focuses the link with the keyboard and keeps the focus outline', async () => {

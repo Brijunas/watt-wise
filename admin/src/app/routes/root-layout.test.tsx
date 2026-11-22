@@ -49,18 +49,42 @@ describe('RootLayout', () => {
     )
   })
 
-  it('renders the side navigation from md up', async () => {
-    renderAt('/', 900)
+  it.each([600, 900, 1199])('renders the rail at %i px', async (width) => {
+    renderAt('/', width)
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Watt-Wise home' }).getAttribute('href')).toBe('/')
     const nav = screen.getByRole('navigation', { name: 'Main navigation' })
     expect(screen.getAllByRole('navigation')).toHaveLength(1)
-    expect(within(nav).getByRole('list')).toBeTruthy()
     expect(nav.querySelector('.MuiBottomNavigation-root')).toBeNull()
+    expect(nav.closest('.MuiDrawer-root')?.className).toContain('-WwAppShell-rail')
     expect(within(nav).getByRole('link', { name: 'Home' }).getAttribute('aria-current')).toBe(
       'page',
     )
   })
+
+  it.each([1200, 1366])('renders the drawer at %i px', async (width) => {
+    renderAt('/', width)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
+    const nav = screen.getByRole('navigation', { name: 'Main navigation' })
+    expect(nav.closest('.MuiDrawer-root')?.className).toContain('-WwAppShell-drawer')
+  })
+
+  it.each([
+    { language: 'en', logo: 'Watt-Wise home' },
+    { language: 'lt', logo: 'Watt-Wise pradžia' },
+  ] as const)(
+    'shows the Admin chip after the logo in $language on the full bar',
+    async ({ language, logo: logoName }) => {
+      localStorage.setItem('wattwise-language', language)
+      renderAt('/', 360)
+      await screen.findByRole('heading', { level: 1 })
+      const logo = screen.getByRole('link', { name: logoName })
+      const chipElement = within(screen.getByRole('banner')).getByText('Admin')
+      expect(
+        logo.compareDocumentPosition(chipElement) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+    },
+  )
 
   it('moves to the Catalog review page and the current marker with a click', async () => {
     const user = userEvent.setup()
@@ -121,20 +145,35 @@ describe('RootLayout', () => {
     expect(localStorage.getItem('wattwise-mode')).toBe('dark')
   })
 
-  it.each([360, 900])('switches the shell to Lithuanian at %i px', async (width) => {
+  // Below 600px the app bar has no language button: the account menu holds the language.
+  it('switches the shell to Lithuanian from the account menu at 360 px', async () => {
     const user = userEvent.setup()
-    renderAt('/', width)
+    renderAt('/', 360)
     await screen.findByRole('heading', { level: 1, name: 'Home' })
-    await user.click(screen.getByRole('button', { name: 'Language' }))
+    expect(screen.queryByRole('button', { name: 'Language: EN' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Account' }))
     await user.click(screen.getByRole('menuitemradio', { name: 'Lietuvių' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Pradžia' })).toBeTruthy()
     const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
     expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
     expect(within(nav).getByRole('link', { name: 'Katalogo peržiūra' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Išvaizda' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Kalba' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Paskyra' })).toBeTruthy()
     expect(localStorage.getItem('wattwise-language')).toBe('lt')
     expect(document.documentElement.lang).toBe('lt')
+  })
+
+  it('switches the shell to Lithuanian from the language button at 900 px', async () => {
+    const user = userEvent.setup()
+    renderAt('/', 900)
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
+    await user.click(screen.getByRole('button', { name: 'Language: EN' }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Lietuvių' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Pradžia' })).toBeTruthy()
+    const nav = screen.getByRole('navigation', { name: 'Pagrindinė navigacija' })
+    expect(within(nav).getByRole('link', { name: 'Katalogo peržiūra' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Kalba: LT' })).toBeTruthy()
+    expect(localStorage.getItem('wattwise-language')).toBe('lt')
   })
 
   it('starts in Lithuanian when the browser prefers it', async () => {
@@ -153,26 +192,72 @@ describe('RootLayout', () => {
     expect(within(nav).getByRole('link', { name: 'Pradžia' })).toBeTruthy()
   })
 
-  it('shows the Sign out button only while signed in', async () => {
-    const { store } = renderAt('/', 360)
+  it.each([
+    { language: 'en', account: 'Account', signOut: 'Sign out' },
+    { language: 'lt', account: 'Paskyra', signOut: 'Atsijungti' },
+  ] as const)(
+    'offers only $signOut in the account menu at 900 px in $language, with no language',
+    async ({ language, account, signOut }) => {
+      localStorage.setItem('wattwise-language', language)
+      const user = userEvent.setup()
+      renderAt('/', 900)
+      await screen.findByRole('heading', { level: 1 })
+      await user.click(screen.getByRole('button', { name: account }))
+      expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([signOut])
+      expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
+    },
+  )
+
+  it('offers Sign out and the language in the account menu at 360 px', async () => {
+    const user = userEvent.setup()
+    renderAt('/', 360)
     await screen.findByRole('heading', { level: 1, name: 'Home' })
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual(['Sign out'])
+    expect(screen.getAllByRole('menuitemradio').map((item) => item.textContent)).toEqual([
+      'English',
+      'Lietuvių',
+    ])
+  })
+
+  // The admin guard shows the loader inside the full shell while the session restores.
+  it('offers only the two languages at 360 px while the session restores', async () => {
+    const user = userEvent.setup()
+    renderAt('/', 360, 'restoring')
+    await screen.findByRole('progressbar', { name: 'Loading' })
+    await user.click(screen.getByRole('button', { name: 'Account' }))
+    expect(screen.queryAllByRole('menuitem')).toHaveLength(0)
+    expect(screen.getAllByRole('menuitemradio').map((item) => item.textContent)).toEqual([
+      'English',
+      'Lietuvių',
+    ])
+  })
+
+  it('shows no account menu at 900 px while the session restores', async () => {
+    renderAt('/', 900, 'restoring')
+    await screen.findByRole('progressbar', { name: 'Loading' })
+    expect(screen.queryByRole('button', { name: 'Account' })).toBeNull()
+  })
+
+  it('shows no account menu on the sign-in page while signed out', async () => {
+    renderAt('/sign-in', 360, 'signedOut')
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' })
+    expect(screen.queryByRole('button', { name: 'Account' })).toBeNull()
+  })
+
+  it('shows no account menu on the sign-in page while the session restores', async () => {
+    renderAt('/sign-in', 360, 'restoring')
+    await screen.findByRole('progressbar', { name: 'Loading' })
+    expect(screen.queryByRole('button', { name: 'Account' })).toBeNull()
+  })
+
+  it('shows no Sign out item at 900 px once the session has ended', async () => {
+    const { store } = renderAt('/', 900)
+    await screen.findByRole('heading', { level: 1, name: 'Home' })
     act(() => {
       store.dispatch(sessionEnded())
     })
     await screen.findByRole('heading', { level: 1, name: 'Sign in' })
-    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
-  })
-
-  it('has no Sign out button when signed out', async () => {
-    renderAt('/sign-in', 360, 'signedOut')
-    await screen.findByRole('heading', { level: 1, name: 'Sign in' })
-    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
-  })
-
-  it('has no Sign out button while the session restores', async () => {
-    renderAt('/sign-in', 360, 'restoring')
-    await screen.findByRole('progressbar', { name: 'Loading' })
-    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Account' })).toBeNull()
   })
 })

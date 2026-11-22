@@ -5,31 +5,18 @@ import { paths } from '@/config/routes'
 import NotFoundRoute from './routes/not-found'
 import ProtectedLayout from './routes/protected-layout'
 import RootLayout from './routes/root-layout'
+import SignedOutLayout from './routes/signed-out-layout'
 
 // `lazy` is a function, not an object of loaders: React Router empties a `lazy` object once it has
 // loaded, so a second router built from these routes (each test builds one) would match nothing.
 // `HydrateFallback` sits on the lazy pages, not on the root: React Router renders the fallback in
 // place of the route that has it, so on the root it would replace the whole shell on first load.
+// The signed-out pages have their own layout (the minimal app bar); every other page shares the
+// full shell.
 export const routes: RouteObject[] = [
   {
-    path: paths.home,
-    Component: RootLayout,
+    Component: SignedOutLayout,
     children: [
-      {
-        index: true,
-        HydrateFallback: PageLoading,
-        lazy: async () => ({ Component: (await import('./routes/home')).default }),
-      },
-      {
-        path: paths.placeholder,
-        HydrateFallback: PageLoading,
-        lazy: async () => ({ Component: (await import('./routes/placeholder')).default }),
-      },
-      {
-        path: paths.about,
-        HydrateFallback: PageLoading,
-        lazy: async () => ({ Component: (await import('./routes/about')).default }),
-      },
       {
         path: paths.signUp,
         HydrateFallback: PageLoading,
@@ -60,6 +47,27 @@ export const routes: RouteObject[] = [
         HydrateFallback: PageLoading,
         lazy: async () => ({ Component: (await import('./routes/reset-password')).default }),
       },
+    ],
+  },
+  {
+    path: paths.home,
+    Component: RootLayout,
+    children: [
+      {
+        index: true,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/home')).default }),
+      },
+      {
+        path: paths.placeholder,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/placeholder')).default }),
+      },
+      {
+        path: paths.about,
+        HydrateFallback: PageLoading,
+        lazy: async () => ({ Component: (await import('./routes/about')).default }),
+      },
       {
         Component: ProtectedLayout,
         children: [
@@ -67,6 +75,11 @@ export const routes: RouteObject[] = [
             path: paths.changePassword,
             HydrateFallback: PageLoading,
             lazy: async () => ({ Component: (await import('./routes/change-password')).default }),
+          },
+          {
+            path: paths.settings,
+            HydrateFallback: PageLoading,
+            lazy: async () => ({ Component: (await import('./routes/settings')).default }),
           },
           {
             path: paths.devices,

@@ -11,6 +11,9 @@ export type GlowSwitchClassKey = 'root' | 'icon' | 'label' | 'switch'
 
 const name = 'WwGlowSwitch'
 
+// The root's class, so the app bar can size it without knowing which element it is.
+export const glowSwitchClasses = { root: `${name}-root` } as const
+
 interface OwnerState {
   ownerState: GlowSwitchProps
 }
@@ -44,7 +47,7 @@ const GlowSwitch = (inProps: GlowSwitchProps) => {
   const [on, setOn] = useState(isGlowOn)
 
   return (
-    <GlowSwitchRoot ownerState={props}>
+    <GlowSwitchRoot className={glowSwitchClasses.root} ownerState={props}>
       <GlowSwitchIcon ownerState={props} aria-hidden />
       <GlowSwitchLabel ownerState={props}>{t('glow.label')}</GlowSwitchLabel>
       <GlowSwitchSwitch

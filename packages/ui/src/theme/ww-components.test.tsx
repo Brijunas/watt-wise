@@ -13,6 +13,7 @@ import SignInFields from '../auth/sign-in-fields'
 import FormPasswordField from '../form/form-password-field'
 import FormTextField from '../form/form-text-field'
 import LanguageSwitch from '../i18n/language-switch'
+import AccountMenu from '../menu/account-menu'
 import IconMenu, { type IconMenuProps } from '../menu/icon-menu'
 import AppShell from '../shell/app-shell'
 import Logo, { type LogoProps } from '../shell/logo'
@@ -72,7 +73,7 @@ const text = {
     password: 'Password',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
-    language: 'Language',
+    language: 'Language: EN',
     appearance: 'Appearance',
     logoHome: 'Watt-Wise home',
   },
@@ -89,7 +90,7 @@ const text = {
     password: 'Slaptažodis',
     showPassword: 'Rodyti slaptažodį',
     hidePassword: 'Slėpti slaptažodį',
-    language: 'Kalba',
+    language: 'Kalba: LT',
     appearance: 'Išvaizda',
     logoHome: 'Watt-Wise pradžia',
   },
@@ -123,12 +124,12 @@ const SignInHarness = ({ busy }: { busy?: boolean }) => {
   )
 }
 
-const shell = (actions?: React.ReactNode) => (
+const shell = (accountMenu?: React.ReactNode) => (
   <AppShell
     items={[{ key: 'home', label: 'Home page', icon: <HomeIcon />, to: '/' }]}
     activeKey="home"
     linkComponent={TestLink}
-    actions={actions}
+    accountMenu={accountMenu}
   >
     <p>Page content</p>
   </AppShell>
@@ -153,8 +154,12 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
           root: { marginTop: '11px' },
           appBar: { marginTop: '12px' },
           drawer: { marginTop: '13px' },
+          rail: { marginTop: '16px' },
           bottomBar: { marginTop: '14px' },
           main: { marginTop: '15px' },
+          toolbar: { marginTop: '17px' },
+          controls: { marginTop: '18px' },
+          content: { marginTop: '19px' },
         },
       },
     }
@@ -162,8 +167,12 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
     it.each([
       { slot: 'root', width: 900, expected: '11px' },
       { slot: 'appBar', width: 900, expected: '12px' },
-      { slot: 'drawer', width: 900, expected: '13px' },
+      { slot: 'rail', width: 900, expected: '16px' },
+      { slot: 'drawer', width: 1366, expected: '13px' },
       { slot: 'main', width: 900, expected: '15px' },
+      { slot: 'toolbar', width: 900, expected: '17px' },
+      { slot: 'controls', width: 900, expected: '18px' },
+      { slot: 'content', width: 900, expected: '19px' },
       { slot: 'root', width: 360, expected: '11px' },
       { slot: 'bottomBar', width: 360, expected: '14px' },
       { slot: 'main', width: 360, expected: '15px' },
@@ -172,23 +181,64 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
       const elements = {
         root: () => screen.getByRole('main').parentElement,
         appBar: () => screen.getByRole('banner'),
+        rail: () =>
+          closestTo(screen.getByRole('navigation', { name: t.navigation }), '.MuiDrawer-root'),
         drawer: () =>
           closestTo(screen.getByRole('navigation', { name: t.navigation }), '.MuiDrawer-root'),
         bottomBar: () => screen.getByRole('navigation', { name: t.navigation }),
         main: () => screen.getByRole('main'),
+        toolbar: () =>
+          closestTo(screen.getByRole('link', { name: t.logoHome }), '.MuiToolbar-root'),
+        controls: () =>
+          closestTo(screen.getByRole('button', { name: t.appearance }), '.MuiToolbar-root')
+            .lastElementChild,
+        content: () => screen.getByText('Page content').parentElement,
       }
       expect(marginTop(elements[slot]())).toBe(expected)
     })
 
-    it('shows defaultProps.actions when the page passes none', () => {
-      renderWithComponents(shell(), {
-        components: {
-          WwAppShell: { defaultProps: { actions: <button type="button">Default action</button> } },
+    it('applies styleOverrides.logoChip to the chip', () => {
+      renderWithComponents(
+        <AppShell items={[]} activeKey={null} linkComponent={TestLink} logoChip="Chip text">
+          <p>Page content</p>
+        </AppShell>,
+        {
+          components: { WwAppShell: { styleOverrides: { logoChip: { marginTop: '20px' } } } },
+          lng,
+          width: 900,
         },
+      )
+      expect(marginTop(closestTo(screen.getByText('Chip text'), '.MuiChip-root'))).toBe('20px')
+    })
+
+    it('applies styleOverrides.aside and primary with a side column', () => {
+      renderWithComponents(
+        <AppShell items={[]} activeKey={null} linkComponent={TestLink} aside={<p>Side text</p>}>
+          <p>Page content</p>
+        </AppShell>,
+        {
+          components: {
+            WwAppShell: {
+              styleOverrides: { aside: { marginTop: '21px' }, primary: { marginTop: '22px' } },
+            },
+          },
+          lng,
+          width: 900,
+        },
+      )
+      expect([
+        marginTop(closestTo(screen.getByText('Side text'), 'aside')),
+        marginTop(screen.getByText('Page content').parentElement),
+      ]).toEqual(['21px', '22px'])
+    })
+
+    it('shows defaultProps.logoChip when the page passes none', () => {
+      renderWithComponents(shell(), {
+        components: { WwAppShell: { defaultProps: { logoChip: 'Default chip' } } },
         lng,
         width: 900,
       })
-      expect(screen.queryAllByRole('button', { name: 'Default action' })).toHaveLength(1)
+      expect(screen.queryAllByText('Default chip')).toHaveLength(1)
     })
   })
 
@@ -229,6 +279,51 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
       })
       expect(screen.queryAllByRole('button')).toHaveLength(1)
       expect(screen.queryAllByRole('button', { name: 'Explicit label' })).toHaveLength(1)
+    })
+  })
+
+  describe('WwAccountMenu', () => {
+    const account = (
+      <AccountMenu
+        label="Account name"
+        linkComponent={TestLink}
+        items={[{ key: 'a', label: 'Alpha', to: '/a' }]}
+      />
+    )
+    const components = {
+      WwAccountMenu: {
+        styleOverrides: { root: { marginTop: '11px' }, menu: { marginTop: '12px' } },
+      },
+    }
+
+    it('applies styleOverrides.root to the trigger', () => {
+      renderWithComponents(account, { components, lng, width: 900 })
+      expect(marginTop(screen.getByRole('button', { name: 'Account name' }))).toBe('11px')
+    })
+
+    it('applies styleOverrides.menu to the menu', async () => {
+      renderWithComponents(account, { components, lng, width: 900 })
+      await userEvent.click(screen.getByRole('button', { name: 'Account name' }))
+      expect(marginTop(closestTo(screen.getByRole('menu'), '.MuiMenu-root'))).toBe('12px')
+    })
+  })
+
+  describe('WwLanguageSwitch code', () => {
+    const code = { en: 'EN', lt: 'LT' }[lng]
+
+    it('applies styleOverrides.code to the visible code', () => {
+      renderWithComponents(<LanguageSwitch />, {
+        components: { WwLanguageSwitch: { styleOverrides: { code: { marginTop: '11px' } } } },
+        lng,
+      })
+      expect(marginTop(screen.getByText(code))).toBe('11px')
+    })
+
+    it('shows the code bold on one line', () => {
+      renderWithComponents(<LanguageSwitch />, { lng })
+      const css = cssFor(screen.getByText(code))
+      expect(css).toContain('font-weight:700;')
+      expect(css).toContain('line-height:1;')
     })
   })
 
@@ -585,17 +680,18 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
   })
 
   describe('explicit props win over defaultProps', () => {
-    it('AppShell actions', () => {
-      renderWithComponents(shell(<button type="button">Explicit action</button>), {
-        components: {
-          WwAppShell: { defaultProps: { actions: <button type="button">Default action</button> } },
+    it('AppShell logoChip', () => {
+      renderWithComponents(
+        <AppShell items={[]} activeKey={null} linkComponent={TestLink} logoChip="Explicit chip">
+          <p>Page content</p>
+        </AppShell>,
+        {
+          components: { WwAppShell: { defaultProps: { logoChip: 'Default chip' } } },
+          lng,
+          width: 900,
         },
-        lng,
-        width: 900,
-      })
-      expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
-        'Explicit action',
-      ])
+      )
+      expect(screen.queryAllByText('Default chip')).toHaveLength(0)
     })
 
     it('UpdatePrompt open', () => {
@@ -626,13 +722,16 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
     it.each([
       { width: 360, expected: '22px' },
       { width: 900, expected: '21px' },
-    ])('AppShell main sees isDesktop at $width px', ({ width, expected }) => {
+      { width: 1366, expected: '23px' },
+    ])('AppShell main sees the navigation at $width px', ({ width, expected }) => {
       renderWithComponents(shell(), {
         components: {
           WwAppShell: {
             styleOverrides: {
               main: ({ ownerState }) => ({
-                marginTop: ownerState.isDesktop === true ? '21px' : '22px',
+                marginTop: { rail: '21px', bottomBar: '22px', drawer: '23px' }[
+                  String(ownerState.navigation)
+                ],
               }),
             },
           },
@@ -756,24 +855,24 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
       expect(cssFor(root ?? document.body)).toContain(declaration)
     })
 
-    it('UpdatePrompt sits above the bottom bar below md', () => {
+    it('UpdatePrompt sits above the bottom bar below sm', () => {
       renderWithComponents(<UpdatePrompt open onReload={vi.fn()} onClose={vi.fn()} />, {
         lng,
         width: 360,
       })
       const snackbar = closestTo(screen.getByText(t.message), '.MuiSnackbar-root')
       expect(cssFor(snackbar)).toContain(
-        'bottom:calc(56px + env(safe-area-inset-bottom) + var(--mui-spacing))',
+        'bottom:calc(var(--ww-shell-inset-bottom, 0px) + var(--mui-spacing))',
       )
     })
 
-    it('UpdatePrompt sits 3 spacing units from the bottom from md', () => {
+    it('UpdatePrompt sits 3 spacing units from the bottom from sm', () => {
       renderWithComponents(<UpdatePrompt open onReload={vi.fn()} onClose={vi.fn()} />, {
         lng,
         width: 900,
       })
       const snackbar = closestTo(screen.getByText(t.message), '.MuiSnackbar-root')
-      expect(cssFor(snackbar, '(min-width:840px)')).toContain('bottom:calc(3 * var(--mui-spacing))')
+      expect(cssFor(snackbar, '(min-width:600px)')).toContain('bottom:calc(3 * var(--mui-spacing))')
     })
 
     it('UpdatePrompt is anchored bottom centre', () => {
@@ -826,13 +925,7 @@ describe.each(languages)('accessibility of the themed components in %s', (lng) =
     ),
     'not-found page': () => <NotFound linkComponent={TestLink} homeTo="/start" />,
     'page loading': () => <PageLoading />,
-    'app shell with the glow switch and an icon menu in its actions': () =>
-      shell(
-        <>
-          <GlowSwitch />
-          {menu('Pick')}
-        </>,
-      ),
+    'app shell with an icon menu as its account menu': () => shell(menu('Pick')),
     'update prompt': () => <UpdatePrompt open onReload={vi.fn()} onClose={vi.fn()} />,
     'text field': () => (
       <FieldsHarness>

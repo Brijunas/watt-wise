@@ -1,4 +1,4 @@
-import { runtimeConfig, serverAddress } from '@wattwise/core/vite'
+import { runtimeConfig, serverAddress, vendorChunks } from '@wattwise/core/vite'
 import { appearanceScript } from '@wattwise/ui/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -49,5 +49,6 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
+  build: { rolldownOptions: { output: { codeSplitting: vendorChunks } } },
   resolve: { tsconfigPaths: true },
 })

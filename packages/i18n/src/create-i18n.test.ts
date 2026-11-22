@@ -124,8 +124,8 @@ describe('language detection', () => {
 
 describe('translations', () => {
   it('resolves the language keys and names', () => {
-    expect(createI18n().t('language.label')).toBe('Language')
-    expect(createI18n({ lng: 'lt' }).t('language.label')).toBe('Kalba')
+    expect(createI18n().t('language.current', { code: 'EN' })).toBe('Language: EN')
+    expect(createI18n({ lng: 'lt' }).t('language.current', { code: 'LT' })).toBe('Kalba: LT')
     expect(languageNames).toEqual({ en: 'English', lt: 'Lietuvių' })
   })
 
