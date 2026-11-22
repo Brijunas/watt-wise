@@ -29,7 +29,7 @@ const NotFound = (inProps: NotFoundProps) => {
 
   return (
     <NotFoundRoot ownerState={props}>
-      <Typography component="h1" variant="h4">
+      <Typography component="h1" variant="h1">
         {t('notFound.title')}
       </Typography>
       <Typography>{t('notFound.message')}</Typography>

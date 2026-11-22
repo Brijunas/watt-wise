@@ -46,7 +46,7 @@ A feature creates only the subfolders it needs. A subfolder that would hold one 
 ```
 packages/ui/src/auth/sign-in-fields.tsx     props only: control, onSubmit, busy, error and link slots; text from the `auth` namespace
 packages/core/src/errors/error-messages.ts  ProblemDetails error code -> `errors` key (errorMessage); shared by both apps
-packages/ui/src/auth/account-page.tsx       the narrow column and h1 of every account page
+packages/ui/src/auth/account-page.tsx       the narrow column of every account page, holding a card with the page's h1
 packages/ui/src/hooks/use-error-text.ts     errorMessage + the `errors` namespace -> text
 packages/core/src/validation/sign-in-schema.ts
 frontend/src/

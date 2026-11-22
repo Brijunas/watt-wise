@@ -449,6 +449,9 @@ describe('Admin guard leaving and returning while /me is pending', () => {
     const { signOuts } = await leaveAndReturn(adminMeResponse)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'About' })).toBeTruthy()
+    // The about page loads its own data behind the same "Loading" bar; once it has answered, the
+    // guard's bar is gone too.
+    expect(await screen.findByText('API: Watt-Wise API')).toBeTruthy()
     expect(screen.queryByRole('progressbar', { name: 'Loading' })).toBeNull()
     await tick()
     expect(signOuts.value).toBe(0)

@@ -209,6 +209,13 @@ describe.each(modes)('%s contrast', (mode) => {
   it.each(['primary', 'secondary', ...statuses] as const)('%s fill supports its label', (role) => {
     expect(getContrastRatio(p[role].contrastText, p[role].main)).toBeGreaterThanOrEqual(4.5)
   })
+  it.each(statuses)('text.primary on the %s tint over paper meets 4.5:1', (role) => {
+    const { main, tint } = p[role]
+    if (!tint) throw new Error('Missing ' + role + ' tint')
+    expect(
+      getContrastRatio(p.text.primary, tintOverPaper(tint, main, p.background.paper)),
+    ).toBeGreaterThanOrEqual(4.5)
+  })
   it.each(statuses)('%s text on its tint over paper meets 4.5:1', (role) => {
     const { main, tint } = p[role]
     if (!tint) throw new Error('Missing ' + role + ' tint')

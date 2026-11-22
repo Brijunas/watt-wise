@@ -14,7 +14,20 @@ beforeAll(() => {
   process.env.TZ = 'UTC'
 })
 
+const removeListeners: (() => void)[] = []
+
+/** Records unhandled rejections for the test; the listener is removed after it, pass or fail. */
+const watchUnhandledRejections = () => {
+  const unhandled = vi.fn()
+  process.on('unhandledRejection', unhandled)
+  removeListeners.push(() => process.off('unhandledRejection', unhandled))
+  return unhandled
+}
+
 afterEach(() => {
+  for (const remove of removeListeners.splice(0)) {
+    remove()
+  }
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
@@ -347,8 +360,7 @@ describe('Devices page and the session guard', () => {
     async (_name, method, path, button) => {
       const user = userEvent.setup()
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-      const unhandled = vi.fn()
-      process.on('unhandledRejection', unhandled)
+      const unhandled = watchUnhandledRejections()
       const gate = createGate()
       let answered = false
       server.use(
@@ -374,7 +386,6 @@ describe('Devices page and the session guard', () => {
       await act(async () => {
         await new Promise((resolve) => setTimeout(resolve, 50))
       })
-      process.off('unhandledRejection', unhandled)
 
       expect(router.state.location.pathname).toBe('/about')
       expect(selectSessionStatus(store.getState())).toBe('signedIn')
@@ -382,4 +393,297 @@ describe('Devices page and the session guard', () => {
       expect(consoleError).not.toHaveBeenCalled()
     },
   )
+})
+
+const unexpected = 'Something went wrong on our side. Try again in a moment.'
+const settle = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50))
+  })
+
+/** Counts the GET /auth/sessions requests. */
+const countSessionLists = () => {
+  const count = { value: 0 }
+  server.use(
+    http.get(authUrl('/sessions'), () => {
+      count.value += 1
+      return HttpResponse.json(sessionsResponse)
+    }),
+  )
+  return count
+}
+
+const operations = [
+  ['End session', 'delete', '/sessions/:id', 'End session on Safari on iPhone'],
+  ['Sign out everywhere', 'post', '/sign-out-everywhere', 'Sign out everywhere'],
+] as const
+
+describe('Devices page texts', () => {
+  it.each([
+    ['en', 'These are the devices signed in to your account.', 'End session'],
+    ['lt', 'Šiuose įrenginiuose esate prisijungę prie savo paskyros.', 'Užbaigti seansą'],
+  ] as const)(
+    'shows the intro and the visible End session text in %s',
+    async (language, intro, end) => {
+      renderRoutesAt(routes, '/devices', { session: 'signedIn', language })
+      await screen.findByText(intro)
+
+      const item = await itemOf('Safari on iPhone', language === 'en' ? 'Devices' : 'Įrenginiai')
+      expect(within(item).getByText(end).tagName).toBe('BUTTON')
+    },
+  )
+
+  // The devices endpoints don't read `Retry-After`, so a lockout there has no minutes to show.
+  it.each([
+    ['en', 'Too many failed attempts. Try again later.'],
+    ['lt', 'Per daug nesėkmingų bandymų. Bandykite vėliau.'],
+  ] as const)('shows the parameterless load failure in %s', async (language, message) => {
+    server.use(
+      http.get(authUrl('/sessions'), () =>
+        problemResponse({ status: 423, code: 'Accounts.LockedOut' }),
+      ),
+    )
+    renderRoutesAt(routes, '/devices', { session: 'signedIn', language })
+
+    expect(await screen.findByText(message)).toBeTruthy()
+  })
+
+  it.each([
+    ['en', 'Too many failed attempts. Try again later.', 'End session on Safari on iPhone'],
+    ['en', 'Too many failed attempts. Try again later.', 'Sign out everywhere'],
+    [
+      'lt',
+      'Per daug nesėkmingų bandymų. Bandykite vėliau.',
+      'Užbaigti seansą įrenginyje Safari on iPhone',
+    ],
+    ['lt', 'Per daug nesėkmingų bandymų. Bandykite vėliau.', 'Atsijungti visur'],
+  ] as const)(
+    'shows the parameterless action failure in %s after %s',
+    async (language, message, button) => {
+      const user = userEvent.setup()
+      const locked = () => problemResponse({ status: 423, code: 'Accounts.LockedOut' })
+      server.use(
+        http.delete(authUrl('/sessions/:id'), locked),
+        http.post(authUrl('/sign-out-everywhere'), locked),
+      )
+      renderRoutesAt(routes, '/devices', { session: 'signedIn', language })
+
+      await user.click(await screen.findByRole('button', { name: button }))
+
+      expect(await screen.findByText(message)).toBeTruthy()
+    },
+  )
+})
+
+describe('Devices page actions', () => {
+  it.each(operations)(
+    'disables every action while %s is pending',
+    async (_name, method, path, button) => {
+      const user = userEvent.setup()
+      const gate = createGate()
+      server.use(
+        http[method](authUrl(path), async () => {
+          await gate.wait
+          return new HttpResponse(null, { status: 204 })
+        }),
+      )
+      renderRoutesAt(routes, '/devices', { session: 'signedIn', language: 'en' })
+      await user.click(await screen.findByRole('button', { name: button }))
+
+      await waitFor(() => {
+        expect(
+          [
+            ...screen.getAllByRole('button', { name: /^End session on / }),
+            screen.getByRole('button', { name: 'Sign out everywhere' }),
+          ].map((action) => action.hasAttribute('disabled')),
+        ).toEqual([true, true, true])
+      })
+    },
+  )
+
+  it.each([
+    ['another end-session', 'End session on Safari on iPhone'],
+    ['a sign-out-everywhere', 'Sign out everywhere'],
+  ] as const)('clears the old failure when %s starts', async (_name, second) => {
+    const user = userEvent.setup()
+    const gate = createGate()
+    let deletes = 0
+    server.use(
+      http.delete(authUrl('/sessions/:id'), async () => {
+        deletes += 1
+        if (deletes === 1) {
+          return problemResponse({ status: 500, code: 'General.Unexpected' })
+        }
+        await gate.wait
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.post(authUrl('/sign-out-everywhere'), async () => {
+        await gate.wait
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    renderRoutesAt(routes, '/devices', { session: 'signedIn', language: 'en' })
+    await user.click(await screen.findByRole('button', { name: 'End session on Safari on iPhone' }))
+    await screen.findByText(unexpected)
+
+    await user.click(screen.getByRole('button', { name: second }))
+
+    await waitFor(() => {
+      expect(screen.queryByText(unexpected)).toBeNull()
+    })
+  })
+
+  it.each([
+    ['navigates away', '/about'],
+    ['signs out', '/sign-in'],
+  ] as const)(
+    'loads no list and shows no alert for a late "already gone" answer after the user %s',
+    async (leave, pathname) => {
+      const user = userEvent.setup()
+      // A refetch of the unmounted list rejects ("not started yet") instead of sending a request.
+      const unhandled = watchUnhandledRejections()
+      const lists = countSessionLists()
+      const gate = createGate()
+      const answered = { value: false }
+      server.use(
+        http.delete(authUrl('/sessions/:id'), async () => {
+          await gate.wait
+          answered.value = true
+          return problemResponse({ status: 404, code: 'Accounts.SessionNotFound' })
+        }),
+      )
+      const { router, store } = renderRoutesAt(routes, '/devices', {
+        session: 'signedIn',
+        language: 'en',
+      })
+      await user.click(
+        await screen.findByRole('button', { name: 'End session on Safari on iPhone' }),
+      )
+      if (leave === 'navigates away') {
+        await act(async () => {
+          await router.navigate('/about')
+        })
+      } else {
+        act(() => {
+          store.dispatch(sessionEnded())
+        })
+        await heading('Sign in')
+      }
+      gate.open()
+      await waitFor(() => {
+        expect(answered.value).toBe(true)
+      })
+      await settle()
+
+      expect([
+        lists.value,
+        screen.queryByRole('alert'),
+        router.state.location.pathname,
+        unhandled.mock.calls.length,
+      ]).toEqual([1, null, pathname, 0])
+    },
+  )
+
+  // A newer sign-in during the request makes the api-client keep the session (its revision check),
+  // so the page stays mounted after a successful answer: the one way to see what the component
+  // does with a success.
+  it('shows no alert when a sign-out-everywhere succeeds and the page stays', async () => {
+    const user = userEvent.setup()
+    const gate = createGate()
+    const answered = { value: false }
+    server.use(
+      http.post(authUrl('/sign-out-everywhere'), async () => {
+        await gate.wait
+        answered.value = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { router, store } = renderRoutesAt(routes, '/devices', {
+      session: 'signedIn',
+      language: 'en',
+    })
+    await user.click(await screen.findByRole('button', { name: 'Sign out everywhere' }))
+    act(() => {
+      store.dispatch(sessionStarted({ accessToken: 'newer-token' }))
+    })
+    gate.open()
+    await waitFor(() => {
+      expect(answered.value).toBe(true)
+    })
+    await settle()
+
+    expect([router.state.location.pathname, screen.queryByRole('alert')]).toEqual([
+      '/devices',
+      null,
+    ])
+  })
+
+  it('does not reload the list after an end-session failure other than "already gone"', async () => {
+    const user = userEvent.setup()
+    const lists = countSessionLists()
+    server.use(
+      http.delete(authUrl('/sessions/:id'), () =>
+        problemResponse({ status: 500, code: 'General.Unexpected' }),
+      ),
+    )
+    renderRoutesAt(routes, '/devices', { session: 'signedIn', language: 'en' })
+    await user.click(await screen.findByRole('button', { name: 'End session on Safari on iPhone' }))
+    await screen.findByText(unexpected)
+    await settle()
+
+    expect(lists.value).toBe(1)
+  })
+
+  describe.each(operations)('an answer to %s that arrives late', (_name, method, path, button) => {
+    const startLate = async (leave: 'navigates away' | 'signs out') => {
+      const user = userEvent.setup()
+      const lists = countSessionLists()
+      const gate = createGate()
+      const answered = { value: false }
+      server.use(
+        http[method](authUrl(path), async () => {
+          await gate.wait
+          answered.value = true
+          return new HttpResponse(null, { status: 204 })
+        }),
+      )
+      const { router, store } = renderRoutesAt(routes, '/devices', {
+        session: 'signedIn',
+        language: 'en',
+      })
+      await user.click(await screen.findByRole('button', { name: button }))
+      if (leave === 'navigates away') {
+        await act(async () => {
+          await router.navigate('/about')
+        })
+      } else {
+        act(() => {
+          store.dispatch(sessionEnded())
+        })
+        await heading('Sign in')
+      }
+      gate.open()
+      await waitFor(() => {
+        expect(answered.value).toBe(true)
+      })
+      await settle()
+      return { lists, router }
+    }
+
+    it('changes nothing and loads no list after the user navigates away', async () => {
+      const { lists, router } = await startLate('navigates away')
+
+      expect([lists.value, router.state.location.pathname, screen.queryByText(unexpected)]).toEqual(
+        [1, '/about', null],
+      )
+    })
+
+    it('changes nothing and loads no list after the user signs out', async () => {
+      const { lists, router } = await startLate('signs out')
+
+      expect([lists.value, router.state.location.pathname, screen.queryByText(unexpected)]).toEqual(
+        [1, '/sign-in', null],
+      )
+    })
+  })
 })

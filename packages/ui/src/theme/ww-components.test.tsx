@@ -476,6 +476,16 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
       ).toBe('12px')
     })
 
+    it('applies styleOverrides.card to the card holding the h1', () => {
+      renderWithComponents(page, {
+        components: { WwAccountPage: { styleOverrides: { card: { marginTop: '13px' } } } },
+        lng,
+      })
+      expect(marginTop(closestTo(screen.getByRole('heading', { level: 1 }), '.MuiCard-root'))).toBe(
+        '13px',
+      )
+    })
+
     it('uses defaultProps.title as the h1', () => {
       renderWithComponents(
         <AccountPage {...withoutRequired<AccountPageProps>({ children: <p>Body</p> })} />,
@@ -890,7 +900,7 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
       expect(cssFor(snackbar, '(min-width:600px)')).toContain('left:50%')
     })
 
-    it('UpdatePrompt has a bold Reload button', () => {
+    it('UpdatePrompt Reload is bold through the contained variant, not its own slot', () => {
       renderWithComponents(<UpdatePrompt open onReload={vi.fn()} onClose={vi.fn()} />, { lng })
       expect(
         getComputedStyle(screen.getByRole('button', { name: t.reload })).getPropertyValue(
