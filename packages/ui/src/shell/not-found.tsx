@@ -1,20 +1,34 @@
-import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import { styled, useThemeProps } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import type { ElementType } from 'react'
 import { useTranslation } from 'react-i18next'
 
-const NotFound = ({
-  linkComponent,
-  homeTo,
-}: {
+export interface NotFoundProps {
   linkComponent: ElementType<{ to: string }>
   homeTo: string
-}) => {
+}
+
+export type NotFoundClassKey = 'root'
+
+const name = 'WwNotFound'
+
+const NotFoundRoot = styled('div', { name, slot: 'root' })<{ ownerState: NotFoundProps }>(
+  ({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: theme.spacing(2),
+  }),
+)
+
+const NotFound = (inProps: NotFoundProps) => {
+  const props = useThemeProps({ props: inProps, name })
+  const { linkComponent, homeTo } = props
   const { t } = useTranslation('shell')
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+    <NotFoundRoot ownerState={props}>
       <Typography component="h1" variant="h4">
         {t('notFound.title')}
       </Typography>
@@ -22,7 +36,7 @@ const NotFound = ({
       <Button component={linkComponent} to={homeTo} variant="contained">
         {t('notFound.home')}
       </Button>
-    </Box>
+    </NotFoundRoot>
   )
 }
 

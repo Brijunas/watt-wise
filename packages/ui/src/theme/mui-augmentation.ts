@@ -1,7 +1,20 @@
 // All of the theme's module augmentation lives here, so every custom token is typed in one place
 // (theme.md, "Custom keys and augmentation"). `vars` is reserved by MUI and is never a custom key.
 import type {} from '@mui/material/themeCssVarsAugmentation'
+import type { ComponentsOverrides, ComponentsVariants } from '@mui/material/styles'
 import type { CSSProperties } from 'react'
+import type { FieldValues } from 'react-hook-form'
+import type { AppShellClassKey, AppShellProps } from '../shell/app-shell'
+import type { IconMenuClassKey, IconMenuProps } from '../menu/icon-menu'
+import type { LanguageSwitchClassKey, LanguageSwitchProps } from '../i18n/language-switch'
+import type { ModeSwitchClassKey, ModeSwitchProps } from './mode-switch'
+import type { AccountPageClassKey, AccountPageProps } from '../auth/account-page'
+import type { NotFoundClassKey, NotFoundProps } from '../shell/not-found'
+import type { PageLoadingClassKey, PageLoadingProps } from '../shell/page-loading'
+import type { UpdatePromptClassKey, UpdatePromptProps } from '../shell/update-prompt'
+import type { FormTextFieldClassKey, FormTextFieldProps } from '../form/form-text-field'
+import type { FormPasswordFieldClassKey, FormPasswordFieldProps } from '../form/form-password-field'
+import type { SignInFieldsClassKey, SignInFieldsProps } from '../auth/sign-in-fields'
 
 export interface Gradient {
   brand: string
@@ -84,6 +97,92 @@ declare module '@mui/material/styles' {
     hero?: CSSProperties
     amountCard?: CSSProperties
     amountInline?: CSSProperties
+  }
+
+  interface ComponentNameToClassKey {
+    WwAppShell: AppShellClassKey
+    WwIconMenu: IconMenuClassKey
+    WwLanguageSwitch: LanguageSwitchClassKey
+    WwModeSwitch: ModeSwitchClassKey
+    WwAccountPage: AccountPageClassKey
+    WwNotFound: NotFoundClassKey
+    WwPageLoading: PageLoadingClassKey
+    WwUpdatePrompt: UpdatePromptClassKey
+    WwFormTextField: FormTextFieldClassKey
+    WwFormPasswordField: FormPasswordFieldClassKey
+    WwSignInFields: SignInFieldsClassKey
+  }
+
+  interface ComponentsPropsList {
+    WwAppShell: AppShellProps
+    WwIconMenu: IconMenuProps<string>
+    WwLanguageSwitch: LanguageSwitchProps
+    WwModeSwitch: ModeSwitchProps
+    WwAccountPage: AccountPageProps
+    WwNotFound: NotFoundProps
+    WwPageLoading: PageLoadingProps
+    WwUpdatePrompt: UpdatePromptProps
+    WwFormTextField: FormTextFieldProps<FieldValues>
+    WwFormPasswordField: FormPasswordFieldProps<FieldValues>
+    WwSignInFields: SignInFieldsProps
+  }
+
+  interface Components<Theme = unknown> {
+    WwAppShell?: {
+      defaultProps?: Partial<ComponentsPropsList['WwAppShell']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwAppShell']
+      variants?: ComponentsVariants<Theme>['WwAppShell']
+    }
+    WwIconMenu?: {
+      defaultProps?: Partial<ComponentsPropsList['WwIconMenu']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwIconMenu']
+      variants?: ComponentsVariants<Theme>['WwIconMenu']
+    }
+    WwLanguageSwitch?: {
+      defaultProps?: Partial<ComponentsPropsList['WwLanguageSwitch']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwLanguageSwitch']
+      variants?: ComponentsVariants<Theme>['WwLanguageSwitch']
+    }
+    WwModeSwitch?: {
+      defaultProps?: Partial<ComponentsPropsList['WwModeSwitch']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwModeSwitch']
+      variants?: ComponentsVariants<Theme>['WwModeSwitch']
+    }
+    WwAccountPage?: {
+      defaultProps?: Partial<ComponentsPropsList['WwAccountPage']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwAccountPage']
+      variants?: ComponentsVariants<Theme>['WwAccountPage']
+    }
+    WwNotFound?: {
+      defaultProps?: Partial<ComponentsPropsList['WwNotFound']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwNotFound']
+      variants?: ComponentsVariants<Theme>['WwNotFound']
+    }
+    WwPageLoading?: {
+      defaultProps?: Partial<ComponentsPropsList['WwPageLoading']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwPageLoading']
+      variants?: ComponentsVariants<Theme>['WwPageLoading']
+    }
+    WwUpdatePrompt?: {
+      defaultProps?: Partial<ComponentsPropsList['WwUpdatePrompt']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwUpdatePrompt']
+      variants?: ComponentsVariants<Theme>['WwUpdatePrompt']
+    }
+    WwFormTextField?: {
+      defaultProps?: Partial<ComponentsPropsList['WwFormTextField']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwFormTextField']
+      variants?: ComponentsVariants<Theme>['WwFormTextField']
+    }
+    WwFormPasswordField?: {
+      defaultProps?: Partial<ComponentsPropsList['WwFormPasswordField']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwFormPasswordField']
+      variants?: ComponentsVariants<Theme>['WwFormPasswordField']
+    }
+    WwSignInFields?: {
+      defaultProps?: Partial<ComponentsPropsList['WwSignInFields']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwSignInFields']
+      variants?: ComponentsVariants<Theme>['WwSignInFields']
+    }
   }
 
   interface BreakpointOverrides {

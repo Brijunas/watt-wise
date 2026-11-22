@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { encodeValidationMessage } from '@wattwise/core'
 import { createI18n } from '@wattwise/i18n'
 import { useForm } from 'react-hook-form'
@@ -47,6 +48,33 @@ describe('FormTextField', () => {
     expect(input.value).toBe('Jonas')
     expect(input.getAttribute('aria-invalid')).toBe('false')
     expect(input.getAttribute('autocomplete')).toBe('name')
+  })
+
+  describe('with no value yet', () => {
+    const EmptyHarness = () => {
+      const { control } = useForm<{ name?: string }>({ defaultValues: {} })
+      return <FormTextField control={control} name="name" label="Name" />
+    }
+    const renderEmpty = () =>
+      render(
+        <I18nextProvider i18n={createI18n({ lng: 'en' })}>
+          <AppThemeProvider>
+            <EmptyHarness />
+          </AppThemeProvider>
+        </I18nextProvider>,
+      )
+
+    it('renders an empty input', () => {
+      renderEmpty()
+      expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Name' }).value).toBe('')
+    })
+
+    it('stays a controlled input once typed in', async () => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      renderEmpty()
+      await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Jo')
+      expect(error).not.toHaveBeenCalled()
+    })
   })
 
   it('shows the translated message and marks the input invalid', () => {
