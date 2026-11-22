@@ -11,6 +11,7 @@ import ListItemButton, { listItemButtonClasses } from '@mui/material/ListItemBut
 import ListItemIcon, { listItemIconClasses } from '@mui/material/ListItemIcon'
 import ListItemText, { listItemTextClasses } from '@mui/material/ListItemText'
 import Paper from '@mui/material/Paper'
+import { svgIconClasses } from '@mui/material/SvgIcon'
 import { styled, useTheme, useThemeProps } from '@mui/material/styles'
 import type { Theme } from '@mui/material/styles'
 import Toolbar from '@mui/material/Toolbar'
@@ -76,6 +77,10 @@ const name = 'WwAppShell'
 // Below this width the app bar's controls shrink and its gutters tighten (layout.md).
 const narrow = 400
 
+// The app bar's icons are 24px whatever the text size: MUI sizes them in rem, which at 200% text
+// would grow them over the 44px and 40px buttons.
+const appBarIconSize = 24
+
 // layout.md "App shell": the content's cap, the side column, the gutters.
 const contentMaxWidth = { base: 1120, xl: 1440, xxl: 1600 } as const
 const asideWidth = { xl: 340, xxl: 380 } as const
@@ -103,20 +108,36 @@ const AppShellToolbar = styled(Toolbar, { name, slot: 'toolbar' })<{ ownerState:
   }),
 )
 
-const AppShellLogoChip = styled(Chip, { name, slot: 'logoChip' })<{ ownerState: OwnerState }>({
-  flexShrink: 0,
-})
+// The chip gives way to the controls at any width or text size: it shrinks (its label ends in an
+// ellipsis) down to nothing, so the controls never leave the screen. `overflow: hidden` clips the
+// label's padding once the chip is narrower than that.
+const AppShellLogoChip = styled(Chip, { name, slot: 'logoChip' })<{ ownerState: OwnerState }>(
+  ({ theme }) => ({
+    flexShrink: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    // MUI's small chip is a fixed 24px; the height follows the text so zoomed text isn't clipped.
+    height: 'auto',
+    minHeight: theme.spacing(3),
+    marginInlineEnd: theme.spacing(0.5),
+  }),
+)
 
 // The app bar's controls: 44px targets, 40px below 400px.
 const AppShellControls = styled('div', { name, slot: 'controls' })<{ ownerState: OwnerState }>(
   ({ theme }) => ({
     marginInlineStart: 'auto',
+    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
+    [`& .${svgIconClasses.root}`]: { fontSize: appBarIconSize },
     [`& .${iconButtonClasses.root}`]: {
-      width: theme.spacing(5.5),
+      // A minimum, not a fixed width: the language button's code grows with the text size and
+      // widens its button (a pill) instead of overflowing it.
+      minWidth: theme.spacing(5.5),
       height: theme.spacing(5.5),
-      [theme.breakpoints.down(narrow)]: { width: theme.spacing(5), height: theme.spacing(5) },
+      borderRadius: theme.vars.shape.radius.chip,
+      [theme.breakpoints.down(narrow)]: { minWidth: theme.spacing(5), height: theme.spacing(5) },
     },
     // The glow switch's label.
     [`& .${glowSwitchClasses.root}`]: {

@@ -241,9 +241,51 @@ describe.each(languages)('AppShell app bar in %s', (lng) => {
     expect(logo.compareDocumentPosition(chip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it('keeps the logo chip from shrinking when the bar is tight', () => {
+  // The chip gives way to the controls at any width or text size, down to nothing.
+  it('lets the logo chip shrink, clipped, when the bar is tight', () => {
     renderShell({ width: 360, lng, logoChip: 'Admin' })
-    expect(cssFor(slot('logoChip'))).toContain('flex-shrink:0;')
+    const css = cssFor(slot('logoChip'))
+    expect(css).toContain('flex-shrink:1;')
+    expect(css).toContain('min-width:0;')
+    expect(css).toContain('overflow:hidden;')
+  })
+
+  // At 200% text the label would be clipped by MUI's fixed 24px small-chip height.
+  it('grows the logo chip with its label from a 24px minimum', () => {
+    renderShell({ width: 360, lng, logoChip: 'Admin' })
+    const css = cssFor(slot('logoChip'))
+    expect(css).toContain('height:auto;')
+    expect(css).toContain('min-height:calc(3 * var(--mui-spacing));')
+  })
+
+  it('applies the chip height over the small chip height of MUI', () => {
+    renderShell({ width: 360, lng, logoChip: 'Admin' })
+    const css = cssFor(slot('logoChip'))
+    expect(css).toContain('height:24px;')
+    expect(css.indexOf('height:auto;')).toBeGreaterThan(css.lastIndexOf('height:24px;'))
+  })
+
+  it('leaves a 4px gap after the logo chip', () => {
+    renderShell({ width: 360, lng, logoChip: 'Admin' })
+    expect(cssFor(slot('logoChip'))).toContain('margin-inline-end:calc(0.5 * var(--mui-spacing));')
+  })
+
+  // Pins MUI's own Chip label style, which the chip's shrinking relies on.
+  it('ends a chip label that does not fit in an ellipsis', () => {
+    renderShell({ width: 360, lng, logoChip: 'Admin' })
+    const css = cssFor(screen.getByText('Admin'))
+    expect(css).toContain('overflow:hidden;')
+    expect(css).toContain('text-overflow:ellipsis;')
+  })
+
+  it('keeps the logo from shrinking', () => {
+    renderShell({ width: 360, lng })
+    expect(cssFor(screen.getByRole('link', { name: text[lng].logo }))).toContain('flex-shrink:0;')
+  })
+
+  it('keeps the controls from shrinking', () => {
+    renderShell({ width: 360, lng })
+    expect(cssFor(slot('controls'))).toContain('flex-shrink:0;')
   })
 
   it('shows no chip without logoChip', () => {
@@ -439,21 +481,40 @@ describe('AppShell responsive CSS', () => {
     expect(cssFor(toolbar, '(max-width:399.95px)')).toContain('padding-inline:var(--mui-spacing);')
   })
 
-  it('sizes the app bar buttons 44px, and 40px below 400px', () => {
+  it('gives the app bar buttons a 44px minimum width and a 44px height', () => {
     renderShell({ width: 360 })
-    const controls = slot('controls')
-    const cls = generatedClass(controls)
-    const css = emittedCss()
-    expect(css).toContain(
-      '.' +
-        cls +
-        ' .MuiIconButton-root{width:calc(5.5 * var(--mui-spacing));height:calc(5.5 * var(--mui-spacing));}',
+    const rule = nestedRule(slot('controls'), '.MuiIconButton-root')
+    expect(rule).toContain('min-width:calc(5.5 * var(--mui-spacing));')
+    expect(rule).toContain('height:calc(5.5 * var(--mui-spacing));')
+  })
+
+  // A minimum, not a fixed width: the language code grows with the text size and widens its button.
+  it('sets no fixed width on the app bar buttons', () => {
+    renderShell({ width: 360 })
+    expect(nestedRule(slot('controls'), '.MuiIconButton-root')).not.toMatch(/[{;]width:/)
+  })
+
+  it('rounds the app bar buttons with the chip radius, so a grown button is a pill', () => {
+    renderShell({ width: 360 })
+    expect(nestedRule(slot('controls'), '.MuiIconButton-root')).toMatch(
+      /border-radius:var\(--mui-shape-radius-chip[,)]/,
     )
-    expect(css).toContain(
+  })
+
+  it('gives the app bar buttons a 40px minimum width and height below 400px', () => {
+    renderShell({ width: 360 })
+    const cls = generatedClass(slot('controls'))
+    expect(emittedCss()).toContain(
       '@media (max-width:399.95px){.' +
         cls +
-        ' .MuiIconButton-root{width:calc(5 * var(--mui-spacing));height:calc(5 * var(--mui-spacing));}}',
+        ' .MuiIconButton-root{min-width:calc(5 * var(--mui-spacing));height:calc(5 * var(--mui-spacing));}}',
     )
+  })
+
+  // MUI sizes icons in rem, which would grow them over the buttons at 200% text.
+  it('sizes the icons in the controls 24px whatever the text size', () => {
+    renderShell({ width: 360 })
+    expect(nestedRule(slot('controls'), '.MuiSvgIcon-root')).toContain('font-size:24px;')
   })
 
   it('gives the glow switch the same 44px and 40px minimum height', () => {

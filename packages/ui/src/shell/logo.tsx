@@ -51,6 +51,8 @@ const LogoRoot = styled(Link, { name, slot: 'root' })<
   OwnerState & { component: ElementType; to: string }
 >(({ theme }) => ({
   display: 'inline-flex',
+  // The logo keeps its size; whatever shares the app bar with it gives way.
+  flexShrink: 0,
   alignItems: 'center',
   gap: theme.spacing(1),
   color: 'inherit',
