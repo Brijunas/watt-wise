@@ -3,7 +3,7 @@ import HomeIcon from '@mui/icons-material/HomeRounded'
 import InfoIcon from '@mui/icons-material/InfoRounded'
 import { useTranslation } from 'react-i18next'
 import { Link, matchPath, Outlet, useLocation } from 'react-router'
-import { AppShell, LanguageSwitch, ModeSwitch } from '@wattwise/ui'
+import { AppShell, GlowSwitch, LanguageSwitch, ModeSwitch } from '@wattwise/ui'
 import type { AppShellNavItem } from '@wattwise/ui'
 import SignOutButton from '@/components/sign-out-button'
 import { paths } from '@/config/routes'
@@ -36,6 +36,7 @@ const RootLayout = () => {
         <>
           <SignOutButton />
           <LanguageSwitch />
+          <GlowSwitch />
           <ModeSwitch />
         </>
       }

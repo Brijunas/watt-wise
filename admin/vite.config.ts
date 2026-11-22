@@ -1,5 +1,5 @@
 import { runtimeConfig, serverAddress } from '@wattwise/core/vite'
-import { colorSchemeScript } from '@wattwise/ui/vite'
+import { appearanceScript } from '@wattwise/ui/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -14,7 +14,7 @@ export default defineConfig({
   preview: listen,
   plugins: [
     react(),
-    colorSchemeScript(),
+    appearanceScript(),
     runtimeConfig({ frontendUrl: true }),
     VitePWA({
       // The user decides when to switch to a new version: `PwaUpdatePrompt` registers the worker.

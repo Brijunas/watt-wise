@@ -156,6 +156,12 @@ describe('card theme', () => {
     expect(String(style.boxShadow)).toMatch(/^var\(--mui-glow-halo/)
   })
 
+  it('fades the highlighted card glow in 250ms when the glow switch changes the halo', () => {
+    const style = variantStyle(rootStyle('MuiCard'), { variant: 'highlighted' })
+
+    expect(style.transition).toMatch(/^box-shadow 250ms\b/)
+  })
+
   it('draws the highlighted card with a Highlight border and no gradient or glow under forced colours', () => {
     const style = variantStyle(rootStyle('MuiCard'), { variant: 'highlighted' })
 

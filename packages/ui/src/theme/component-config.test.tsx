@@ -138,6 +138,14 @@ describe('css baseline', () => {
     )
   })
 
+  it('emits the reduced-motion rule that zeroes transitions', () => {
+    renderThemed(<p>Page</p>)
+
+    expect(emittedCss()).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\{[^@]*transition-duration:0s ?!important/,
+    )
+  })
+
   it('makes every animation and transition instant under reduced motion', () => {
     expect(
       at(baseline(), '@media (prefers-reduced-motion: reduce)', '*, *::before, *::after'),

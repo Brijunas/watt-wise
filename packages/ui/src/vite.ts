@@ -9,8 +9,9 @@ import {
   defaultMode,
   modeStorageKey,
 } from './theme/color-scheme.ts'
+import { glowScriptBody } from './theme/glow.ts'
 
-export const colorSchemeScriptBody = (): string => {
+const colorSchemeScriptBody = (): string => {
   const markup = renderToStaticMarkup(
     createElement(InitColorSchemeScript, {
       attribute: colorSchemeAttribute,
@@ -29,11 +30,15 @@ export const colorSchemeScriptBody = (): string => {
   return body
 }
 
-export const colorSchemeScript = (): Plugin => {
+// One inline script applies the stored mode and glow (security.md, "Inline script"): its hash is
+// the one the apps' policy lists.
+export const appearanceScriptBody = (): string => `${colorSchemeScriptBody()}\n${glowScriptBody()}`
+
+export const appearanceScript = (): Plugin => {
   return {
-    name: 'wattwise:color-scheme-script',
+    name: 'wattwise:appearance-script',
     transformIndexHtml() {
-      return [{ tag: 'script', children: colorSchemeScriptBody(), injectTo: 'head' }]
+      return [{ tag: 'script', children: appearanceScriptBody(), injectTo: 'head' }]
     },
   }
 }

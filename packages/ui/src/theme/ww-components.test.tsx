@@ -24,6 +24,7 @@ import {
   renderWithComponents,
   resetThemeState,
 } from '../testing/theme-test-utils'
+import GlowSwitch from './glow-switch'
 import ModeSwitch from './mode-switch'
 
 // Each case sets `theme.components.Ww<Name>` the way a page would and reads the style the browser
@@ -247,6 +248,41 @@ describe.each(languages)('theme.components.Ww* in %s', (lng) => {
         lng,
       })
       expect(marginTop(screen.getByRole('button', { name: button }))).toBe('12px')
+    })
+  })
+
+  describe('WwGlowSwitch', () => {
+    const word = { en: 'Glow', lt: 'Švytėjimas' }[lng]
+    const glowName = { en: 'Glow effects', lt: 'Švytėjimas (efektai)' }[lng]
+    const overrideFor = (slot: string) => ({
+      WwGlowSwitch: { styleOverrides: { [slot]: { marginTop: '11px' } } },
+    })
+
+    it('applies styleOverrides.root to the label element around the control', () => {
+      renderWithComponents(<GlowSwitch />, { components: overrideFor('root'), lng })
+      expect(marginTop(closestTo(screen.getByText(word), 'label'))).toBe('11px')
+    })
+
+    it('applies styleOverrides.icon to the bulb', () => {
+      const { container } = renderWithComponents(<GlowSwitch />, {
+        components: overrideFor('icon'),
+        lng,
+      })
+      expect(marginTop(container.querySelector('svg[data-testid="LightbulbRoundedIcon"]'))).toBe(
+        '11px',
+      )
+    })
+
+    it('applies styleOverrides.label to the visible word', () => {
+      renderWithComponents(<GlowSwitch />, { components: overrideFor('label'), lng })
+      expect(marginTop(screen.getByText(word))).toBe('11px')
+    })
+
+    it('applies styleOverrides.switch to the switch root', () => {
+      renderWithComponents(<GlowSwitch />, { components: overrideFor('switch'), lng })
+      expect(
+        marginTop(closestTo(screen.getByRole('switch', { name: glowName }), '.MuiSwitch-root')),
+      ).toBe('11px')
     })
   })
 
@@ -738,6 +774,7 @@ describe.each(languages)('accessibility of the themed components in %s', (lng) =
     'sign-in fields while busy': () => <SignInHarness busy />,
     'language switch': () => <LanguageSwitch />,
     'mode switch': () => <ModeSwitch />,
+    'glow switch': () => <GlowSwitch />,
     'icon menu': () => menu('Pick'),
   }
 

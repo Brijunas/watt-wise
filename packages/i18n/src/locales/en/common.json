@@ -1,5 +1,6 @@
 {
   "appearance": { "label": "Appearance", "light": "Light", "dark": "Dark", "auto": "Auto" },
+  "glow": { "name": "Glow effects", "label": "Glow" },
   "language": { "label": "Language" },
   "form": { "showPassword": "Show password", "hidePassword": "Hide password" }
 }

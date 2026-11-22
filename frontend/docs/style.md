@@ -57,7 +57,7 @@ The logo; the filled primary button; the page's one hero figure (gradient text, 
 - **Hover halo:** a hovered clickable card gets `0 0 24px -8px` `primary.main` at 50% in dark and 25% in light (`glow.hover`); it follows the glow switch like the halo.
 - **Where:** only on gradient elements, the filled primary button and the hover halo of a clickable card; never on chart bars.
 - **Off:** halos become ordinary elevation (light `0 1px 2px` and `0 8px 24px -12px` of the text colour at 6% and 14%; dark `0 1px 2px` black at 50%); text and logo glow go away; gradients stay.
-- **The switch:** a real switch (`role="switch"`, `aria-checked`, Space toggles) named "Glow effects"; its label never changes, the track's position and colour show the state (no changing On/Off text). Bulb icon at every width, the word "Glow" from 840px. On by default, off by default when the device asks for more contrast or forced colours; stored per browser ([architecture.md](architecture.md#appearance)).
+- **The switch:** a real switch (a native checkbox with `role="switch"` that exposes its checked state as `aria-checked`, Space toggles) named "Glow effects"; its label never changes, the track's position and colour show the state (no changing On/Off text). Bulb icon at every width, the word "Glow" from 840px. On by default, off by default when the device asks for more contrast or forced colours; stored per browser ([architecture.md](architecture.md#appearance)).
 - **Motion:** no pulsing or flicker; changes fade within 0.25s, instantly under `prefers-reduced-motion`.
 
 ## Hover and focus
