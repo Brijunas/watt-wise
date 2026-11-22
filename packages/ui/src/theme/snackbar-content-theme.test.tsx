@@ -26,15 +26,51 @@ describe('snackbar content theme', () => {
     expect(lastDeclaration(cssFor(snackbarContent()), property)).toBe(value)
   })
 
-  it('puts one spacing unit between the action buttons (characterization: snackbar-content-theme.ts:16)', () => {
-    const generated = Array.from(snackbarContent().classList).find((name) =>
-      name.startsWith('css-'),
-    )
-    const rules = Array.from(document.querySelectorAll('style'))
-      .map((tag) => tag.textContent)
-      .filter((css) => css.includes('.' + (generated ?? '') + ' .MuiSnackbarContent-action{'))
+  it.each([
+    ['box-sizing', 'border-box'],
+    ['min-width', '0'],
+    ['max-width', '100%'],
+    ['background-image', 'none'],
+  ])('sets %s to %s so the panel fits the viewport and has no dark overlay', (property, value) => {
+    expect(lastDeclaration(cssFor(snackbarContent()), property)).toBe(value)
+  })
 
-    expect(rules.map((css) => lastDeclaration(css, 'gap'))).toEqual(['var(--mui-spacing)'])
+  it('keeps the 288px minimum from 600px, never wider than the Snackbar', () => {
+    expect(lastDeclaration(cssFor(snackbarContent(), '(min-width:600px)'), 'min-width')).toBe(
+      'min(288px, 100%)',
+    )
+  })
+
+  describe('the action', () => {
+    const actionRules = () => {
+      const generated = Array.from(snackbarContent().classList).find((name) =>
+        name.startsWith('css-'),
+      )
+      return Array.from(document.querySelectorAll('style'))
+        .map((tag) => tag.textContent)
+        .filter((css) => css.includes('.' + (generated ?? '') + ' .MuiSnackbarContent-action{'))
+    }
+
+    it('wraps under the message when the buttons do not fit', () => {
+      expect(actionRules().map((css) => lastDeclaration(css, 'flex-wrap'))).toEqual(['wrap'])
+    })
+
+    // characterization: snackbar-content-theme.ts:30, `theme.spacing(1)`
+    it('puts one spacing unit between the action buttons', () => {
+      expect(actionRules().map((css) => lastDeclaration(css, 'gap'))).toEqual([
+        'var(--mui-spacing)',
+      ])
+    })
+
+    // characterization: snackbar-content-theme.ts:31-32, `theme.spacing(1)`
+    it.each(['padding-top', 'padding-bottom'])(
+      'gives the action one spacing unit of %s',
+      (property) => {
+        expect(actionRules().map((css) => lastDeclaration(css, property))).toEqual([
+          'var(--mui-spacing)',
+        ])
+      },
+    )
   })
 
   it('draws a ButtonBorder border and no shadow in forced colours', () => {

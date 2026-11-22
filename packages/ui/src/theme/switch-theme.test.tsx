@@ -76,6 +76,8 @@ describe('switch theme', () => {
 
   it('gives way to system colours under forced colours', () => {
     expect(at(rootStyle('MuiSwitch'), '@media (forced-colors: active)')).toEqual({
+      '& .MuiSwitch-switchBase:focus-visible, & .MuiSwitch-switchBase:focus-within:has(input:focus-visible)':
+        { outline: 'none' },
       '& .MuiSwitch-switchBase.Mui-checked:not(.Mui-disabled) + .MuiSwitch-track': {
         backgroundImage: 'none',
         boxShadow: 'none',
