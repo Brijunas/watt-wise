@@ -108,6 +108,8 @@ Each component is the MUI one in the second column, styled by its theme override
 | Bottom bar                    | `BottomNavigation` with `BottomNavigationAction`s       | Under 600px ([layout.md](layout.md))                                                                                                 |
 | Drawer                        | `Drawer` `variant="permanent"`                          | From 1200px ([layout.md](layout.md))                                                                                                 |
 | Rail                          | Narrow (88px) permanent `Drawer` with `ListItemButton`s | 600-1199px; MUI has no rail component                                                                                                |
+| Alert                         | `Alert` (standard)                                      | `text.primary` on the severity's tint (`surface2` for info); the icon in the severity colour (`primary.main` for info)               |
+| Update prompt                 | `Snackbar` (`WwUpdatePrompt`)                           | `background.paper` panel with a `divider` border; "Reload" `contained`, "Later" `outlined`                                           |
 
 ## Don'ts
 

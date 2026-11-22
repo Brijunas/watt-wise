@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 const Placeholder = () => {
   const { t } = useTranslation('app')
   return (
-    <Typography component="h1" variant="h4">
+    <Typography component="h1" variant="h1">
       {t('nav.placeholder')}
     </Typography>
   )

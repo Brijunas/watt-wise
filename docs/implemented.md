@@ -66,3 +66,17 @@ ASP.NET Core Identity with email and password: an account signs in only after co
 - **S4.8 Token handling in the clients.** The session in `@wattwise/core`: token in memory, restore, refresh and retry inside a Web Lock.
 - **S4.9 Frontend account pages.** Sign-up, confirmation, sign-in, password reset and change, and the devices page, with protected routes.
 - **S4.10 Admin app sign-in.** Sign-in and sign-out in `admin/`, an `admin.access` guard from `/me`, a no-access page, and the forgot-password link to the frontend through the new `FRONTEND_URL` setting. The shared sign-in pieces moved to `@wattwise/ui` and `@wattwise/core`.
+
+## E5A. Visual identity
+
+Brings both apps to the look in [style.md](../frontend/docs/style.md) and the shell in [layout.md](../frontend/docs/layout.md): the logo palette in light and dark, a glow the user can switch off, Red Hat Display everywhere, the user's logo, and Material 3 breakpoints with a rail and capped content. E5A builds the MUI theme in `@wattwise/ui` from style.md and moves both apps onto it, following MUI's own guides ([theme.md](../frontend/docs/theme.md#mui): tokens and variants in the theme, nothing styled per component); every story wrote MUI v9 code ([theme.md](../frontend/docs/theme.md#mui-v9)). The results, chart and state patterns in layout.md are built by the epics that own those screens (E8, E14).
+
+### Stories
+
+- **S5A.1 Design tokens and font.** The light and dark palettes, gradients, glow, shape and type tokens as the MUI theme, and Red Hat Display.
+- **S5A.2 Glow switch.** The user's glow on/off choice, applied through `data-glow` and kept across visits.
+- **S5A.3 Logo.** The user's logo as the `WwLogo` component, in lockups for light, dark and mono.
+- **S5A.4 App shell layout.** The shell: bottom bar, rail and drawer, capped content with a side column, and the minimal signed-out app bar.
+- **S5A.5 Existing pages in the new look.** Every existing page and the update prompt use only mapped MUI components, variants and `Ww` components: `h1` titles, cards for account pages, Settings and about, themed Alerts and Snackbar, outlined secondary buttons, and one primary button per form.
+- **S5A.6 Component variants.** The custom variants (highlighted card, segmented choice, chips, typography) in the theme.
+- **S5A.8 Themed @wattwise/ui components.** The `Ww` components styled through the theme's slots, with their types registered in `mui-augmentation.ts`.

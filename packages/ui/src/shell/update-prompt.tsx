@@ -30,7 +30,7 @@ const UpdatePromptRoot = styled(Snackbar, { name, slot: 'root' })<{
 
 const UpdatePromptReloadButton = styled(Button, { name, slot: 'reloadButton' })<{
   ownerState: UpdatePromptProps
-}>(({ theme }) => ({ fontWeight: theme.typography.fontWeightBold }))
+}>({})
 
 const UpdatePrompt = (inProps: UpdatePromptProps) => {
   const props = useThemeProps({ props: inProps, name })
@@ -45,15 +45,10 @@ const UpdatePrompt = (inProps: UpdatePromptProps) => {
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       action={
         <>
-          <Button color="inherit" size="small" onClick={onClose}>
+          <Button variant="outlined" onClick={onClose}>
             {t('update.later')}
           </Button>
-          <UpdatePromptReloadButton
-            ownerState={props}
-            color="inherit"
-            size="small"
-            onClick={onReload}
-          >
+          <UpdatePromptReloadButton ownerState={props} variant="contained" onClick={onReload}>
             {t('update.reload')}
           </UpdatePromptReloadButton>
         </>

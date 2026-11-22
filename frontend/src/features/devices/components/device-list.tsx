@@ -91,7 +91,6 @@ const DeviceList = () => {
       </Stack>
       <Button
         variant="outlined"
-        color="error"
         disabled={busy}
         sx={{ alignSelf: 'flex-start' }}
         onClick={() => {

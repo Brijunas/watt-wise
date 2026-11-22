@@ -1,3 +1,5 @@
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
 import Container from '@mui/material/Container'
 import Stack from '@mui/material/Stack'
 import { styled, useThemeProps } from '@mui/material/styles'
@@ -9,7 +11,7 @@ export interface AccountPageProps {
   children: ReactNode
 }
 
-export type AccountPageClassKey = 'root' | 'title'
+export type AccountPageClassKey = 'root' | 'title' | 'card'
 
 const name = 'WwAccountPage'
 
@@ -29,19 +31,27 @@ const AccountPageTitle = styled(Typography, { name, slot: 'title' })<{
   component?: ElementType
 }>({})
 
-// The frame of every account page: a narrow column with the page's h1.
+const AccountPageCard = styled(Card, { name, slot: 'card' })<{
+  ownerState: AccountPageProps
+}>({})
+
+// The frame of every account page: a narrow column holding a card with the page's h1.
 const AccountPage = (inProps: AccountPageProps) => {
   const props = useThemeProps({ props: inProps, name })
   const { title, children } = props
 
   return (
     <AccountPageRoot maxWidth="sm" ownerState={props}>
-      <Stack spacing={3}>
-        <AccountPageTitle component="h1" variant="h4" ownerState={props}>
-          {title}
-        </AccountPageTitle>
-        {children}
-      </Stack>
+      <AccountPageCard ownerState={props}>
+        <CardContent>
+          <Stack spacing={3}>
+            <AccountPageTitle component="h1" variant="h1" ownerState={props}>
+              {title}
+            </AccountPageTitle>
+            {children}
+          </Stack>
+        </CardContent>
+      </AccountPageCard>
     </AccountPageRoot>
   )
 }

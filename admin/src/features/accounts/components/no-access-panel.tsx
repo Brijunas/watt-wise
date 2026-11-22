@@ -1,4 +1,5 @@
 import Button from '@mui/material/Button'
+import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink } from 'react-router'
@@ -14,9 +15,11 @@ const NoAccessPanel = ({ signedOut }: { signedOut: boolean }) => {
     <AccountPage title={t('noAccess.title')}>
       <Typography>{t('noAccess.text')}</Typography>
       {signedOut ? (
-        <Button component={RouterLink} to={paths.signIn} variant="contained">
-          {t('noAccess.signIn')}
-        </Button>
+        <Stack direction="row">
+          <Button component={RouterLink} to={paths.signIn} variant="contained">
+            {t('noAccess.signIn')}
+          </Button>
+        </Stack>
       ) : null}
     </AccountPage>
   )

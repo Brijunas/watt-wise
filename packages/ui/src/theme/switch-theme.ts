@@ -41,6 +41,12 @@ export const switchTheme: ThemeOptions['components'] = {
             color: theme.vars.palette.background.paper,
           },
         '@media (forced-colors: active)': {
+          // `enhanceHighContrast` gives every ButtonBase a `5px auto` outline on `:focus-visible` and
+          // on `:focus-within:has(input:focus-visible)` (the latter is how a Switch's thumb matches).
+          // That ring is clipped by the root's `overflow: hidden`, so the thumb's is turned off with
+          // selectors that outrank both, leaving the root's one ring.
+          [`& .${switchClasses.switchBase}:focus-visible, & .${switchClasses.switchBase}:focus-within:has(input:focus-visible)`]:
+            { outline: 'none' },
           [checkedTrack]: { backgroundImage: 'none', boxShadow: 'none' },
           [`& .${switchClasses.thumb}`]: {
             forcedColorAdjust: 'none',

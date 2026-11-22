@@ -1,32 +1,36 @@
 import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import CircularProgress from '@mui/material/CircularProgress'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useTranslation } from 'react-i18next'
 import { useGetAboutQuery } from '@wattwise/api-client'
+import { PageLoading } from '@wattwise/ui'
 
 const AboutPanel = () => {
   const { t } = useTranslation('about')
   const { data, isLoading, isError } = useGetAboutQuery()
 
   return (
-    <Box>
-      <Typography component="h1" variant="h4" gutterBottom>
+    <Stack spacing={2}>
+      <Typography component="h1" variant="h1">
         {t('title')}
       </Typography>
-      {isLoading && <CircularProgress aria-label={t('loading')} />}
+      {isLoading && <PageLoading />}
       {isError && <Alert severity="error">{t('error')}</Alert>}
       {data && (
-        <>
-          <Typography>
-            {t('apiName')}: {data.name}
-          </Typography>
-          <Typography>
-            {t('version')}: {data.version}
-          </Typography>
-        </>
+        <Card>
+          <CardContent>
+            <Typography>
+              {t('apiName')}: {data.name}
+            </Typography>
+            <Typography>
+              {t('version')}: {data.version}
+            </Typography>
+          </CardContent>
+        </Card>
       )}
-    </Box>
+    </Stack>
   )
 }
 

@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { axe } from 'vitest-axe'
 import { cssFor } from '../testing/theme-test-utils'
 import AppThemeProvider from '../theme/app-theme-provider'
 import UpdatePrompt from './update-prompt'
@@ -91,6 +92,46 @@ describe('UpdatePrompt', () => {
       expect(snackbarCss('(min-width:600px)')).toContain(
         'max-width:calc(100vw - var(--ww-shell-inset-start, 0px) - calc(6 * var(--mui-spacing)));',
       )
+    })
+  })
+
+  describe.each([
+    ['en', 'A new version is available.', 'Reload', 'Later'],
+    ['lt', 'Yra nauja versija.', 'Atnaujinti', 'Vėliau'],
+  ] as const)('look in %s', (lng, message, reload, later) => {
+    it('makes Reload the one contained button', () => {
+      renderPrompt({ lng })
+      expect(
+        screen.getByRole('button', { name: reload }).classList.contains('MuiButton-contained'),
+      ).toBe(true)
+    })
+
+    it('makes Later an outlined button', () => {
+      renderPrompt({ lng })
+      expect([
+        screen.getByRole('button', { name: later }).classList.contains('MuiButton-outlined'),
+        screen.getByRole('button', { name: later }).classList.contains('MuiButton-contained'),
+      ]).toEqual([true, false])
+    })
+
+    it('announces the message as an alert', () => {
+      renderPrompt({ lng })
+      expect(screen.getByRole('alert').textContent).toContain(message)
+    })
+
+    it('calls onClose from Later and onReload from Reload', async () => {
+      const onReload = vi.fn()
+      const onClose = vi.fn()
+      renderPrompt({ lng, onReload, onClose })
+      await userEvent.click(screen.getByRole('button', { name: later }))
+      expect([onClose.mock.calls.length, onReload.mock.calls.length]).toEqual([1, 0])
+      await userEvent.click(screen.getByRole('button', { name: reload }))
+      expect([onClose.mock.calls.length, onReload.mock.calls.length]).toEqual([1, 1])
+    })
+
+    it('has no accessibility violations when open', async () => {
+      renderPrompt({ lng })
+      expect((await axe(screen.getByRole('alert'))).violations).toEqual([])
     })
   })
 

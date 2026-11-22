@@ -7,7 +7,7 @@ const Settings = () => {
   const { t } = useTranslation('settings')
   return (
     <Stack spacing={2}>
-      <Typography component="h1" variant="h4">
+      <Typography component="h1" variant="h1">
         {t('title')}
       </Typography>
       <SettingsLinks />

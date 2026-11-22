@@ -19,6 +19,7 @@ import { nativeSelectTheme } from './native-select-theme'
 import { outlinedInputTheme } from './outlined-input-theme'
 import { radioTheme } from './radio-theme'
 import { selectTheme } from './select-theme'
+import { snackbarContentTheme } from './snackbar-content-theme'
 import { switchTheme } from './switch-theme'
 import { textFieldTheme } from './text-field-theme'
 
@@ -44,6 +45,7 @@ export const brandedComponents: ThemeOptions['components'] = {
   ...outlinedInputTheme,
   ...radioTheme,
   ...selectTheme,
+  ...snackbarContentTheme,
   ...switchTheme,
   ...textFieldTheme,
 }

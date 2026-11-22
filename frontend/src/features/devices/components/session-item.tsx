@@ -24,13 +24,13 @@ const SessionItem = ({ session, busy, onEnd }: SessionItemProps) => {
   })
 
   return (
-    <Card component="li" variant="outlined">
+    <Card component="li">
       <CardContent>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <Typography component="h2" variant="h6">
+          <Typography component="h2" variant="h3">
             {session.deviceLabel}
           </Typography>
-          {session.current && <Chip size="small" color="primary" label={t('thisDevice')} />}
+          {session.current && <Chip label={t('thisDevice')} />}
         </Stack>
         <Typography variant="body2" color="text.secondary">
           {t('signedInAt', { date: format.format(new Date(session.signedInAt)) })}
@@ -41,6 +41,7 @@ const SessionItem = ({ session, busy, onEnd }: SessionItemProps) => {
       </CardContent>
       <CardActions>
         <Button
+          variant="outlined"
           disabled={busy}
           aria-label={t('endSessionFor', { device: session.deviceLabel })}
           onClick={() => {
