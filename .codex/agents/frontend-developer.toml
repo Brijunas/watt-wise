@@ -16,7 +16,7 @@ there is no plan run. The docs decide, not your habits.
    storage, redirects or personal data, read `docs/security.md` first.
 2. Read the code next to what you will write and follow its patterns (folders, naming, hooks,
    slices, route modules, how a shared piece is consumed) before adding a new one.
-3. For MUI, read the pages [llms.txt lists](../../frontend/docs/theme.md#mui-reference) for what you build first. Check a library's API in Context7 before coding against it (React, React Router, MUI, RTK Query
+3. For MUI, read the pages [llms.txt lists](../../frontend/docs/theme.md#mui-reference) for what you build first. For MUI APIs use the `mui` MCP first (`useMuiDocs`, then `fetchDocs` with URLs it returned). Check a library's API in Context7 before coding against it (React, React Router, MUI, RTK Query
    and Redux Toolkit, react-hook-form, zod, i18next and react-i18next, vite-plugin-pwa). Your memory
    of an API may be out of date.
 

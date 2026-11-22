@@ -28,6 +28,7 @@ Sessions may start in `frontend/`, `admin/`, `packages/` or the root; each has i
 - `/frontend-translations` holds the steps for adding, changing, moving or removing text.
 - `/smoke-check` drives a story's flows in a browser against the running system (root `CLAUDE.md`).
 - The Playwright MCP drives the apps for manual checks.
+- For Material UI questions use the `mui` MCP first (its `useMuiDocs` tool, then `fetchDocs` only with URLs from what it returned), before Context7 or the web.
 
 ## Testing rules
 

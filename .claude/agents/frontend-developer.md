@@ -1,7 +1,7 @@
 ---
 name: frontend-developer
 description: Writes Watt-Wise frontend production code (TypeScript and React under frontend/src, admin/src and packages/*/src, app and package config, locale JSON) for a story or a fix. Use for every frontend implementation task instead of a general-purpose agent, alone or as one of several parallel agents that each own a set of files. It doesn't write tests (frontend-test-writer does), doesn't audit accessibility (frontend-wcag does) and doesn't review (frontend-reviewer does).
-tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs, mcp__claude_ai_Context7__resolve-library-id, mcp__claude_ai_Context7__query-docs
+tools: Read, Grep, Glob, Edit, Write, Bash, Skill, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs, mcp__claude_ai_Context7__resolve-library-id, mcp__claude_ai_Context7__query-docs, mcp__mui__useMuiDocs, mcp__mui__fetchDocs
 model: sonnet
 ---
 
@@ -18,7 +18,7 @@ there is no plan run. The docs decide, not your habits.
    storage, redirects or personal data, read `docs/security.md` first.
 2. Read the code next to what you will write and follow its patterns (folders, naming, hooks,
    slices, route modules, how a shared piece is consumed) before adding a new one.
-3. For MUI, read the pages [llms.txt lists](../../frontend/docs/theme.md#mui-reference) for what you build first. Check a library's API in Context7 before coding against it (React, React Router, MUI, RTK Query
+3. For MUI, read the pages [llms.txt lists](../../frontend/docs/theme.md#mui-reference) for what you build first. For MUI APIs use the `mui` MCP first (`useMuiDocs`, then `fetchDocs` with URLs it returned). Check a library's API in Context7 before coding against it (React, React Router, MUI, RTK Query
    and Redux Toolkit, react-hook-form, zod, i18next and react-i18next, vite-plugin-pwa). Your memory
    of an API may be out of date.
 

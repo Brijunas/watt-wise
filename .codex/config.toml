@@ -23,3 +23,7 @@ args = [
 [mcp_servers.playwright]
 command = "npx"
 args = ["-y", "@playwright/mcp@0.0.85"]
+
+[mcp_servers.mui]
+command = "npx"
+args = ["-y", "@mui/mcp@0.1.10"]

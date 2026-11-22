@@ -26,6 +26,8 @@ Read architecture, structure, and conventions before implementation, then the ta
 
 Run commands from the root. `pnpm --filter frontend test` runs this app's tests; substitute `admin` or `@wattwise/<name>` for other workspaces. Follow the five JavaScript [checks](../docs/development.md#checks) before committing.
 
+For Material UI questions use the `mui` MCP first (its `useMuiDocs` tool, then `fetchDocs` only with URLs from what it returned), before Context7 or the web.
+
 Start apps through the documented [1Password development command](../docs/development.md#running-the-apps); notify the user before authorization. API addresses use runtime `/config.js` as defined in architecture.
 
 For generated API changes, follow the [API-client contract](docs/architecture.md#api-client) and run `pnpm generate:api`. Keep generated output and the backend OpenAPI document together. For public assets, use the documented icon-generation command. Test placement, rendering helpers, translation checks, and HTTP mocks follow the testing and structure documents above.
