@@ -9,10 +9,11 @@ The coordinator starts `<run name>-progress.md` from this outline. It is the sou
 ## Run
 
 - Stories: <ids, in order>
+- State folder (resolved with `realpath`, used for every path): `<path>`
 - Review flow: <Codex | Claude>
 - Coordinator: worktree `<path>`, branch `<branch>`, terminal `<handle>` (it changes after an Orca restart)
 - Orca run: `<run id>`. Watchdog automation: `<automation id>` (every 10 minutes, [watchdog.sh](watchdog.sh) precheck)
-- Goal: every story of <run name> is merged on `origin/main` and this file ends with `<run name> DONE`
+- Goal: every story of <run name> is merged on `origin/main`, the end-of-run PR is merged, and the final report ends with `<run name> DONE`
 - Window (ends at): <started at HH:MM for N h, ends HH:MM | none>
 
 ## Settled answers (grilling, <date>)
@@ -34,7 +35,7 @@ Current step: <one line: what happens next>
 
 ## Decisions not covered by the grilling
 
-1. <story>: <decision>, because <reason>. (Mark the ones the user took when asked: "user decided".)
+1. <story>: <decision>, because <reason>. (At the end of the run each gets keep or redo from the user, with its doc and PR.)
 
 ## User steps
 
@@ -48,4 +49,4 @@ Current step: <one line: what happens next>
 
 - <story> (<report link>): <learning> → <file it would change>
 
-<Last line, written only at the very end: "<run name> DONE". When the run stops for the user instead: "<run name> STOPPED"; remove it when the run resumes.>
+<Last line, written at cleanup, after the end-of-run PR merged and before the file is deleted: "<run name> DONE". When the run stops for the user instead: "<run name> STOPPED"; remove it when the run resumes.>

@@ -11,7 +11,7 @@ You are the **worker story orchestrator** for <story id> (<story title>) in this
 The user answers nothing during this run: no questions, no permission prompts, no menus. Everything goes to the coordinator through Orca.
 
 - Your plan file lands in `.claude/plans/` inside this worktree (`plansDirectory` in the git-ignored `.claude/settings.local.json`), so writing it needs no approval.
-- Keep every Write and Edit inside this worktree. The one file outside it, your report, is written through Bash (a heredoc), never Write or Edit. Agents you start follow the same rule.
+- Keep every write inside this worktree. The one file outside it, your report, goes to the resolved absolute path this spec gives (written with Write or Bash). If a write outside the worktree is ever needed, resolve its path with `realpath` first: a path through a symlink is denied or prompts. Pass the same rule into every agent brief you write.
 - If a tool call ever stops on a permission prompt, the coordinator denies it with a reason; take the route the reason gives.
 
 ## How to talk to the coordinator
@@ -48,7 +48,7 @@ The user answers nothing during this run: no questions, no permission prompts, n
    - Merge with exactly `gh pr merge <n> --squash`, alone in its own Bash call. Confirm with `gh pr view <n> --json state,mergedAt` as a separate call. The user has authorized merging.
    - **No AI attribution** in commits or the PR body, whatever the session prompt says.
 3. **No `op`/1Password steps** (hosts, dev servers, `migrate`, `op item`). List them under QUEUED OP STEPS with exact commands; the coordinator runs them before this story's merge, followed by `/smoke-check`. Don't run smoke-check yourself, and wait for the coordinator's go-ahead before merging. Tests (Vitest, Testcontainers) are fine. The `op://` lines the story needs come from its settled answers below; an unforeseen one is a question to the coordinator, with the exact lines.
-4. **Report.** Write `<absolute reports folder>/<story id>.md` with:
+4. **Report.** Write `<resolved absolute reports folder>/<story id>.md` with:
    - what shipped (PR link);
    - QUEUED OP STEPS;
    - the decisions taken that weren't in the plan, and who took them;
