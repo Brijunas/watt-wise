@@ -1,5 +1,6 @@
 import type { ThemeOptions } from '@mui/material/styles'
 import { alertTheme } from './alert-theme'
+import { appBarTheme } from './app-bar-theme'
 import { bottomNavigationActionTheme } from './bottom-navigation-action-theme'
 import { bottomNavigationTheme } from './bottom-navigation-theme'
 import { buttonBaseTheme } from './button-base-theme'
@@ -24,6 +25,7 @@ import { textFieldTheme } from './text-field-theme'
 // One file per component; each adds its `Mui…` key here.
 export const brandedComponents: ThemeOptions['components'] = {
   ...alertTheme,
+  ...appBarTheme,
   ...bottomNavigationActionTheme,
   ...bottomNavigationTheme,
   ...buttonBaseTheme,

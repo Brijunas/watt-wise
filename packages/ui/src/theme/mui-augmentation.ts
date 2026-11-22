@@ -8,6 +8,7 @@ import type { AppShellClassKey, AppShellProps } from '../shell/app-shell'
 import type { IconMenuClassKey, IconMenuProps } from '../menu/icon-menu'
 import type { LanguageSwitchClassKey, LanguageSwitchProps } from '../i18n/language-switch'
 import type { ModeSwitchClassKey, ModeSwitchProps } from './mode-switch'
+import type { GlowSwitchClassKey, GlowSwitchProps } from './glow-switch'
 import type { AccountPageClassKey, AccountPageProps } from '../auth/account-page'
 import type { NotFoundClassKey, NotFoundProps } from '../shell/not-found'
 import type { PageLoadingClassKey, PageLoadingProps } from '../shell/page-loading'
@@ -104,6 +105,7 @@ declare module '@mui/material/styles' {
     WwIconMenu: IconMenuClassKey
     WwLanguageSwitch: LanguageSwitchClassKey
     WwModeSwitch: ModeSwitchClassKey
+    WwGlowSwitch: GlowSwitchClassKey
     WwAccountPage: AccountPageClassKey
     WwNotFound: NotFoundClassKey
     WwPageLoading: PageLoadingClassKey
@@ -118,6 +120,7 @@ declare module '@mui/material/styles' {
     WwIconMenu: IconMenuProps<string>
     WwLanguageSwitch: LanguageSwitchProps
     WwModeSwitch: ModeSwitchProps
+    WwGlowSwitch: GlowSwitchProps
     WwAccountPage: AccountPageProps
     WwNotFound: NotFoundProps
     WwPageLoading: PageLoadingProps
@@ -147,6 +150,11 @@ declare module '@mui/material/styles' {
       defaultProps?: Partial<ComponentsPropsList['WwModeSwitch']>
       styleOverrides?: ComponentsOverrides<Theme>['WwModeSwitch']
       variants?: ComponentsVariants<Theme>['WwModeSwitch']
+    }
+    WwGlowSwitch?: {
+      defaultProps?: Partial<ComponentsPropsList['WwGlowSwitch']>
+      styleOverrides?: ComponentsOverrides<Theme>['WwGlowSwitch']
+      variants?: ComponentsVariants<Theme>['WwGlowSwitch']
     }
     WwAccountPage?: {
       defaultProps?: Partial<ComponentsPropsList['WwAccountPage']>

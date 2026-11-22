@@ -101,6 +101,16 @@ describe('RootLayout', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeTruthy()
   })
 
+  it.each([
+    { language: 'en', name: 'Glow effects' },
+    { language: 'lt', name: 'Švytėjimas (efektai)' },
+  ])('shows the glow switch in the app bar in $language', async ({ language, name }) => {
+    localStorage.setItem('wattwise-language', language)
+    renderAt('/', 360)
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.getByRole('switch', { name, checked: true })).toBeTruthy()
+  })
+
   it('stores Dark and sets the class on html', async () => {
     const user = userEvent.setup()
     renderAt('/', 360)

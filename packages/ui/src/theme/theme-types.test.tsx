@@ -95,6 +95,16 @@ it('rejects an unknown slot key in a Ww component styleOverrides', () => {
           menu: {},
         },
       },
+      WwGlowSwitch: {
+        styleOverrides: {
+          root: {},
+          icon: {},
+          label: {},
+          switch: {},
+          // @ts-expect-error GlowSwitch has no `track` slot.
+          track: {},
+        },
+      },
       WwAccountPage: {
         styleOverrides: {
           root: {},
@@ -147,7 +157,7 @@ it('rejects an unknown slot key in a Ww component styleOverrides', () => {
         },
       },
     }),
-  ).toBe(11)
+  ).toBe(12)
 })
 
 it('rejects an unknown prop in a Ww component defaultProps', () => {
@@ -190,10 +200,12 @@ it('rejects any key in the defaultProps of the components that take no props', (
       WwLanguageSwitch: { defaultProps: { label: 'x' } },
       // @ts-expect-error ModeSwitch takes no props.
       WwModeSwitch: { defaultProps: { label: 'x' } },
+      // @ts-expect-error GlowSwitch takes no props.
+      WwGlowSwitch: { defaultProps: { label: 'x' } },
       // @ts-expect-error PageLoading takes no props.
       WwPageLoading: { defaultProps: { label: 'x' } },
     }),
-  ).toBe(3)
+  ).toBe(4)
 })
 
 it('accepts the wide breakpoint', () => {

@@ -50,6 +50,10 @@ export const cardTheme: ThemeOptions['components'] = {
                 backgroundOrigin: 'padding-box, border-box',
                 backgroundClip: 'padding-box, border-box',
                 boxShadow: theme.vars.glow.halo,
+                // The glow switch changes the halo; it fades within 0.25s.
+                transition: theme.transitions.create('box-shadow', {
+                  duration: theme.transitions.duration.short,
+                }),
                 '@media (forced-colors: active)': {
                   backgroundImage: 'none',
                   boxShadow: 'none',
