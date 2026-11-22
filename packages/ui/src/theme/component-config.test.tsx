@@ -2,6 +2,7 @@ import BottomNavigation from '@mui/material/BottomNavigation'
 import BottomNavigationAction from '@mui/material/BottomNavigationAction'
 import Checkbox from '@mui/material/Checkbox'
 import FormControlLabel from '@mui/material/FormControlLabel'
+import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import Radio from '@mui/material/Radio'
 import NativeSelect from '@mui/material/NativeSelect'
@@ -12,6 +13,7 @@ import { axe } from 'vitest-axe'
 import {
   at,
   colorModes,
+  emittedCss,
   renderThemed,
   resetThemeState,
   rootStyle,
@@ -291,5 +293,34 @@ describe('navigation items', () => {
       at(style, '&:last-child').paddingBottom,
       at(wide, '&:last-child').paddingBottom,
     ]).toEqual(['calc(2.5 * var(--mui-spacing, 8px))', 'calc(3 * var(--mui-spacing, 8px))'])
+  })
+
+  it('holds menu items at 44px through a doubled class, above MUI auto and dense minHeight', () => {
+    const style = rootStyle('MuiMenuItem')
+
+    expect(style['&&']).toEqual({ minHeight: 'calc(5.5 * var(--mui-spacing, 8px))' })
+    expect('minHeight' in style).toBe(false)
+  })
+
+  it('emits the 44px min-height rule with a doubled class for a normal and a dense item', () => {
+    renderThemed(
+      <Menu open anchorEl={document.body}>
+        <MenuItem>Normal</MenuItem>
+        <MenuItem dense>Dense</MenuItem>
+      </Menu>,
+    )
+    const css = emittedCss()
+    const doubled = (name: string) => {
+      const item = screen.getByRole('menuitem', { name })
+      return item.className
+        .split(' ')
+        .filter((token) => token.startsWith('css-'))
+        .some((token) =>
+          css.includes(`.${token}.${token}{min-height:calc(5.5 * var(--mui-spacing));}`),
+        )
+    }
+
+    expect([doubled('Normal'), doubled('Dense')]).toEqual([true, true])
+    expect(screen.getByRole('menuitem', { name: 'Dense' }).className).toContain('MuiMenuItem-dense')
   })
 })

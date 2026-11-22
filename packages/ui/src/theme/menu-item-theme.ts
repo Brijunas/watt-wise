@@ -8,7 +8,9 @@ export const menuItemTheme: ThemeOptions['components'] = {
   MuiMenuItem: {
     styleOverrides: {
       root: ({ theme }) => ({
-        minHeight: theme.spacing(5.5),
+        // `&&` outranks MUI's own `minHeight: 'auto'` from 600px and `minHeight: 32` when dense,
+        // so items are 44px at every width.
+        '&&': { minHeight: theme.spacing(5.5) },
         [`&.${buttonBaseClasses.focusVisible}`]: { outlineOffset: -2 },
         [`&.${menuItemClasses.selected}`]: {
           color: theme.vars.palette.primary.main,
