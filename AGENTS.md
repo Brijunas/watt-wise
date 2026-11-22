@@ -44,7 +44,7 @@ Use descriptive scope/story commit subjects. PRs explain behavior, reference sto
 
 ## Codex Review
 
-A Claude session may start you as an Orca worker (`gpt-6.1-sol`, medium effort) to review its change (backend, frontend or both; the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). In that task:
+A Claude session may start you as an Orca worker (`gpt-6.2-sol`, medium effort) to review its change (backend, frontend or both; the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). In that task:
 
 - Don't try `dotnet build`, `dotnet test` or `dotnet format`: your sandbox blocks their named pipes (`SocketException 13`). Claude runs them and sends you the results.
 - For `frontend/`, `admin/` and `packages/`, run the JS checks yourself (`pnpm --filter <workspace> test`, `pnpm lint`, `pnpm typecheck`), but no StrykerJS: Claude's `frontend-test-reviewer` runs it. The `dotnet` limit above is for the backend only.
@@ -56,7 +56,7 @@ A Claude session may start you as an Orca worker (`gpt-6.1-sol`, medium effort) 
 
 ## Codex Test Writing
 
-A Claude session may start you as an Orca worker (`gpt-6-astra`, medium effort) to write the backend and frontend tests for its story (the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). Claude writes the production code and reviews your tests. In that task:
+A Claude session may start you as an Orca worker (`gpt-6.2-astra`, medium effort) to write the backend and frontend tests for its story (the "Codex review" flow in [Claude notes](CLAUDE.md#claude-code-setup)). Claude writes the production code and reviews your tests. In that task:
 
 - Don't try `dotnet build`, `dotnet test` or `dotnet format`: your sandbox blocks their named pipes (`SocketException 13`). Claude runs them and sends you failures to fix.
 - For frontend tests, run the JS checks yourself (`pnpm --filter <workspace> test`, `pnpm lint`, `pnpm typecheck`) and fix failures; no StrykerJS. The `dotnet` limit above is for the backend only.

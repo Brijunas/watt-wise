@@ -78,6 +78,7 @@ How releases reach the server and how its secrets are kept. The repository is pu
 
 - **Development only.** `WattWise.Cli seed smoke-accounts` makes two fixed accounts, a user and an admin, for the manual smoke check ([accounts.md](../backend/docs/features/accounts.md#smoke-accounts)). In any other environment it refuses and exits 1. The rule is enforced twice, in the Cli and in the Infrastructure adapter. The environment is the boundary: each environment has its own `.env` file and 1Password vault, and the `smoke-accounts` item exists only in the development vault, so there is no database-host check.
 - **Credentials only in 1Password.** The emails and passwords come from the `smoke-accounts` item through the Cli's `.env.development`. They are never written to the repository, a log or the command's output, which prints only `created`, `changed` or `unchanged`. Claude may read only these Development-only throwaway credentials (`op read` on the `smoke-accounts` item, allowed in the `settings.json` files), to type them into the sign-in form during the smoke check.
+- **Coordinator window.** During a coordinator run's window, the Development settings are resolved once into files only the user can read on tmpfs, used only in the run's marked worktrees, and deleted when the window ends. Other environments' vaults are never resolved this way.
 
 ## Elsewhere
 

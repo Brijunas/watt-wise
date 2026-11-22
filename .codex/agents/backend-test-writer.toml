@@ -1,6 +1,6 @@
 name = "backend-test-writer"
 description = "Writes unit and integration tests for a Watt-Wise backend feature or change (C#, xUnit v3, real PostgreSQL). Use when a story, handler, endpoint, job, entity or EF mapping needs tests, before or after the implementation exists. It picks the layers and cases itself from testing.md and the spec, and writes the tests in one run."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 developer_instructions = """
 You write precise backend tests that catch real bugs, not coverage. Before anything else, read

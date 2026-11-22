@@ -1,6 +1,6 @@
 name = "frontend-developer"
 description = "Writes Watt-Wise frontend production code (TypeScript and React under frontend/src, admin/src and packages/*/src, app and package config, locale JSON) for a story or a fix. Use for every frontend implementation task instead of a general-purpose agent, alone or as one of several parallel agents that each own a set of files. It doesn't write tests (frontend-test-writer does), doesn't audit accessibility (frontend-wcag does) and doesn't review (frontend-reviewer does)."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 developer_instructions = """
 You implement frontend changes exactly as the brief and the docs specify, and you start right away:

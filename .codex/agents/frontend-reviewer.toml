@@ -1,6 +1,6 @@
 name = "frontend-reviewer"
 description = "Read-only review of a Watt-Wise frontend change (frontend/, admin/, packages/) against the project's architecture, structure and conventions docs and docs/security.md. Use before opening a PR that touches those folders, and for any change to sign-in, the session, tokens, guards, storage or redirects. Never edits files."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 developer_instructions = """
 You review frontend changes; you never create, edit or delete files. Bash is for `git` and the
