@@ -3,7 +3,7 @@ import DarkModeIcon from '@mui/icons-material/DarkModeRounded'
 import LightModeIcon from '@mui/icons-material/LightModeRounded'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
-import { useColorScheme } from '@mui/material/styles'
+import { styled, useColorScheme, useThemeProps } from '@mui/material/styles'
 import { useTranslation } from 'react-i18next'
 import IconMenu from '../menu/icon-menu'
 
@@ -15,7 +15,18 @@ const options = [
   { mode: 'system', labelKey: 'appearance.auto', Icon: BrightnessAutoIcon },
 ] as const satisfies readonly { mode: Mode; labelKey: string; Icon: unknown }[]
 
-const ModeSwitch = () => {
+export type ModeSwitchProps = Record<string, never>
+
+export type ModeSwitchClassKey = 'root'
+
+const name = 'WwModeSwitch'
+
+const ModeSwitchRoot = styled(IconMenu<Mode>, { name, slot: 'root' })<{
+  ownerState: ModeSwitchProps
+}>({})
+
+const ModeSwitch = (inProps: ModeSwitchProps) => {
+  const props = useThemeProps({ props: inProps, name })
   const { t } = useTranslation('common')
   const { mode, setMode } = useColorScheme()
 
@@ -26,7 +37,8 @@ const ModeSwitch = () => {
   const current = options.find((option) => option.mode === mode) ?? options[2]
 
   return (
-    <IconMenu
+    <ModeSwitchRoot
+      ownerState={props}
       label={t('appearance.label')}
       icon={<current.Icon />}
       options={options.map(({ mode: value, labelKey, Icon }) => ({

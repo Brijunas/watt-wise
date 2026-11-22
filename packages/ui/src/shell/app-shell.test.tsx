@@ -94,6 +94,14 @@ describe('AppShell', () => {
     expect(home.getAttribute('aria-current')).toBeNull()
   })
 
+  it('selects only the active item in the side list at 900 px', () => {
+    renderShell({ width: 900, activeKey: 'inbox' })
+    expect([
+      screen.getByRole('link', { name: 'Home page' }).classList.contains('Mui-selected'),
+      screen.getByRole('link', { name: 'Inbox page' }).classList.contains('Mui-selected'),
+    ]).toEqual([false, true])
+  })
+
   it.each([360, 900])('marks no item active without an active key at %i px', (width) => {
     renderShell({ width, activeKey: null })
     for (const link of screen.getAllByRole('link')) {

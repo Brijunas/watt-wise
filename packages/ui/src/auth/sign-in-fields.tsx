@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Stack from '@mui/material/Stack'
+import { styled, useThemeProps } from '@mui/material/styles'
 import type { SignInInput } from '@wattwise/core'
 import type { SubmitEventHandler, ReactNode } from 'react'
 import type { Control } from 'react-hook-form'
@@ -19,19 +20,23 @@ export interface SignInFieldsProps {
   forgotPasswordLink?: ReactNode
 }
 
+export type SignInFieldsClassKey = 'root'
+
+const name = 'WwSignInFields'
+
+const SignInFieldsRoot = styled('form', { name, slot: 'root' })<{
+  ownerState: SignInFieldsProps
+}>({})
+
 // The sign-in form's fields and button, shared by both apps. It holds no data fetching and no
 // routing: the page binds `control` and `onSubmit` and passes the links and errors in.
-const SignInFields = ({
-  control,
-  onSubmit,
-  busy = false,
-  error,
-  forgotPasswordLink,
-}: SignInFieldsProps) => {
+const SignInFields = (inProps: SignInFieldsProps) => {
+  const props = useThemeProps({ props: inProps, name })
+  const { control, onSubmit, busy = false, error, forgotPasswordLink } = props
   const { t } = useTranslation('auth')
 
   return (
-    <form noValidate onSubmit={onSubmit} aria-busy={busy}>
+    <SignInFieldsRoot ownerState={props} noValidate onSubmit={onSubmit} aria-busy={busy}>
       <Stack spacing={2}>
         <FormTextField
           control={control}
@@ -52,7 +57,7 @@ const SignInFields = ({
           {t('signIn.submit')}
         </Button>
       </Stack>
-    </form>
+    </SignInFieldsRoot>
   )
 }
 

@@ -67,24 +67,44 @@ describe('FormPasswordField', () => {
     expect(input.getAttribute('autocomplete')).toBe('new-password')
   })
 
-  it('toggles the visibility and its label in English', async () => {
-    const user = renderField()
-    const input = screen.getByLabelText<HTMLInputElement>('Password', { selector: 'input' })
+  it.each([
+    { lng: 'en', show: 'Show password', hide: 'Hide password' },
+    { lng: 'lt', show: 'Rodyti slaptažodį', hide: 'Slėpti slaptažodį' },
+  ] as const)(
+    'shows the text on $show and hides it again on $hide',
+    async ({ lng, show, hide }) => {
+      const user = renderField({ lng })
+      const input = screen.getByLabelText<HTMLInputElement>('Password', { selector: 'input' })
 
-    await user.click(screen.getByRole('button', { name: 'Show password' }))
-    expect(input.type).toBe('text')
+      await user.click(screen.getByRole('button', { name: show }))
+      expect(input.type).toBe('text')
 
-    await user.click(screen.getByRole('button', { name: 'Hide password' }))
-    expect(input.type).toBe('password')
+      await user.click(screen.getByRole('button', { name: hide }))
+      expect(input.type).toBe('password')
+    },
+  )
+
+  it.each([
+    { lng: 'en', show: 'Show password' },
+    { lng: 'lt', show: 'Rodyti slaptažodį' },
+  ] as const)('keeps the focus in the input when the toggle is pressed ($lng)', async (c) => {
+    const user = renderField({ lng: c.lng })
+    const input = screen.getByLabelText('Password', { selector: 'input' })
+    await user.click(input)
+
+    await user.click(screen.getByRole('button', { name: c.show }))
+
+    expect(document.activeElement).toBe(input)
   })
 
-  it('toggles the visibility and its label in Lithuanian', async () => {
-    const user = renderField({ lng: 'lt' })
-    const input = screen.getByLabelText<HTMLInputElement>('Password', { selector: 'input' })
-
-    await user.click(screen.getByRole('button', { name: 'Rodyti slaptažodį' }))
-    expect(input.type).toBe('text')
-    expect(screen.getByRole('button', { name: 'Slėpti slaptažodį' })).toBeTruthy()
+  it.each([
+    { lng: 'en', text: 'This field is required' },
+    { lng: 'lt', text: 'Privalomas laukas' },
+  ] as const)('describes the input by its error text in $lng', ({ lng, text }) => {
+    renderField({ lng, message: encodeValidationMessage('required') })
+    const input = screen.getByLabelText('Password', { selector: 'input' })
+    const describedBy = input.getAttribute('aria-describedby') ?? ''
+    expect(document.getElementById(describedBy)?.textContent).toBe(text)
   })
 
   it('shows the translated error message', () => {

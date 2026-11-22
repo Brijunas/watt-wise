@@ -97,11 +97,39 @@ describe('SignInFields', () => {
     expect(onValid).not.toHaveBeenCalled()
   })
 
+  it('renders no wrapper for the missing forgot-password link', () => {
+    renderFields()
+
+    const stack = screen.getByRole('button', { name: 'Sign in' }).closest('form')?.firstElementChild
+    // The two fields and the button.
+    expect(stack?.children).toHaveLength(3)
+  })
+
+  it('renders the link and the error next to the fields and the button', () => {
+    renderFields({ withSlots: true })
+
+    const stack = screen.getByRole('button', { name: 'Sign in' }).closest('form')?.firstElementChild
+    // The two fields, the link's wrapper, the error and the button.
+    expect(stack?.children).toHaveLength(5)
+  })
+
   it('shows the error and the forgot-password slots', () => {
     renderFields({ withSlots: true })
 
     expect(screen.getByText('Server said no')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Forgot link' })).toBeTruthy()
+  })
+
+  it.each([
+    { lng: 'en', busy: true, name: 'Sign in', expected: 'true' },
+    { lng: 'en', busy: false, name: 'Sign in', expected: 'false' },
+    { lng: 'lt', busy: true, name: 'Prisijungti', expected: 'true' },
+    { lng: 'lt', busy: false, name: 'Prisijungti', expected: 'false' },
+  ] as const)('sets aria-busy to $expected on the form when busy is $busy ($lng)', (c) => {
+    renderFields({ lng: c.lng, busy: c.busy })
+
+    const form = screen.getByRole('button', { name: new RegExp(c.name) }).closest('form')
+    expect(form?.getAttribute('aria-busy')).toBe(c.expected)
   })
 
   it('disables the button while busy', () => {

@@ -1,5 +1,5 @@
 import { createI18n } from '@wattwise/i18n'
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -110,6 +110,25 @@ describe('ModeSwitch', () => {
     expect(screen.getByRole('menuitemradio', { name: 'Dark' }).getAttribute('aria-checked')).toBe(
       'true',
     )
+  })
+
+  it.each([
+    { stored: 'light', icon: 'LightModeRoundedIcon' },
+    { stored: 'dark', icon: 'DarkModeRoundedIcon' },
+    { stored: 'system', icon: 'BrightnessAutoRoundedIcon' },
+  ])('shows the $icon on the button in $stored mode', ({ stored, icon }) => {
+    localStorage.setItem('wattwise-mode', stored)
+    renderSwitch()
+    expect(within(screen.getByRole('button')).queryAllByTestId(icon)).toHaveLength(1)
+  })
+
+  it('renders nothing outside a theme provider, where the mode is not known', () => {
+    const { container } = render(
+      <I18nextProvider i18n={createI18n({ lng: 'en' })}>
+        <ModeSwitch />
+      </I18nextProvider>,
+    )
+    expect(container.innerHTML).toBe('')
   })
 
   it('is translated to Lithuanian', async () => {

@@ -72,6 +72,26 @@ describe('IconMenu', () => {
     expect(onSelect).not.toHaveBeenCalled()
   })
 
+  it('returns focus to the button after Escape', async () => {
+    const { user } = renderMenu()
+    await user.click(screen.getByRole('button', { name: 'Pick' }))
+    await user.keyboard('{Escape}')
+
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pick' }))
+    })
+  })
+
+  it('returns focus to the button after a selection', async () => {
+    const { user } = renderMenu()
+    await user.click(screen.getByRole('button', { name: 'Pick' }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Beta' }))
+
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Pick' }))
+    })
+  })
+
   describe.each([
     { language: 'en', label: 'Appearance', names: ['Light', 'Dark'] },
     { language: 'lt', label: 'Išvaizda', names: ['Šviesi', 'Tamsi'] },

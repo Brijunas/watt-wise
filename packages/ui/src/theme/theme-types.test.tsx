@@ -1,5 +1,6 @@
 import Card from '@mui/material/Card'
 import Chip from '@mui/material/Chip'
+import type { Components } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import { expect, expectTypeOf, it } from 'vitest'
 import { theme } from './theme'
@@ -58,6 +59,141 @@ it('types the highlighted card and the two chip variants', () => {
   expectTypeOf(<Card variant="undeclared" />)
   // @ts-expect-error Chip rejects undeclared variants.
   expectTypeOf(<Chip variant="undeclared" />)
+})
+
+// Counts the entries so each case's object is used; the `@ts-expect-error` lines are the assertions.
+const countKeys = (components: Components) => Object.keys(components).length
+
+it('rejects an unknown slot key in a Ww component styleOverrides', () => {
+  expect(
+    countKeys({
+      WwAppShell: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error AppShell has no `sidebar` slot.
+          sidebar: {},
+        },
+      },
+      WwIconMenu: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error IconMenu has no `popup` slot.
+          popup: {},
+        },
+      },
+      WwLanguageSwitch: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error LanguageSwitch only has the root slot.
+          menu: {},
+        },
+      },
+      WwModeSwitch: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error ModeSwitch only has the root slot.
+          menu: {},
+        },
+      },
+      WwAccountPage: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error AccountPage has no `body` slot.
+          body: {},
+        },
+      },
+      WwNotFound: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error NotFound only has the root slot.
+          title: {},
+        },
+      },
+      WwPageLoading: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error PageLoading only has the root slot.
+          spinner: {},
+        },
+      },
+      WwUpdatePrompt: {
+        styleOverrides: {
+          root: {},
+          reloadButton: {},
+          // @ts-expect-error UpdatePrompt has no `laterButton` slot.
+          laterButton: {},
+        },
+      },
+      WwFormTextField: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error FormTextField only has the root slot.
+          input: {},
+        },
+      },
+      WwFormPasswordField: {
+        styleOverrides: {
+          root: {},
+          toggleButton: {},
+          // @ts-expect-error FormPasswordField has no `input` slot.
+          input: {},
+        },
+      },
+      WwSignInFields: {
+        styleOverrides: {
+          root: {},
+          // @ts-expect-error SignInFields only has the root slot.
+          submitButton: {},
+        },
+      },
+    }),
+  ).toBe(11)
+})
+
+it('rejects an unknown prop in a Ww component defaultProps', () => {
+  expect(
+    countKeys({
+      // @ts-expect-error AppShell has no `colour` prop.
+      WwAppShell: { defaultProps: { colour: 'red' } },
+      // @ts-expect-error IconMenu has no `colour` prop.
+      WwIconMenu: { defaultProps: { colour: 'red' } },
+      // @ts-expect-error AccountPage has no `colour` prop.
+      WwAccountPage: { defaultProps: { colour: 'red' } },
+      // @ts-expect-error NotFound has no `colour` prop.
+      WwNotFound: { defaultProps: { colour: 'red' } },
+      // @ts-expect-error UpdatePrompt has no `colour` prop.
+      WwUpdatePrompt: { defaultProps: { colour: 'red' } },
+      // @ts-expect-error FormTextField has no `colour` prop.
+      WwFormTextField: { defaultProps: { colour: 'red' } },
+      // @ts-expect-error FormPasswordField has no `colour` prop.
+      WwFormPasswordField: { defaultProps: { colour: 'red' } },
+      // @ts-expect-error SignInFields has no `colour` prop.
+      WwSignInFields: { defaultProps: { colour: 'red' } },
+    }),
+  ).toBe(8)
+})
+
+it('accepts a known prop with its type in a Ww component defaultProps', () => {
+  expect(
+    countKeys({
+      WwAccountPage: { defaultProps: { title: 'Title' } },
+      WwFormTextField: { defaultProps: { size: 'small', fullWidth: false } },
+      WwSignInFields: { defaultProps: { busy: true } },
+    }),
+  ).toBe(3)
+})
+
+it('rejects any key in the defaultProps of the components that take no props', () => {
+  expect(
+    countKeys({
+      // @ts-expect-error LanguageSwitch takes no props.
+      WwLanguageSwitch: { defaultProps: { label: 'x' } },
+      // @ts-expect-error ModeSwitch takes no props.
+      WwModeSwitch: { defaultProps: { label: 'x' } },
+      // @ts-expect-error PageLoading takes no props.
+      WwPageLoading: { defaultProps: { label: 'x' } },
+    }),
+  ).toBe(3)
 })
 
 it('accepts the wide breakpoint', () => {
