@@ -20,7 +20,7 @@ The user answers nothing during this run: no questions, no permission prompts, n
 - When the plan is written, ask `APPROVE PLAN <absolute path of the plan file>` through `orca orchestration ask` and end your turn. List the decisions you took that this spec doesn't settle, so the coordinator can overrule them. On "approved", call ExitPlanMode; the coordinator answers its menu with auto mode. On a revision request, revise the plan and ask again.
 - When something blocks you (commit signing or push fails, a merge is denied, a hook rejects a commit, a hard error), send `orca orchestration send --type escalation` naming the block, and stop. Don't work around it.
 - A change to a security control (secret scan, hooks, allowlists, deny rules, CORS, cookies) beyond what this spec settles is a question, not a fix.
-- `orca orchestration check` takes `--terminal <your handle>`, not `--from`.
+- Two handles exist: the coordinator's, which the dispatch names and which receives your `ask`, `send` and `worker_done`, and your own, `$ORCA_TERMINAL_HANDLE`. Pass your own as `--from` on every `orca orchestration` call; `orca orchestration check` takes it as `--terminal <your handle>`, not `--from`.
 - At the very end, send `worker_done` with `--outcome succeeded` when the PR is merged, `failed` otherwise, and `--report-path` set to your report.
 
 ## Rules for the story
@@ -55,6 +55,16 @@ The user answers nothing during this run: no questions, no permission prompts, n
    - LEARNINGS: improvements to CLAUDE.md, agents, skills or hooks.
 
    Don't commit learnings. The coordinator collects them for the whole run.
+
+5. **Working rules.**
+   - The coordinator has run `pnpm install` in this fresh worktree before you plan.
+   - Only agents get the MUI MCP. This session uses Context7 and the installed sources under `node_modules`.
+   - No agent has a browser on the running apps (the dev servers need the window), so a real-browser measurement lands in the coordinator's smoke check, and your plan gives computed values.
+   - Scratch output goes to this session's scratchpad, never to relative `../` paths outside the worktree.
+   - A twin of an answer the coordinator already gave is yours to decide and log in the report.
+   - A lint error about a new import: delete `.eslintcache` first.
+   - Keep the developer, test writer and reviewers alive across fix rounds and send each fix round with SendMessage; a fresh agent re-derives the context.
+   - While StrykerJS runs, reviewers read from a saved diff snapshot, because it mutates files in place.
 
 ## What is already settled for <story id>
 

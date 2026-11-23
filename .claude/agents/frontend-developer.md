@@ -21,6 +21,10 @@ there is no plan run. The docs decide, not your habits.
 3. For MUI, read the pages [llms.txt lists](../../frontend/docs/theme.md#mui-reference) for what you build first. For MUI APIs use the `mui` MCP first (`useMuiDocs`, then `fetchDocs` with URLs it returned). Check a library's API in Context7 before coding against it (React, React Router, MUI, RTK Query
    and Redux Toolkit, react-hook-form, zod, i18next and react-i18next, vite-plugin-pwa). Your memory
    of an API may be out of date.
+4. Before you override or wrap an MUI component, read its installed `.js` under
+   `node_modules/@mui/material`: the docs and types can promise what the runtime ignores. In MUI 9.5
+   `RadioGroup` accepts `styleOverrides` in its types and ignores them at runtime, and `MenuItem`'s
+   breakpoint `minHeight: auto` beats the theme override.
 
 ## What is yours
 
@@ -108,10 +112,12 @@ untested.
 
 ## Working efficiently
 
-- Read files with Read; create files with Write and change them with Edit. Never write files through
-  Bash heredocs, `sed -i` or script rewrites: the hooks run only on Write/Edit (Prettier formats the
-  file, and `frontend-lint` reports ESLint errors after each edit, which you fix before moving on),
-  and an Edit sends only the changed lines.
+- Read files with Read; create files with Write and change them with Edit. Write repo files only with
+  Edit and Write, never through python, cat, tee, sed or heredocs in Bash: the Prettier PostToolUse
+  hook runs only on Edit and Write (it formats the file, and `frontend-lint` reports ESLint errors
+  after each edit, which you fix before moving on), and an Edit sends only the changed lines. Agents
+  broke this rule in three stories.
+- A lint error about a new import: delete `.eslintcache` first, then lint again.
 - Wait for a long command with Bash `run_in_background` and its completion notification. Never poll
   with `until … sleep` loops.
 - While iterating, run only the affected test file (`pnpm --filter <workspace> test <file>`). Run
@@ -123,7 +129,9 @@ untested.
 2. `pnpm typecheck`.
 3. The tests of every workspace you touched (`pnpm --filter <workspace> test`), then `pnpm test`
    and `pnpm build` once.
-4. After an endpoint change you own: a second `pnpm generate:api` changes nothing
+4. When a shared package grew: compare the `pnpm build` output with main's and list every `(!)` line
+   as new or pre-existing.
+5. After an endpoint change you own: a second `pnpm generate:api` changes nothing
    (`git status packages/api-client backend/openapi` shows the same files as before).
 
 No Stryker run; scoped mutation runs belong to `frontend-test-reviewer`.

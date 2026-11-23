@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(gh pr merge:*)",
-      "Bash(op read \"op://Watt Wise Development/smoke-accounts/*\")"
+      "Bash(op read \"op://Watt Wise Development/smoke-accounts/*\")",
+      "mcp__mui__useMuiDocs",
+      "mcp__mui__fetchDocs"
     ],
     "deny": [
       "Read(.env)",
@@ -46,6 +48,16 @@
           {
             "type": "command",
             "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/frontend-generated-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/script-write-guard.sh\"",
             "timeout": 10
           }
         ]

@@ -39,7 +39,7 @@ A feature creates only the subfolders it needs. A subfolder that would hold one 
 ## Features
 
 - **One feature per route section:** the pages under one route prefix belong together. The backend's endpoint groups don't decide it: the sessions endpoints sit in the `/api/v1/auth` group, yet the devices pages are their own feature. A demo or a single page is a feature like any other.
-- **Expected first features.** `frontend`: `accounts` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `plans`, `consumption`. `admin`: `accounts` (sign-in and the no-access page), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](../../docs/technical.md#admin-application)).
+- **Expected first features.** `frontend`: `accounts` (sign-up, confirmation, sign-in, password reset and change), `devices` (sessions), `settings` (the Settings page, linking to change password and devices), `plans`, `consumption`. `admin`: `accounts` (sign-in and the no-access page), `catalog-review`. Jobs are watched in the Hangfire dashboard, not in the admin app ([technical.md](../../docs/technical.md#admin-application)).
 - **Shared sign-in pieces.** Both apps use `SignInFields`, `AccountPage`, `useErrorText` and `useMounted` from `@wattwise/ui`, and `readReturnTo` (the return-to check) from `@wattwise/core`.
 - **Worked example (S4.9 sign-in):**
 
@@ -62,6 +62,7 @@ frontend/src/
 │   ├── utils/read-sign-in-state.ts         router state -> notice; the path check is readReturnTo (core)
 │   └── locales/                            en.json, lt.json: the `accounts` namespace
 ├── features/devices/                       the devices page
+├── features/settings/                      the Settings page: links to change password and devices
 └── testing/mocks/handlers/auth.ts          shared by the accounts tests and the route tests (its helpers come from `@wattwise/core/testing`)
 ```
 

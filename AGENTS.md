@@ -53,6 +53,8 @@ A Claude session may start you as an Orca worker (`gpt-6.2-sol`, medium effort) 
 - Edit, stage and commit nothing, and run no Stryker. Bash is for `git` and the `pnpm` checks; Claude reports the `dotnet` build and test results to you.
 - Report through `worker_done` in the reviewer's Output format: findings most severe first, then "Questions", then the build and test line. Claude sends each finding to the agent that owns the file.
 - When Claude asks for a re-review after the fixes, review the new diff the same way and report again in the same format. Stay open until Claude releases you.
+- Claude repeats "end with `worker_done`" in every follow-up to you, and checks that the model shown in your session is the one it passed with `--model` (a worker once showed GPT-6-Luna after starting with `gpt-6.2-sol`).
+- When the review covers a hand-written rule (such as a lint rule), the task names what is out of scope; stay inside it, so the review doesn't loop on ever-narrower edge cases.
 
 ## Codex Test Writing
 
@@ -64,3 +66,4 @@ A Claude session may start you as an Orca worker (`gpt-6.2-astra`, medium effort
 - Write only tests: under `backend/tests/`, and in `frontend/`, `admin/` and `packages/` the `*.test.*` files and `testing/` folders (MSW handlers, test-utils). Never change production code or docs; report a production bug instead. Stage and commit nothing, and run no Stryker (Claude's `backend-test-reviewer` and `frontend-test-reviewer` run it).
 - Report through `worker_done` in the test writer's report format: files added, the case table with its status column, the test output Claude sent you and any production bug found.
 - When Claude sends the test reviewer's findings, fix them the same way and report again in the same format. Stay open until Claude releases you.
+- Claude repeats "end with `worker_done`" in every follow-up to you, because follow-ups were often left without it. Every follow-up ends with `worker_done`, even a one-line fix.

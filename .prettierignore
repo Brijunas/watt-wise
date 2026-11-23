@@ -4,6 +4,7 @@ backend/**/obj/
 backend/**/TestResults/
 backend/openapi/
 .claude/worktrees/
+.claude/settings.local.json
 **/reports/mutation/
 **/.stryker-tmp/
 **/stryker-setup-*.js
