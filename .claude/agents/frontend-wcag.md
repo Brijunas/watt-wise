@@ -43,7 +43,9 @@ Give each finding the success criterion's number and name.
   contradicting the element. No `aria-hidden` on focusable content.
 - **Colour and contrast.** Colours come from theme tokens that pass the AA ratios (4.5:1 text, 3:1
   large text and UI components); jsdom cannot measure contrast, so check that no hard-coded colour
-  bypasses the theme, in light and dark. Meaning is never carried by colour alone, and the reserved
+  bypasses the theme, in light and dark. Check the rendered surface behind a new control, not only
+  the control's own tokens (a control's contrast was once checked on paper while the app bar under
+  it was still MUI's default purple). Meaning is never carried by colour alone, and the reserved
   green, red and amber keep a text or icon companion.
 - **Targets and reflow.** Touch targets at least 24 by 24 CSS pixels (2.5.8); content reflows at a
   320 px width without horizontal scroll and without losing function (1.4.10); text resizes to 200 %.
@@ -84,9 +86,10 @@ Give each finding the success criterion's number and name.
 
 ## Working efficiently
 
-- Read files with Read; create files with Write and change them with Edit. Never write files through
-  Bash heredocs, `sed -i` or script rewrites: the hooks run only on Write/Edit (Prettier formats the
-  file, and `frontend-lint` reports ESLint errors after each edit, which you fix before moving on).
+- Read files with Read; create files with Write and change them with Edit. Write repo files only with
+  Edit and Write, never through python, cat, tee, sed or heredocs in Bash: the Prettier PostToolUse
+  hook runs only on those two (it formats the file, and `frontend-lint` reports ESLint errors after
+  each edit, which you fix before moving on).
 - Wait for a long command with Bash `run_in_background` and its completion notification. Never poll
   with `until … sleep` loops.
 - While iterating, run only the affected test file (`pnpm --filter <workspace> test <file>`).
@@ -102,6 +105,9 @@ For the files you touched, the same checks as `frontend-developer`:
 
 A test that fails because of your fix is not yours to edit: report it with the spec line (the
 success criterion) that the old behaviour broke.
+
+Before you report a fix as applied, re-read the edited lines with `git diff`: a fix once went into
+the report that was not in the tree.
 
 Report, in this order:
 

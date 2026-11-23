@@ -16,6 +16,7 @@ Tell the user before each step that runs `op`: they approve it in the 1Password 
 3. Seed the fixed accounts: `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- seed smoke-accounts`. It is idempotent: both accounts exist, confirmed, unlocked, with the 1Password password and the right role.
 4. Start the Api, the Jobs host (only when a flow sends email) and the dev servers the flows need (`frontend`, `admin`), each through `op run` in the background.
 5. Read URLs with `op read "op://Watt Wise Development/<item>/url"`, or in a window from the variables of the matching file.
+6. Before the walk, on each app's origin unregister stale service workers and clear caches, localStorage and cookies (`browser_evaluate`): a previous run's app can be served from the old service worker.
 
 ## 2. Accounts
 
@@ -34,6 +35,9 @@ Mobile first: the Playwright `browser_resize` tool to 360px wide, then 900px, th
 - The one expected console error is the 401 from `/api/v1/auth/refresh` that each app makes on start without a cookie ("Failed to load resource ... 401"); it is also expected in the network check. Any other console error fails the flow.
 - Each app keeps its own language choice (per origin): switch the language in each app separately.
 
+- The Playwright MCP browser reports borders and outlines at 0.75x their CSS px (a 1px border reads 0.75px): judge widths by ratio.
+- A theme or layout story also measures computed styles with `browser_evaluate` at three widths (for example 360, 900 and 1280), because jsdom can't see the cascade.
+
 Save screenshots as `.playwright-mcp/smoke/<flow>-<width>-<lang>.png` (the Playwright MCP writes only inside the repo; `.playwright-mcp/` is git-ignored).
 
 ## 4. Report
@@ -42,4 +46,4 @@ A table flow x width x language -> pass or fail, with the failing detail (screen
 
 ## 5. Clean up
 
-Stop every process this check started and close the browser: `pkill -P` on the recorded `op run` PIDs, then on the dotnet and vite children. Check that the ports are closed (the Api and the app dev servers; read them from the items' URLs, e.g. 5062, 5173, 5174). Leave the Development stack running.
+Stop every process this check started and close the browser: `pkill -P` on the recorded `op run` PIDs, then on the dotnet and vite children. Stop processes by PID or port, never with a broad `pkill -f`: it can kill your own shell. Check that the ports are closed (the Api and the app dev servers; read them from the items' URLs, e.g. 5062, 5173, 5174). Leave the Development stack running.

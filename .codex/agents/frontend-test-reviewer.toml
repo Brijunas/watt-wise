@@ -63,17 +63,22 @@ If your sandbox blocks `pnpm` (or Vitest, ESLint, Stryker), say so and let Claud
 
 Stryker is the main check of whether the tests are valid: a surviving mutant in changed code means a
 test is missing or weak. Run it on every review, always scoped, as "Mutation testing" in
-[testing.md](../../frontend/docs/testing.md) says. The form is:
-
-`pnpm --filter <workspace> exec stryker run <path to the root stryker.config.json> --mutate <changed files>`
+[testing.md](../../frontend/docs/testing.md#mutation-testing) says (command, `TZ=UTC`, `@wattwise/ui`
+options, several files as one comma-separated `--mutate "a,b"`, recovery after a killed run).
 
 - One workspace per run, from the repo root, for each workspace whose production code changed.
   `--mutate` names the changed source files (relative to the workspace), not the tests.
+- The run mutates the files in place: read files after the run, never during it, and expect nobody
+  else to run tests, lint or `format:check` meanwhile. You never write, the restore included: after
+  a killed run, report that the tree has instrumented files. The orchestrator restores them from
+  `<workspace>/.stryker-tmp/backup-*/` and deletes `.stryker-tmp`.
 - A fresh output folder for every run. A run that reports 0 % with no killed mutants is a bad run:
   rerun it from a clean folder.
 - Never a whole-workspace run; the orchestrator runs those.
 - A surviving mutant in changed code is should-fix unless it is equivalent (the mutation can't change
   observable behavior). Name the equivalence and explain it; "hard to test" is not equivalence.
+- A surviving mutant on a line the story didn't touch is old debt: mark it "old debt", so the
+  orchestrator can fix it now or log it.
 
 List the surviving mutants. If Stryker can't run, say so, and list by hand the mutations of the
 changed production code that no test would catch.

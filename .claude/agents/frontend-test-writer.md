@@ -70,7 +70,9 @@ vitest-axe, react-i18next); your memory of an API may be out of date.
   its markup, gets a `vitest-axe` `toHaveNoViolations` test. jsdom cannot check contrast, so don't
   try; add the focus and announcement cases `accessibility.md` names.
 - **Races.** Every awaited session or API call gets a `createGate` test: the answer arrives late,
-  after navigation, unmount or sign-out, and changes nothing.
+  after navigation, unmount or sign-out, and changes nothing. Every mounted-guard gets its own
+  late-answer test: StrykerJS doesn't remove a sub-condition such as `|| !mountedRef.current`, so
+  only a test that unmounts before the answer pins it.
 - **Errors.** Each ProblemDetails `code` the UI maps (and the network and generic fallbacks) shows
   its localized message, built with `problemResponse`.
 - **Characterization values.** When the spec and docs are silent and the expected value comes only
@@ -82,9 +84,10 @@ vitest-axe, react-i18next); your memory of an API may be out of date.
 
 ## Working efficiently
 
-- Read files with Read; create files with Write and change them with Edit. Never write files through
-  Bash (`cat > … <<EOF`, `sed -i`, script rewrites): the Prettier and lint hooks run only on
-  Write/Edit, and an Edit sends only the changed lines. Use Bash for `grep`, `ls` and `pnpm`.
+- Read files with Read; create files with Write and change them with Edit. Write repo files only with
+  Edit and Write, never through python, cat, tee, sed or heredocs in Bash: the Prettier PostToolUse
+  hook runs only on Edit and Write, and an Edit sends only the changed lines. Agents broke this rule
+  in three stories. Use Bash for `grep`, `ls` and `pnpm`.
 - Wait for a long command (a whole workspace's suite) by starting it with Bash `run_in_background`
   and acting on its completion notification. Never poll with `until … sleep` loops or repeated
   `tail`: each poll is a turn that re-sends the whole context.
@@ -100,5 +103,7 @@ vitest-axe, react-i18next); your memory of an API may be out of date.
 2. No Stryker run: mutation testing is the reviewer's. When resumed with surviving mutants from the
    review, add a test that kills each one or explain why it is equivalent. Each test in the table
    still names the bug it catches.
-3. Report: files added, the case table with a status column, the test output, any production bugs
-   found, and `characterization` rows left out.
+3. Delete any temporary debug test file before reporting.
+4. Report: files added, the case table with a status column, the test output, which new tests passed
+   on their first run ("first run green"), any production bugs found, and `characterization` rows
+   left out.
