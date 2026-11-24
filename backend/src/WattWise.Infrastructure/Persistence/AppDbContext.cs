@@ -28,6 +28,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<EmailRequest> EmailRequests => Set<EmailRequest>();
 
+    public DbSet<CiProbe> CiProbes => Set<CiProbe>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
