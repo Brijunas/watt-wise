@@ -111,6 +111,23 @@ for path in /etc/nginx /etc/nginx/conf.d /etc/nginx/templates /docker-entrypoint
 done
 pass "the runtime user can't write the config, the templates, the guard, the html root or their folders"
 
+# Nothing the runtime user serves or runs is writable by it. The built files keep their source
+# modes (no --chmod), so a world-writable file in public/ would otherwise ship writable.
+writable="$(docker run --rm --entrypoint sh "$image" -c \
+  'find /usr/share/nginx/html /etc/nginx /docker-entrypoint.d -writable 2>/dev/null; true')"
+[ -z "$writable" ] || fail "the runtime user can write: $writable"
+pass "the runtime user can write nothing under the html root, /etc/nginx or /docker-entrypoint.d"
+
+# The runtime user can read every served file and enter every directory (a stripped x bit on a
+# directory makes nginx answer 404 for what is inside). `-readable` and `-executable` are GNU find.
+unreadable="$(docker run --rm --entrypoint sh "$image" -c \
+  'dirs="/usr/share/nginx/html /etc/nginx /docker-entrypoint.d"; find $dirs ! -readable 2>/dev/null; find $dirs -type d ! -executable 2>/dev/null; true')"
+if [ -n "$unreadable" ]; then
+  docker run --rm --entrypoint ls "$image" -laR /usr/share/nginx/html /etc/nginx >&2 || true
+  fail "the runtime user can't read or enter: $unreadable"
+fi
+pass "the runtime user can read every served file and enter every directory"
+
 # 4. Two containers of one image, two APIs.
 start web-a "$api_a"
 start web-b "$api_b"
@@ -170,6 +187,10 @@ expect_eq "a missing hashed asset" 404 "$status"
 asset="$(grep -oE '/assets/[^"]+\.js' "$work/index.html" | head -n 1)"
 [ -n "$asset" ] || fail "index.html names no hashed script"
 get "$a" "$asset"
+if [ "$status" != 200 ]; then
+  docker exec web-a ls -la /usr/share/nginx/html /usr/share/nginx/html/assets >&2 || true
+  docker logs web-a >&2 || true
+fi
 expect_eq "$asset status" 200 "$status"
 expect_eq "$asset cache" "public, max-age=31536000, immutable" "$(header cache-control)"
 get "$a" /sw.js

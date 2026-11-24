@@ -39,12 +39,16 @@ USER root
 RUN chown -R root:root /etc/nginx \
     && chmod -R go-w /etc/nginx \
     && rm -rf /usr/share/nginx/html/* \
+    && install -d -o root -g root -m 0755 /etc/nginx/templates \
     && install -d -o 101 -g 101 -m 0755 /run/wattwise
-COPY --from=build --chown=root:root --chmod=a=rX /src/out/html/ /usr/share/nginx/html/
-COPY --from=build --chown=root:root --chmod=a=rX /src/out/index.html.template /etc/nginx/templates/index.html.template
-COPY --chown=root:root --chmod=a=rX deploy/nginx/frontend/config.js.template /etc/nginx/templates/config.js.template
-COPY --chown=root:root --chmod=a=rX deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY --chown=root:root --chmod=a=rx deploy/nginx/05-check-settings.sh /docker-entrypoint.d/05-check-settings.sh
+# The built files keep the build's modes (644 and 755): a symbolic --chmod on the directory copy
+# was observed to strip the directories' x bit on the CI runner's BuildKit. An octal
+# --chmod also applies to the parent directories a COPY creates, so templates/ is made above.
+COPY --from=build --chown=root:root /src/out/html/ /usr/share/nginx/html/
+COPY --from=build --chown=root:root --chmod=0644 /src/out/index.html.template /etc/nginx/templates/index.html.template
+COPY --chown=root:root --chmod=0644 deploy/nginx/frontend/config.js.template /etc/nginx/templates/config.js.template
+COPY --chown=root:root --chmod=0644 deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --chown=root:root --chmod=0755 deploy/nginx/05-check-settings.sh /docker-entrypoint.d/05-check-settings.sh
 # The guard checks WATTWISE_SETTINGS; envsubst renders only these names and nothing else in the files.
 ENV WATTWISE_SETTINGS="API_BASE_URL APP_URL" \
     NGINX_ENVSUBST_OUTPUT_DIR=/run/wattwise \
