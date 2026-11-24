@@ -1,5 +1,31 @@
 # workflows
 
-GitHub Actions workflows for Watt-Wise. The pull request workflow builds, lints and tests all apps. Pushes to `main` and `dev` build, sign and publish the Docker images to GitHub Container Registry and move a deploy tag; the server pulls from there, and no workflow connects to it. See [technical.md](../../docs/technical.md).
+GitHub Actions workflows for Watt-Wise. The pull request workflow checks every pull request to `main`. Pushes to `main` and `dev` build, sign and publish the Docker images to GitHub Container Registry and move a deploy tag; the server pulls from there, and no workflow connects to it. See [technical.md](../../docs/technical.md); pushes and publishing come in E5C ([epics.md](../../docs/epics.md)). GitHub Actions only reads `.yml` and `.yaml` files here, so this README is ignored.
 
-There are no workflows yet. They are created in E5B (the pull request workflow) and E5C (publishing and deploys) (see [epics.md](../../docs/epics.md)). GitHub Actions only reads `.yml` and `.yaml` files here, so this README is ignored.
+The rules every workflow follows are in "CI and contributions" in [security.md](../../docs/security.md#ci-and-contributions). Tools come from the root `mise.toml` through `jdx/mise-action`, each job installing only what it needs.
+
+## Pull request workflow
+
+`pull-request.yml` runs on every pull request to `main`, and a new push cancels the run still in progress.
+
+| Job          | What it runs                                                                                                                                                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `secrets`    | Betterleaks over the pull request's commits, with the same `.betterleaks.toml` as the local hook (which can be skipped; this can't).                                                                                                                    |
+| `workflows`  | zizmor over `.github/`, with the read-only token so its online audits run (locally: [development.md](../../docs/development.md#checks)).                                                                                                                |
+| `js`         | `pnpm lint`, `format:check`, `typecheck`, `test` and `build`; it fails when the build prints a `(!)` warning.                                                                                                                                           |
+| `dotnet`     | `dotnet build` with warnings as errors ([conventions.md](../../backend/docs/conventions.md)), `dotnet format --verify-no-changes`, `dotnet test` (the integration tests use Docker on the runner) and `dotnet ef migrations has-pending-model-changes`. |
+| `api-client` | `pnpm generate:api`, then fails if it left a diff: the committed OpenAPI document and API client must be current.                                                                                                                                       |
+| `ci`         | Needs every job above and fails unless each one succeeded (a failed, cancelled or skipped job fails it). It is the only required check of `main`'s ruleset, so it is the one status a pull request waits for.                                           |
+
+To add a job, add it to the workflow and to `ci`'s `needs`; the ruleset needs no change. S5B.2 and S5B.3 do this for their image builds.
+
+## Repository settings
+
+Each setting backs a rule in [security.md](../../docs/security.md#ci-and-contributions). The commands are read-only; all were verified on 2026-11-24.
+
+| Rule                          | Setting checked                                                                           | Check                                                                          |
+| ----------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Pinned actions                | Actions enabled, `sha_pinning_required: true`                                             | `gh api repos/{owner}/{repo}/actions/permissions`                              |
+| Least privilege               | Default token read-only, `can_approve_pull_request_reviews: false`                        | `gh api repos/{owner}/{repo}/actions/permissions/workflow`                     |
+| Fork pull requests            | Approval policy `all_external_contributors`                                               | `gh api repos/{owner}/{repo}/actions/permissions/fork-pr-contributor-approval` |
+| Signed commits, required `ci` | `main` ruleset: signed commits, pull requests, `ci` from GitHub Actions, no bypass actors | `gh api repos/{owner}/{repo}/rulesets`, then `.../rulesets/<id>`               |
