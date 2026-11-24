@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+# Sets up a Fedora machine for Watt-Wise from a fresh `git clone`: the system packages mise, .NET and
+# the 1Password CLI need, the tool versions in mise.toml, the JS and .NET dependencies, the Development
+# service-account token on a headless machine, and deploy/.env. It is safe to rerun: every step prints
+# `setup: <step>: unchanged|changed|skipped`, and a rerun changes only what is missing or
+# out of date (a moved lts/latest in mise.toml installs the newer release). What it does and why is
+# in docs/setup.md. Run it as your own user (it uses sudo only for dnf, and only for what is missing).
+set -euo pipefail
+# Tracing (`bash -x ./setup`, SHELLOPTS) would print the token when it is read and written, so it is
+# switched off for the whole script.
+{ set +x; } 2> /dev/null
+
+usage() {
+  cat << 'EOF'
+Usage: ./setup [--headless] [--skip-secrets]
+
+  --headless       Use the service-account token even when the 1Password desktop app is installed.
+  --skip-secrets   Skip the token and deploy/.env steps (CI, or a machine without vault access).
+  -h, --help       Show this help.
+EOF
+}
+
+force_headless=false
+skip_secrets=false
+for arg in "$@"; do
+  case "$arg" in
+    --headless) force_headless=true ;;
+    --skip-secrets) skip_secrets=true ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "setup: unknown option: $arg" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+step() { printf 'setup: %s: %s\n' "$1" "$2"; }
+die() {
+  echo "setup: $*" >&2
+  exit 1
+}
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$root"
+
+work=""
+secret_tmp=""
+cleanup() {
+  if [ -n "$work" ]; then rm -rf "$work"; fi
+  if [ -n "$secret_tmp" ]; then rm -f "$secret_tmp"; fi
+}
+trap cleanup EXIT
+work="$(mktemp -d)"
+
+# --- 1. Preflight -------------------------------------------------------------------------------
+
+# shellcheck disable=SC1091
+os_id="$( (. /etc/os-release 2> /dev/null && printf '%s' "${ID:-}") || true)"
+if [ "$os_id" != fedora ]; then
+  die "this installer supports Fedora only. On another distribution, follow the manual steps in docs/setup.md."
+fi
+if [ "$(id -u)" -eq 0 ]; then
+  die "run as your own user, not as root. setup uses sudo for dnf."
+fi
+[ -n "${HOME:-}" ] || die "HOME is not set."
+command -v git > /dev/null 2>&1 || die "git is required. Install it with 'sudo dnf install git'."
+if ! docker compose version > /dev/null 2>&1; then
+  die "'docker compose version' fails. Install Docker Engine with the Compose plugin; if the daemon is installed, add yourself to the docker group (sudo usermod -aG docker \$USER) and log in again."
+fi
+step preflight unchanged
+
+# --- 2. Mode ------------------------------------------------------------------------------------
+
+# The token file's existence is never the signal: a machine with the desktop app stays on it.
+if [ "$force_headless" = false ] && { [ -e /opt/1Password/1password ] || command -v 1password > /dev/null 2>&1; }; then
+  mode=desktop
+else
+  mode=headless
+fi
+echo "setup: mode: $mode"
+
+# --- 3. System packages -------------------------------------------------------------------------
+
+run_sudo() {
+  command -v sudo > /dev/null 2>&1 || die "sudo is needed to install: $*. Install it or run those commands as root."
+  sudo "$@"
+}
+
+# Installs a repo file into /etc/yum.repos.d unless it exists already.
+add_repo_file() { # name, source file
+  [ -e "/etc/yum.repos.d/$1.repo" ] || run_sudo install -m 644 "$2" "/etc/yum.repos.d/$1.repo"
+}
+
+packages_changed=false
+
+if ! rpm -q libicu libatomic > /dev/null 2>&1; then
+  run_sudo dnf -y install libicu libatomic # .NET needs ICU, Node needs libatomic
+  packages_changed=true
+fi
+
+if ! command -v mise > /dev/null 2>&1; then
+  if [ ! -e /etc/yum.repos.d/mise.repo ]; then
+    curl -fsSL -o "$work/mise.repo" https://mise.jdx.dev/rpm/mise.repo
+    if ! grep -qx 'gpgcheck=1' "$work/mise.repo" || ! grep -q '^gpgkey=.' "$work/mise.repo"; then
+      die "mise's repo file has no gpgcheck=1 and gpgkey= lines; refusing to install an unsigned repo."
+    fi
+    add_repo_file mise "$work/mise.repo"
+  fi
+  run_sudo dnf -y install mise
+  packages_changed=true
+fi
+
+if ! command -v op > /dev/null 2>&1; then
+  if [ ! -e /etc/yum.repos.d/1password.repo ]; then
+    run_sudo rpm --import https://downloads.1password.com/linux/keys/1password.asc
+    # shellcheck disable=SC2016
+    printf '%s\n' \
+      '[1password]' \
+      'name=1Password Stable Channel' \
+      'baseurl=https://downloads.1password.com/linux/rpm/stable/$basearch' \
+      'enabled=1' \
+      'gpgcheck=1' \
+      'repo_gpgcheck=1' \
+      'gpgkey=https://downloads.1password.com/linux/keys/1password.asc' > "$work/1password.repo"
+    add_repo_file 1password "$work/1password.repo"
+  fi
+  run_sudo dnf -y install 1password-cli
+  packages_changed=true
+fi
+
+if [ "$packages_changed" = true ]; then step packages changed; else step packages unchanged; fi
+
+# --- 4. Shell -----------------------------------------------------------------------------------
+
+# Appends a line to a file unless that exact line is there.
+append_line() { # file, line
+  if grep -qxF -- "$2" "$1" 2> /dev/null; then return 1; fi
+  touch "$1"
+  if [ -s "$1" ] && [ -n "$(tail -c1 "$1")" ]; then printf '\n' >> "$1"; fi
+  printf '%s\n' "$2" >> "$1"
+}
+
+# Activation counts as present in ~/.bashrc or in any file under ~/.bashrc.d/ (vidar keeps it there).
+if grep -qsE '^[[:space:]]*[^#[:space:]][^#]*mise[[:space:]]+activate' "$HOME/.bashrc" "$HOME"/.bashrc.d/*; then
+  step shell unchanged
+else
+  # shellcheck disable=SC2016
+  append_line "$HOME/.bashrc" 'eval "$(mise activate bash)"'
+  step shell changed
+fi
+
+# --- 5. Tools -----------------------------------------------------------------------------------
+
+mise trust "$root/mise.toml"
+tools_before="$(mise ls --installed 2> /dev/null || true)"
+mise install
+tools_after="$(mise ls --installed 2> /dev/null || true)"
+if [ "$tools_before" = "$tools_after" ]; then step tools unchanged; else step tools changed; fi
+
+# --- 6. Dependencies ----------------------------------------------------------------------------
+
+# pnpm's `prepare` script installs the Husky hooks.
+mise exec -- pnpm install --frozen-lockfile 2>&1 | tee "$work/pnpm.log"
+# pnpm prints a "Packages: +N -M" line only when it adds or removes packages.
+if grep -qE '^Packages: [+-]' "$work/pnpm.log"; then step pnpm changed; else step pnpm unchanged; fi
+
+nuget_dir="${NUGET_PACKAGES:-$HOME/.nuget/packages}"
+nuget_state() { { find "$nuget_dir" -mindepth 2 -maxdepth 2 2> /dev/null || true; } | sort | cksum; }
+nuget_before="$(nuget_state)"
+mise exec -- dotnet tool restore
+if [ "$nuget_before" = "$(nuget_state)" ]; then step dotnet-tools unchanged; else step dotnet-tools changed; fi
+
+# --- 7. Token (headless) and 8. deploy/.env -----------------------------------------------------
+
+token_dir="${XDG_CONFIG_HOME:-$HOME/.config}/watt-wise"
+token_file="$token_dir/op-service-account-token"
+
+# Reads the token from the terminal, never from argv or the environment, and stores it mode 600
+# in a mode 700 folder through a temp file and mv.
+prompt_for_token() {
+  local token=""
+  if ! { : < /dev/tty; } 2> /dev/null; then
+    die "the token file $token_file is missing and there is no terminal to ask for it. Run ./setup again in a terminal, or put the token there yourself (mode 600)."
+  fi
+  IFS= read -rs -p 'Paste the Development service-account token (hidden): ' token < /dev/tty
+  echo >&2
+  token="${token//[[:space:]]/}"
+  case "$token" in
+    '') die "no token entered." ;;
+    ops_*) ;;
+    *) die "that is not a service-account token (they start with ops_)." ;;
+  esac
+  (umask 077 && mkdir -p "$token_dir")
+  secret_tmp="$(umask 077 && mktemp "$token_dir/.token.XXXXXX")"
+  printf '%s' "$token" > "$secret_tmp"
+  token=""
+  mv -f "$secret_tmp" "$token_file"
+  secret_tmp=""
+}
+
+setup_token() {
+  local changed=false
+  # The folder is mode 700 whether or not the file exists yet; another user's folder stops setup.
+  if [ -e "$token_dir" ]; then
+    [ "$(stat -c %u "$token_dir")" = "$(id -u)" ] || die "$token_dir belongs to another user. Fix its owner or remove it."
+    if [ "$(stat -c %a "$token_dir")" != 700 ]; then
+      chmod 700 "$token_dir"
+      changed=true
+    fi
+  fi
+  if [ ! -e "$token_file" ]; then
+    prompt_for_token
+    changed=true
+  else
+    [ "$(stat -c %u "$token_file")" = "$(id -u)" ] || die "$token_file belongs to another user. Fix its owner or remove it."
+    if [ "$(stat -c %a "$token_file")" != 600 ]; then
+      chmod 600 "$token_file"
+      changed=true
+    fi
+  fi
+  # shellcheck disable=SC2016
+  if append_line "$HOME/.bashrc" "[ -r \"$token_file\" ] && export OP_SERVICE_ACCOUNT_TOKEN=\"\$(cat \"$token_file\")\""; then
+    changed=true
+  fi
+  OP_SERVICE_ACCOUNT_TOKEN="$(< "$token_file")"
+  export OP_SERVICE_ACCOUNT_TOKEN
+  if [ "$changed" = true ]; then step token changed; else step token unchanged; fi
+}
+
+render_env() {
+  local target="$root/deploy/.env" hint
+  if [ "$mode" = desktop ]; then
+    hint="turn on the CLI integration in the 1Password desktop app (Settings, Developer) and check that you can read the Watt Wise Development vault."
+  else
+    hint="check the service-account token in $token_file."
+  fi
+  secret_tmp="$(mktemp "$root/deploy/.env.XXXXXX")"
+  if ! op inject -f -i "$root/deploy/development/compose.settings.tpl" -o "$secret_tmp" > /dev/null; then
+    die "op inject failed: $hint"
+  fi
+  if [ -f "$target" ] && cmp -s "$secret_tmp" "$target"; then
+    rm -f "$secret_tmp"
+    step deploy/.env unchanged
+  else
+    mv -f "$secret_tmp" "$target"
+    step deploy/.env changed
+  fi
+  secret_tmp=""
+}
+
+if [ "$skip_secrets" = true ]; then
+  step token "skipped (--skip-secrets)"
+  step deploy/.env "skipped (--skip-secrets)"
+else
+  if [ "$mode" = headless ]; then
+    setup_token
+  else
+    step token "skipped (desktop app)"
+  fi
+  render_env
+fi
+
+# --- 9. Summary ---------------------------------------------------------------------------------
+
+echo "setup: done. Open a new terminal (or run 'source ~/.bashrc') so the tools are on PATH."
+echo "setup: next: the first database start is step 5 of docs/setup.md."

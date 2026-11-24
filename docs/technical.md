@@ -14,6 +14,7 @@ Companion to [product.md](product.md). This document records the architecture of
 ```
 watt-wise/
 ├── docs/                      product.md, technical.md, security.md, epics.md, implemented.md, setup.md, development.md, known-issues.md
+├── setup                      installer for a new Fedora machine (docs/setup.md)
 ├── deploy/                    docker-compose.*.yml, per-environment reference files, docs
 ├── .github/workflows/         CI/CD
 ├── pnpm-workspace.yaml        frontend, admin, packages/*

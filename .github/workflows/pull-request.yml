@@ -252,10 +252,28 @@ jobs:
         if: matrix.kind == 'web'
         run: bash .github/scripts/check-web-image.sh image-runtime "$APP"
 
+  setup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Runs ./setup twice on a throwaway Fedora container that has only git and the Docker CLI. The
+      # token only lifts mise's GitHub rate limit inside the container.
+      - name: Check ./setup on a clean Fedora
+        env:
+          # The job's read-only, ephemeral token, passed into the container by name only, to lift
+          # mise's GitHub API rate limit.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/check-setup.sh
+
   # The one check main's ruleset requires. It has no name: key, so its check context is exactly "ci".
   # `images` holds the backend and the frontend and admin image builds (one matrix entry each).
   ci:
-    needs: [secrets, workflows, js, dotnet, api-client, images]
+    needs: [secrets, workflows, js, dotnet, api-client, images, setup]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
