@@ -2,7 +2,7 @@
 # Stages and base images: deploy/docs/images.md.
 
 # restore: the SDK, the packages of the project closure, the folders the later stages write to.
-FROM mcr.microsoft.com/dotnet/sdk:11.0.100-resolute AS restore
+FROM mcr.microsoft.com/dotnet/sdk:11.0.999-does-not-exist AS restore
 ENV NUGET_PACKAGES=/nuget
 RUN mkdir /src /nuget /out && chown $APP_UID:$APP_UID /src /nuget /out
 USER $APP_UID
