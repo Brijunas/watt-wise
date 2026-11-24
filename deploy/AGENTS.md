@@ -6,16 +6,17 @@ Follow the [root guide](../AGENTS.md) and the root [technical](../docs/technical
 
 ## Required Documentation
 
-| Read before changing                                              | Source                                                                                                              |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Deployment layout or configuration files                          | [README](README.md)                                                                                                 |
-| Database images, roles, grants, bootstrap, or connection security | [PostgreSQL](docs/postgres.md)                                                                                      |
-| Grafana, OTLP ports, telemetry storage, or troubleshooting        | [LGTM](docs/lgtm.md), backend [observability](../backend/docs/observability.md)                                     |
-| Development SMTP, caught messages, or Mailpit configuration       | [Mailpit](docs/mailpit.md), backend [email](../backend/docs/email.md) and [outbox](../backend/docs/email-outbox.md) |
-| First-time infrastructure setup                                   | Root [setup](../docs/setup.md)                                                                                      |
-| Starting services or changing runtime settings                    | Root [development](../docs/development.md)                                                                          |
-| Schema migrations                                                 | Backend [guide](../backend/AGENTS.md) and [migration skill](../.agents/skills/ef-migration/SKILL.md)                |
-| Release automation                                                | [Workflow status](../.github/workflows/README.md) and root [epics](../docs/epics.md)                                |
+| Read before changing                                               | Source                                                                                                              |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Deployment layout or configuration files                           | [README](README.md)                                                                                                 |
+| Database images, roles, grants, bootstrap, or connection security  | [PostgreSQL](docs/postgres.md)                                                                                      |
+| Grafana, OTLP ports, telemetry storage, or troubleshooting         | [LGTM](docs/lgtm.md), backend [observability](../backend/docs/observability.md)                                     |
+| Dockerfiles, `.dockerignore`, image tags, or the image build in CI | [Images](docs/images.md), [Workflow status](../.github/workflows/README.md)                                         |
+| Development SMTP, caught messages, or Mailpit configuration        | [Mailpit](docs/mailpit.md), backend [email](../backend/docs/email.md) and [outbox](../backend/docs/email-outbox.md) |
+| First-time infrastructure setup                                    | Root [setup](../docs/setup.md)                                                                                      |
+| Starting services or changing runtime settings                     | Root [development](../docs/development.md)                                                                          |
+| Schema migrations                                                  | Backend [guide](../backend/AGENTS.md) and [migration skill](../.agents/skills/ef-migration/SKILL.md)                |
+| Release automation                                                 | [Workflow status](../.github/workflows/README.md) and root [epics](../docs/epics.md)                                |
 
 ## Configuration & Verification
 

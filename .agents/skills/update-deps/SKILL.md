@@ -31,7 +31,7 @@ These come from upstream problems or deliberate decisions, not taste. A "latest"
 python3 .agents/skills/update-deps/scripts/outdated.py
 ```
 
-It is read-only and prints one section per source: mise tools, .NET SDK, pnpm (`pnpm outdated -r --long`, latest including majors), NuGet, Docker images. `MAJOR` flags a major bump; `too new` flags a release under one day old. Show the user the result as one short table before changing anything, so they see the scope of the run.
+It is read-only and prints one section per source: mise tools, .NET SDK, pnpm (`pnpm outdated -r --long`, latest including majors), NuGet, Docker images, Dockerfile base images. `MAJOR` flags a major bump; `too new` flags a release under one day old. Show the user the result as one short table before changing anything, so they see the scope of the run.
 
 ## 3. Apply the updates
 
@@ -61,6 +61,7 @@ Work through the sources in this order. The SDK goes first because the NuGet cho
 - postgres: the survey's tag (same major), changed in both files named in the hard rules.
 - Grafana LGTM and Mailpit: the survey's tag in `deploy/docker-compose.development.yml`.
 - Testcontainers fixture image tags under `backend/tests/` (e.g. the Mailpit fixture) get the same tag as their compose service; the survey doesn't see them, so `git grep` for the old tag.
+- Dockerfile base images (every `FROM` in the repo's Dockerfiles, [images.md](../../../deploy/docs/images.md#base-images)): the survey's "Dockerfile base images" section. Exact tags, never digests. The .NET SDK image tag equals `global.json`'s SDK and the aspnet and runtime tags its runtime, so they move together with the SDK step; a `-resolute` suffix stays. MCR's tag list has no dates, so the survey's age column says `?`: check the release date by hand against the one-day rule.
 
 ## 4. Fix what the majors broke
 

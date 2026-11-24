@@ -1,0 +1,20 @@
+# An allowlist: the build context holds only what the backend images need (deploy/docs/images.md).
+# S5B.3 adds the frontend's paths.
+*
+
+!global.json
+!.editorconfig
+!backend/Directory.Build.props
+!backend/Directory.Packages.props
+!backend/nuget.config
+!backend/.editorconfig
+!backend/.globalconfig
+!backend/src/
+
+# Never in an image: build output, settings and secrets, launch profiles.
+**/bin/
+**/obj/
+**/.env*
+**/appsettings.*.local.json
+**/*.local
+**/Properties/launchSettings.json

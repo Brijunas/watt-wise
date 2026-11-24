@@ -69,7 +69,7 @@ The Cli keeps migration messages at Information, so a deployment log shows which
 
 ## One log line per request
 
-An HTTP request that succeeds writes exactly one Information event, the request line:
+An HTTP request that succeeds writes exactly one event, the request line, at Information unless the level rules below say otherwise:
 
 ```
 HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed} ms
@@ -79,6 +79,7 @@ HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed} ms
 - **Its level is set by `RequestLogLevel`:**
   - Error, when an exception escaped the pipeline (which shouldn't happen behind the exception handler);
   - Warning, for any 5xx status;
+  - Debug, for a `/health` request (exact path, any case) with a status below 500: the container health check calls it every 30 seconds per container ([images.md](../../deploy/docs/images.md)), so an Information line each time would drown the log. A 5xx `/health` stays Warning, an exception Error. Traces are unchanged;
   - Information otherwise.
   - A 5xx is Warning rather than Serilog's default Error because the Api's exception handler already logs the exception once at Error, with its stack trace. So in the Api one unexpected failure means one Error event plus one Warning request line.
   - Jobs copies the same rules (`UseJobsRequestLogging`) but has no exception handler: an exception escaping the dashboard is logged at Error by the request line and once more by the developer exception page or Kestrel.
