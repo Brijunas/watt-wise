@@ -15,7 +15,7 @@ dotnet format backend/WattWise.slnx --verify-no-changes
 dotnet test --solution backend/WattWise.slnx
 ```
 
-Run all eight before committing; the pull request workflow runs them on every PR, plus the secret scan of the PR's commits, zizmor, the pending-model check, the API-client diff and the three backend image builds with their assertions (the local way is the `docker build` commands under [Images](#images)) ([workflows README](../.github/workflows/README.md)). `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. `pnpm build` must also print no `(!)` warning; a new one counts as a failure (compare against main when a shared package grows). The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
+Run all eight before committing; the pull request workflow runs them on every PR, plus the secret scan of the PR's commits, zizmor, the pending-model check, the API-client diff and the five image builds (three backend, two web) with their assertions (the local way is the `docker build` commands under [Images](#images)) ([workflows README](../.github/workflows/README.md)). `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. `pnpm build` must also print no `(!)` warning; a new one counts as a failure (compare against main when a shared package grows). The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
 
 The workflows are linted with zizmor (from `mise.toml`): `zizmor --offline .` skips the audits that need GitHub, and `GH_TOKEN=$(gh auth token) zizmor .` runs them all, like CI.
 
@@ -94,6 +94,8 @@ Each host gets its settings and its database role from 1Password through its own
 The listen address in the log shows as `<concealed by 1Password>` (see "Troubleshooting" in [setup.md](setup.md#troubleshooting)); the URLs are in the 1Password items.
 
 ## Images
+
+The frontend and admin images build the same way from `frontend/Dockerfile` and `admin/Dockerfile` (`docker build -f frontend/Dockerfile -t wattwise-frontend .`; swap the names for the admin), and `bash .github/scripts/check-web-image.sh <image> frontend|admin` runs CI's container checks against a built runtime image.
 
 Build from the repo root, with Docker running. The stages, base images and how to run an image are in [images.md](../deploy/docs/images.md). Swap `Api`/`api` for `Jobs`/`jobs` or `Cli`/`cli`.
 

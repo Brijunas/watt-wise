@@ -1,7 +1,7 @@
-# An allowlist: the build context holds only what the backend images need (deploy/docs/images.md).
-# S5B.3 adds the frontend's paths.
+# An allowlist: the build context holds only what the images need (deploy/docs/images.md).
 *
 
+# Backend images
 !global.json
 !.editorconfig
 !backend/Directory.Build.props
@@ -11,10 +11,33 @@
 !backend/.globalconfig
 !backend/src/
 
-# Never in an image: build output, settings and secrets, launch profiles.
+# Frontend and admin images: the JS workspace, and the nginx files the runtime images copy.
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!tsconfig.base.json
+!vitest.base.js
+!vitest.setup.js
+!frontend/
+!admin/
+!packages/
+!deploy/nginx/
+
+# Never in an image: build output, installed packages, test and tool output, settings and
+# secrets, launch profiles. Docs and agent files too, so editing one doesn't invalidate a layer.
 **/bin/
 **/obj/
+**/node_modules/
+**/dist/
+**/coverage/
+**/reports/
+**/.stryker-tmp/
+.eslintcache
+**/.claude/
+**/docs/
+**/*.md
 **/.env*
 **/appsettings.*.local.json
 **/*.local
+**/*.local.*
 **/Properties/launchSettings.json

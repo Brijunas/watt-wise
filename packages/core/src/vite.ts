@@ -1,4 +1,7 @@
+import { existsSync, readFileSync, statSync } from 'node:fs'
+import { resolve, sep } from 'node:path'
 import type { Plugin } from 'vite'
+import { checkOrigin, describeOriginProblem } from './runtime-config/origin.ts'
 
 const configPath = '/config.js'
 
@@ -57,6 +60,97 @@ export const runtimeConfig = (options: RuntimeConfigOptions = {}): Plugin => {
     },
     configurePreviewServer(server) {
       server.middlewares.use(middleware)
+    },
+  }
+}
+
+const appUrlPlaceholder = '${APP_URL}'
+
+const appUrlMissing =
+  'APP_URL is not set. Start the server through 1Password: ' +
+  'op run --env-file <app>/.env.op.development -- pnpm --filter <app> dev'
+
+// The validated origin of APP_URL, or the message that says why there is none (unset or invalid).
+const readAppUrl = (): { origin: string } | { error: string } => {
+  const value = process.env.APP_URL
+  if (!value) return { error: appUrlMissing }
+  const checked = checkOrigin(value)
+  if ('problem' in checked) {
+    return {
+      error: `APP_URL is not valid: ${describeOriginProblem(checked.problem, 'APP_URL', value)}`,
+    }
+  }
+  return checked
+}
+
+const wantsHtml = (accept: string | undefined): boolean =>
+  accept === undefined || accept === '' || accept.includes('text/html') || accept.includes('*/*')
+
+// Fills the `${APP_URL}` placeholder of `index.html` (the social card tags) in `vite dev` and
+// `vite preview`. `vite build` never substitutes: the deployed image renders the same placeholder
+// with nginx's envsubst at container start. Without APP_URL the HTML request answers an error that
+// names the command; the server still starts, because Vitest merges `vite.config.ts` without it.
+// An invalid APP_URL throws when the plugin is created; one that turns invalid later answers like
+// an unset one, with its own message.
+export const appUrl = (): Plugin => {
+  const initial = readAppUrl()
+  if (process.env.APP_URL && 'error' in initial) throw new Error(initial.error)
+  return {
+    name: 'wattwise:app-url',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        // Only the dev server has `ctx.server`; a build keeps the placeholder.
+        if (!ctx.server) return html
+        const resolved = readAppUrl()
+        if ('error' in resolved) throw new Error(resolved.error)
+        return html.replaceAll(appUrlPlaceholder, resolved.origin)
+      },
+    },
+    // Preview doesn't run `transformIndexHtml`: it serves the built file as it is. The middleware
+    // runs before Vite's static one and answers what Vite would answer with `index.html`: `/`,
+    // `/index.html` and, as in Vite's SPA fallback, a GET or HEAD that accepts HTML (or anything)
+    // for a path that is not a file in `outDir`.
+    configurePreviewServer(server) {
+      const outDir = resolve(server.config.root, server.config.build.outDir)
+      server.middlewares.use((req, res, next) => {
+        if ((req.method !== 'GET' && req.method !== 'HEAD') || !wantsHtml(req.headers.accept)) {
+          next()
+          return
+        }
+        let pathname: string
+        try {
+          pathname = decodeURIComponent((req.url ?? '/').split(/[?#]/)[0] ?? '/')
+        } catch {
+          next()
+          return
+        }
+        const file = resolve(outDir, `.${pathname}`)
+        const inside = file === outDir || file.startsWith(outDir + sep)
+        const isFile = inside && existsSync(file) && statSync(file).isFile()
+        const isIndex = pathname === '/' || pathname === '/index.html'
+        if (!isIndex && (isFile || pathname === '/favicon.ico')) {
+          next()
+          return
+        }
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        res.setHeader('Cache-Control', 'no-cache')
+        const resolved = readAppUrl()
+        if ('error' in resolved) {
+          res.statusCode = 500
+          res.end(resolved.error)
+          return
+        }
+        res.statusCode = 200
+        res.end(
+          req.method === 'HEAD'
+            ? undefined
+            : readFileSync(resolve(outDir, 'index.html'), 'utf8').replaceAll(
+                appUrlPlaceholder,
+                resolved.origin,
+              ),
+        )
+      })
     },
   }
 }

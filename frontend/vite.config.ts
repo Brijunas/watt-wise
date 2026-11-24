@@ -1,4 +1,4 @@
-import { runtimeConfig, serverAddress, vendorChunks } from '@wattwise/core/vite'
+import { appUrl, runtimeConfig, serverAddress, vendorChunks } from '@wattwise/core/vite'
 import { appearanceScript } from '@wattwise/ui/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -17,6 +17,7 @@ export default defineConfig({
     react(),
     appearanceScript(),
     runtimeConfig(),
+    appUrl(),
     VitePWA({
       // The user decides when to switch to a new version: `PwaUpdatePrompt` registers the worker.
       registerType: 'prompt',
@@ -28,8 +29,9 @@ export default defineConfig({
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api\//],
         // `/config.js` is the deployment's own file (see the runtime config in technical.md), so it
-        // must never be precached: a precached copy would outlive a change of the API URL.
-        globIgnores: ['**/config.js'],
+        // must never be precached: a precached copy would outlive a change of the API URL. The
+        // social card is only for link previews, so it is not needed offline.
+        globIgnores: ['**/config.js', '**/social-card.png'],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

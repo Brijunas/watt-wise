@@ -1,3 +1,5 @@
+import { checkOrigin, describeOriginProblem } from './origin.ts'
+
 export interface RuntimeConfig {
   apiBaseUrl: string
 }
@@ -6,8 +8,6 @@ declare global {
   // Set by the `/config.js` script that `index.html` loads before the app.
   var __WATTWISE_CONFIG__: unknown
 }
-
-const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 const fail = (reason: string, setting: string, example: string): never => {
   throw new Error(
@@ -22,23 +22,11 @@ const apiExample = 'API origin, such as https://api.example.test'
 // Validates one origin setting: https (http only on loopback), no credentials, path, query or hash.
 // `key` is the config key and `setting` the environment variable that feeds it, for the messages.
 const readOrigin = (value: unknown, key: string, setting: string, example: string): string => {
-  const failWith = (reason: string) => fail(reason, setting, example)
-  if (typeof value !== 'string' || value === '') return failWith(`${key} is missing`)
-  let url: URL
-  try {
-    url = new URL(value)
-  } catch {
-    return failWith(`${key} "${value}" is not a URL`)
+  const checked = checkOrigin(value)
+  if ('problem' in checked) {
+    return fail(describeOriginProblem(checked.problem, key, value), setting, example)
   }
-  const secure = url.protocol === 'https:'
-  const localHttp = url.protocol === 'http:' && loopbackHosts.has(url.hostname)
-  if (!secure && !localHttp) {
-    return failWith(`${key} must use https (http is allowed only for localhost)`)
-  }
-  if (url.username || url.password) return failWith(`${key} must not contain credentials`)
-  if (url.search || url.hash) return failWith(`${key} must not contain a query or a fragment`)
-  if (url.pathname !== '/') return failWith(`${key} must not contain a path`)
-  return url.origin
+  return checked.origin
 }
 
 const readSource = (source: unknown): Record<string, unknown> => {
