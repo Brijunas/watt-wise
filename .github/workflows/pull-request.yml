@@ -112,10 +112,10 @@ jobs:
       - run: dotnet tool restore
       # Directory.Build.props keeps TreatWarningsAsErrors off locally; CI enforces "0 warnings" here.
       - run: dotnet build backend/WattWise.slnx -warnaserror
+      - run: dotnet ef migrations has-pending-model-changes --project backend/src/WattWise.Infrastructure --no-build
       - run: dotnet format backend/WattWise.slnx --verify-no-changes --no-restore
       # The integration tests start PostgreSQL with Testcontainers on the runner's Docker.
       - run: dotnet test --solution backend/WattWise.slnx --no-build
-      - run: dotnet ef migrations has-pending-model-changes --project backend/src/WattWise.Infrastructure --no-build
 
   api-client:
     runs-on: ubuntu-24.04
@@ -155,10 +155,71 @@ jobs:
             exit 1
           fi
 
+  images:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: Api
+            healthcheck: 'true'
+          - image: Jobs
+            healthcheck: 'true'
+          - image: Cli
+            healthcheck: 'false'
+    env:
+      PROJECT: WattWise.${{ matrix.image }}
+      HEALTHCHECK: ${{ matrix.healthcheck }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build the dev target
+        run: docker build -f "backend/src/$PROJECT/Dockerfile" --target dev -t "image-dev" .
+      - name: Build the build stage
+        run: docker build -f "backend/src/$PROJECT/Dockerfile" --target build -t "image-build" .
+      - name: Build the runtime image
+        run: docker build -f "backend/src/$PROJECT/Dockerfile" -t "image-runtime" .
+      - name: Assert the runtime image
+        run: |
+          for image in image-dev image-runtime; do
+            user="$(docker image inspect -f '{{.Config.User}}' "$image")"
+            case "$user" in
+              ''|root|0|0:*|root:*) echo "::error::$image runs as '$user', not as a non-root user."; exit 1 ;;
+            esac
+          done
+          health="$(docker image inspect -f '{{json .Config.Healthcheck}}' image-runtime)"
+          if [ "$HEALTHCHECK" = true ] && [ "$health" = null ]; then
+            echo "::error::The runtime image has no health check."
+            exit 1
+          fi
+          for path in /app "/app/$PROJECT.dll"; do
+            if ! docker run --rm --entrypoint sh -e CHECK_PATH="$path" image-runtime -c 'test -e "$CHECK_PATH" && test ! -w "$CHECK_PATH"'; then
+              echo "::error::The runtime user can write $path."
+              exit 1
+            fi
+          done
+          sdks="$(docker run --rm --entrypoint sh image-runtime -c 'dotnet --list-sdks 2>/dev/null || true')"
+          if [ -n "$sdks" ]; then
+            echo "::error::The runtime image holds a .NET SDK: $sdks"
+            exit 1
+          fi
+          find_settings="find / -xdev \( -name '.env*' -o -name 'appsettings.*.local.json' -o -name launchSettings.json \) 2>/dev/null || true"
+          for image in image-runtime image-build; do
+            found="$(docker run --rm --entrypoint sh "$image" -c "$find_settings")"
+            if [ -n "$found" ]; then
+              echo "::error::$image holds settings files: $found"
+              exit 1
+            fi
+          done
+
   # The one check main's ruleset requires. It has no name: key, so its check context is exactly "ci".
-  # Later stories (S5B.2, S5B.3 image builds) add their jobs to needs.
+  # Later stories (S5B.3's frontend image builds) add their jobs to needs.
   ci:
-    needs: [secrets, workflows, js, dotnet, api-client]
+    needs: [secrets, workflows, js, dotnet, api-client, images]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5

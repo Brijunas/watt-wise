@@ -15,8 +15,10 @@ How `WattWise.Jobs` runs background work. Where Jobs sits among the hosts is in 
 1. `AddObservability("wattwise-jobs")`, `AddInfrastructure()`, `AddApplication()`, then `AddMediator` with the same behavior list as the Api ([architecture.md](architecture.md#request-handling)), and `ValidateOnStart` for `Smtp`, `Email:Retry` and `Links`;
 2. `AddHangfireStorage()` (`Storage/`), the storage registration. It lives in Jobs, not Infrastructure, because Hangfire.AspNetCore brings in ASP.NET Core and only Jobs uses Hangfire;
 3. `AddHangfireServer` with `WorkerCount` 5 and `SchedulePollingInterval` 5 seconds: the recurring-job scheduler polls on it (default 15 s) and would miss the outbox's 5-second ticks;
-4. the job classes, registered in DI;
-5. after `Build`: `UseJobsRequestLogging()` first, then the dashboard, then `RecurringJobs.Register`.
+4. the job classes, registered in DI, then `AddHealthChecks().AddDbContextCheck<AppDbContext>("database")`;
+5. after `Build`: `UseJobsRequestLogging()` first, then `/health`, then the dashboard, then `RecurringJobs.Register`.
+
+`/health` is the Api's ([architecture.md](architecture.md#http-surface)): 200 when Healthy or Degraded, 503 when Unhealthy, and no exception text in the body. `Health/` holds a copy of the Api's `HealthResponseWriter` and its two records, as `Observability/` holds a copy of the request logging. It is what the Jobs image's container health check calls ([images.md](../../deploy/docs/images.md)).
 
 ## Storage
 

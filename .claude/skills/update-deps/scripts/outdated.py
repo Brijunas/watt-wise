@@ -12,6 +12,11 @@ Rules it applies (the skill explains why):
 - .NET SDK: newest SDK of the major in global.json, from the official feed.
 - Docker: postgres stays on its major and suffix (e.g. 18.x-trixie);
   the other images move to their newest plain x.y[.z] tag.
+- Dockerfiles: every FROM in a Dockerfile outside node_modules. mcr.microsoft.com
+  images stay on their major.minor and suffix (11.0.0-resolute -> newest
+  11.0.x-resolute; the SDK also on its feature band, 11.0.1xx); MCR's tag list has
+  no dates, so the age column says "?". Docker Hub images stay on their tag's shape
+  (e.g. 24-alpine -> newest N-alpine).
 - pnpm and mise report through their own commands.
 """
 
@@ -159,6 +164,54 @@ def docker():
     print_table("Docker images (deploy/*.yml, PostgresContainerFixture)", rows)
 
 
+def dockerfile_froms():
+    """(path, image, tag) of every FROM image:tag line in the repo's Dockerfiles."""
+    froms = []
+    listed = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "--", "Dockerfile*", "**/Dockerfile*"],
+        capture_output=True, text=True, check=True, cwd=ROOT,
+    ).stdout.split()
+    for path in sorted(ROOT / name for name in listed if (ROOT / name).is_file()):
+        for image, tag in re.findall(r"^FROM\s+(?:--\S+\s+)?([\w./-]+):([\w.-]+)", path.read_text(), re.M):
+            froms.append((path.relative_to(ROOT), image, tag))
+    return froms
+
+
+def mcr_row(image, cur):
+    repo = image.removeprefix("mcr.microsoft.com/")
+    m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(-[a-z][\w]*)", cur)
+    if not m:
+        return (image, cur, "->", "?", "tag shape not understood", "")
+    maj, minor, patch, suffix = m.group(1), m.group(2), int(m.group(3)), m.group(4)
+    band = patch // 100 if repo.endswith("/sdk") else None
+    tags = fetch_json(f"https://mcr.microsoft.com/v2/{repo}/tags/list")["tags"]
+    pattern = re.compile(rf"{maj}\.{minor}\.(\d+){re.escape(suffix)}")
+    found = [t for t in tags if (mt := pattern.fullmatch(t)) and (band is None or int(mt.group(1)) // 100 == band)]
+    newest = max(found, key=version_key) if found else None
+    if newest and version_key(newest.split("-")[0]) > version_key(cur.split("-")[0]):
+        return (image, cur, "->", newest, "", "?")
+    return None
+
+
+def dockerfiles():
+    rows = []
+    for path, image, cur in dockerfile_froms():
+        if image.startswith("mcr.microsoft.com/"):
+            row = mcr_row(image, cur)
+        else:
+            repo = image if "/" in image else f"library/{image}"
+            pattern = re.sub(r"\d+", r"\\d+", re.escape(cur))
+            tags = docker_tags(repo, pattern)
+            newest = max(tags, key=lambda t: version_key(t.split("-")[0])) if tags else None
+            row = None
+            if newest and version_key(newest.split("-")[0]) > version_key(cur.split("-")[0]):
+                flag = "MAJOR" if major(newest) != major(cur) else ""
+                row = (image, cur, "->", newest, flag, age_note(tags[newest]))
+        if row:
+            rows.append((*row, str(path)))
+    print_table("Dockerfile base images (FROM lines)", rows)
+
+
 def run(title, cmd):
     print(f"\n## {title}\n$ {' '.join(cmd)}")
     out = subprocess.run(cmd, capture_output=True, text=True)
@@ -173,6 +226,7 @@ def main():
     run("pnpm, latest including majors", ["pnpm", "outdated", "-r", "--long"])
     nuget()
     docker()
+    dockerfiles()
 
 
 if __name__ == "__main__":

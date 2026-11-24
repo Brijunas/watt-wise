@@ -15,7 +15,7 @@ dotnet format backend/WattWise.slnx --verify-no-changes
 dotnet test --solution backend/WattWise.slnx
 ```
 
-Run all eight before committing; the pull request workflow runs them on every PR, plus the secret scan of the PR's commits, zizmor, the pending-model check and the API-client diff ([workflows README](../.github/workflows/README.md)). `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. `pnpm build` must also print no `(!)` warning; a new one counts as a failure (compare against main when a shared package grows). The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
+Run all eight before committing; the pull request workflow runs them on every PR, plus the secret scan of the PR's commits, zizmor, the pending-model check, the API-client diff and the three backend image builds with their assertions (the local way is the `docker build` commands under [Images](#images)) ([workflows README](../.github/workflows/README.md)). `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. `pnpm build` must also print no `(!)` warning; a new one counts as a failure (compare against main when a shared package grows). The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
 
 The workflows are linted with zizmor (from `mise.toml`): `zizmor --offline .` skips the audits that need GitHub, and `GH_TOKEN=$(gh auth token) zizmor .` runs them all, like CI.
 
@@ -92,6 +92,16 @@ Each host gets its settings and its database role from 1Password through its own
 | `op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs` | Starts the Jobs host on the `jobs` item's `url`, with the Hangfire dashboard at `/hangfire` ([jobs.md](../backend/docs/jobs.md)).                        |
 
 The listen address in the log shows as `<concealed by 1Password>` (see "Troubleshooting" in [setup.md](setup.md#troubleshooting)); the URLs are in the 1Password items.
+
+## Images
+
+Build from the repo root, with Docker running. The stages, base images and how to run an image are in [images.md](../deploy/docs/images.md). Swap `Api`/`api` for `Jobs`/`jobs` or `Cli`/`cli`.
+
+| Command                                                                                      | What it does                                                    |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `docker build -f backend/src/WattWise.Api/Dockerfile --target dev -t wattwise-api:dev .`     | Builds the `dev` target (the SDK, for `dotnet watch`).          |
+| `docker build -f backend/src/WattWise.Api/Dockerfile -t wattwise-api .`                      | Builds the runtime image: no SDK, non-root.                     |
+| `docker build -f backend/src/WattWise.Api/Dockerfile --target build -t wattwise-api:build .` | Builds the publish stage; CI checks it holds no settings files. |
 
 ## Development database
 

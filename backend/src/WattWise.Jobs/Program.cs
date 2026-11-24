@@ -2,12 +2,16 @@ using Hangfire;
 
 using Mediator;
 
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+
 using WattWise.Application;
 using WattWise.Application.Behaviors;
 using WattWise.Application.Email;
 using WattWise.Infrastructure;
 using WattWise.Infrastructure.Email;
 using WattWise.Infrastructure.Observability;
+using WattWise.Infrastructure.Persistence;
+using WattWise.Jobs.Health;
 using WattWise.Jobs.Observability;
 using WattWise.Jobs.Recurring;
 using WattWise.Jobs.Storage;
@@ -42,10 +46,12 @@ builder.Services.AddTransient<NoOpJob>();
 builder.Services.AddTransient<SendEmailsJob>();
 builder.Services.AddTransient<PurgeEmailRequestsJob>();
 builder.Services.AddTransient<PurgeSessionsJob>();
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("database");
 
 var app = builder.Build();
 
 app.UseJobsRequestLogging();
+app.MapHealthChecks("/health", new HealthCheckOptions { ResponseWriter = HealthResponseWriter.WriteAsync });
 app.MapHangfireDashboard("/hangfire");
 RecurringJobs.Register(app.Services.GetRequiredService<IRecurringJobManager>());
 
