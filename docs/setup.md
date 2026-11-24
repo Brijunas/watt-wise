@@ -6,11 +6,11 @@ How to get a working Watt-Wise checkout on a new machine. This guide covers what
 
 Install git and Docker Engine with the Compose plugin yourself; `./setup` installs the rest. It supports Fedora only (vidar's release); on another distribution follow [Other distributions](#other-distributions).
 
-| Tool                                                                             | Why                                       | Notes                                                                                  |
-| -------------------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------- |
-| git                                                                              | Version control                           | Any recent version                                                                     |
-| [Docker Engine](https://docs.docker.com/engine/install/) with the Compose plugin | Runs PostgreSQL, Grafana LGTM and Mailpit | `docker compose version` must work without `sudo` (add yourself to the `docker` group) |
-| [gh](https://cli.github.com/) (optional)                                         | Pull requests from the command line       | Run `gh auth login` once                                                               |
+| Tool                                                                             | Why                                                                        | Notes                                                                                  |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| git                                                                              | Version control                                                            | Any recent version                                                                     |
+| [Docker Engine](https://docs.docker.com/engine/install/) with the Compose plugin | Runs the whole system: PostgreSQL, Grafana LGTM, Mailpit and the four apps | `docker compose version` must work without `sudo` (add yourself to the `docker` group) |
+| [gh](https://cli.github.com/) (optional)                                         | Pull requests from the command line                                        | Run `gh auth login` once                                                               |
 
 Which 1Password access `./setup` uses depends on the machine:
 
@@ -36,7 +36,7 @@ Run it as your own user, not as root. It prints `setup: <step>: unchanged|change
 5. **Tools.** `mise trust` for the repo's `mise.toml`, then `mise install`: Node, pnpm, Betterleaks, zizmor and the .NET SDK. How their versions are chosen is under "Tool versions" in [technical.md](technical.md).
 6. **Dependencies.** `pnpm install --frozen-lockfile` (its `prepare` script installs the Husky hooks, so `git config core.hooksPath` prints `.husky/_`) and `dotnet tool restore` for the local tools in `.config/dotnet-tools.json`. pnpm is the only supported package manager.
 7. **Token** (headless only). The token lives in `${XDG_CONFIG_HOME:-~/.config}/watt-wise/op-service-account-token`; [security.md](security.md#deployment) has its modes and why. Without the file, setup asks for the token at a hidden prompt, or stops with the path when it has no terminal. Looser modes are tightened; a file or folder owned by another user stops setup. It adds a guarded line to `~/.bashrc` that exports `OP_SERVICE_ACCOUNT_TOKEN` from the file, so `op` works in every new terminal.
-8. **`deploy/.env`.** `op inject` renders `deploy/development/compose.settings.tpl` (bind addresses, ports, user names, database name; no passwords) from the `Watt Wise Development` vault, and replaces the gitignored file only when it differs.
+8. **`deploy/.env`.** `op inject` renders `deploy/development/compose.settings.tpl` (bind addresses, ports, user names, database name, the four apps' `url`s; no passwords) from the `Watt Wise Development` vault, and `./setup` appends each app's published `<APP>_BIND_ADDRESS` and `<APP>_PORT`, derived from its `url`; a `url` that isn't a loopback `http` origin with a port stops it ([how](../deploy/docs/development-stack.md#published-ports)). It replaces the gitignored file only when the result differs.
 
 `--skip-secrets` skips steps 7 and 8, for CI and for a machine without vault access. A rerun after the floating `lts` and `latest` versions in `mise.toml` have moved installs the newer release (`tools: changed`). Open a new terminal (or `source ~/.bashrc`) afterwards so the tools are on `PATH`; `mise current` shows what is active.
 
@@ -62,16 +62,16 @@ The vault's items are listed under "Passwords" in [deploy/docs/postgres.md](../d
 
 ## 4. Settings file
 
-`./setup` rendered `deploy/.env` in step 8, which Docker Compose reads automatically. There is nothing to do here unless a value changed in 1Password: run `./setup` again.
+`./setup` rendered `deploy/.env` in step 8, which Docker Compose reads automatically. There is nothing to do here unless a value changed in 1Password (including an app's `url`, which sets its published port): run `./setup` again. The apps' own settings and passwords come from `deploy/development/compose.env` through `op run` at every `up`, never from this file.
 
 ## 5. Development database
 
 One-time setup of the Development PostgreSQL. The roles and why they exist are in [deploy/docs/postgres.md](../deploy/docs/postgres.md).
 
-1. Start the stack for the first time. The PostgreSQL image reads the `admin` password only to initialize an empty volume, so only this first start goes through `op run`. Every later compose command (`up`, `down`, `logs`, `exec`) runs without it.
+1. Start the infrastructure for the first time. The PostgreSQL image reads the `admin` password only to initialize an empty volume. Only these three services start: `api` can't turn healthy before the roles and the migration below exist. Every `up` goes through `op run`; `down`, `logs` and `exec` need none.
 
    ```bash
-   op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait
+   op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait postgres lgtm mailpit
    ```
 
 2. Create the roles, the database, the schemas and the privileges:
@@ -102,17 +102,17 @@ One-time setup of the Development PostgreSQL. The roles and why they exist are i
    op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- migrate
    ```
 
-5. Optionally, start the Jobs host to check Hangfire. It connects as `jobs` from the `postgres-jobs` item and listens on the `jobs` item's `url` (http://localhost:5063 today); the dashboard is at `/hangfire`:
+5. Start the whole system: the Api, the Jobs host, the frontend and the admin, built from their `dev` targets (the first build takes a few minutes). They connect as `api` and `jobs` from the `postgres-api` and `postgres-jobs` items and are published on the `url`s of the `api`, `jobs`, `frontend` and `admin` items. The Jobs host's Hangfire dashboard answers 401 in the container ([why](../deploy/docs/development-stack.md#the-hangfire-dashboard)); [development.md](development.md#running-on-the-host) runs the host on the host.
 
    ```bash
-   op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs
+   op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait
    ```
 
 For an optional GUI client, see [Connecting with pgAdmin](../deploy/docs/postgres.md#connecting-with-pgadmin).
 
-The stack also runs Grafana LGTM, which receives the apps' traces, metrics and logs. Grafana is at the `grafana` item's `url` (http://127.0.0.1:3000 today), without a login; see [deploy/docs/lgtm.md](../deploy/docs/lgtm.md). On a machine set up before S2.8, run `./setup` again to render `deploy/.env` and then run `docker compose -f deploy/docker-compose.development.yml up -d --wait` to add it.
+The stack also runs Grafana LGTM, which receives the apps' traces, metrics and logs. Grafana is at the `grafana` item's `url` (http://127.0.0.1:3000 today), without a login; see [deploy/docs/lgtm.md](../deploy/docs/lgtm.md). On a machine set up before S2.8, run `./setup` again to render `deploy/.env` and then run the `up` of step 5 to add it.
 
-The stack also runs Mailpit, which catches every email the Development Jobs host sends. Its web UI is at the `mailpit` item's `url` (http://127.0.0.1:8025 today); see [deploy/docs/mailpit.md](../deploy/docs/mailpit.md). On a machine set up before S4.2, run `./setup` again to render `deploy/.env` and then run `docker compose -f deploy/docker-compose.development.yml up -d --wait` to add it.
+The stack also runs Mailpit, which catches every email the Development Jobs host sends. Its web UI is at the `mailpit` item's `url` (http://127.0.0.1:8025 today); see [deploy/docs/mailpit.md](../deploy/docs/mailpit.md). On a machine set up before S4.2, run `./setup` again to render `deploy/.env` and then run the `up` of step 5 to add it. A machine set up before S5B.5 does the same: `./setup` renders the new keys and the `up` builds and starts the four apps.
 
 ## 6. Check that everything works
 
@@ -122,12 +122,12 @@ Run the [checks](development.md#checks) from development.md. Every one should pa
 
 `.github/scripts/check-setup.sh` tests `./setup` on a throwaway Fedora container that has only git and the Docker CLI, built from `.github/setup-check/Dockerfile`; CI's `setup` job runs it. It clones the committed HEAD of the repo, so commit before you run it.
 
-| Command                                                            | What it asserts                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `bash .github/scripts/check-setup.sh`                              | `./setup --skip-secrets` twice: both exit 0, the second reports no `changed` and leaves `~/.bashrc`, `~/.bashrc.d`, `git status`, the Husky hooks, the rpm packages, the mise tools and the yum repos as they were; one `mise activate` line (none added when `~/.bashrc.d` has it); an empty commit runs the pre-commit hook; setup as root stops; node, pnpm, dotnet, betterleaks, zizmor and op run in a new shell; no terminal and no token file stops; Debian is refused. |
-| `bash .github/scripts/check-setup.sh --token-file <file>`          | Also the secrets steps with that service-account token (mounted read-only and copied into the container with loose modes, so setup has to tighten them): the file ends mode 600 in a 700 folder owned by the user, one token line in `~/.bashrc`, `deploy/.env` has every key and no `{{`, `op vault list` shows only `Watt Wise Development`, and another vault can't be listed.                                                                                              |
-| `bash .github/scripts/check-setup.sh --token-file <file> --checks` | Also the [checks](development.md#checks) of development.md inside the container. It mounts the host's Docker socket, so the container controls the host's Docker; the socket path is read from the Docker context, and the user in the container joins the group that owns the mounted socket (its gid is read there, as it depends on the host). It is written for rootless Docker. It doesn't run in CI.                                                                     |
-| `bash .github/scripts/check-setup.sh --interactive`                | The same assertions as `--token-file`, but you paste the token at setup's hidden prompt, so the loose-modes tightening isn't checked.                                                                                                                                                                                                                                                                                                                                          |
+| Command                                                            | What it asserts                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bash .github/scripts/check-setup.sh`                              | `./setup --skip-secrets` twice: both exit 0, the second reports no `changed` and leaves `~/.bashrc`, `~/.bashrc.d`, `git status`, the Husky hooks, the rpm packages, the mise tools and the yum repos as they were; one `mise activate` line (none added when `~/.bashrc.d` has it); an empty commit runs the pre-commit hook; setup as root stops; node, pnpm, dotnet, betterleaks, zizmor and op run in a new shell; no terminal and no token file stops; Debian is refused; `./setup --derive-url` accepts the loopback `url`s and rejects the others (the published-port derivation's case table). |
+| `bash .github/scripts/check-setup.sh --token-file <file>`          | Also the secrets steps with that service-account token (mounted read-only and copied into the container with loose modes, so setup has to tighten them): the file ends mode 600 in a 700 folder owned by the user, one token line in `~/.bashrc`, `deploy/.env` has every key (the derived bind addresses and ports too) and no `{{`, `op vault list` shows only `Watt Wise Development`, and another vault can't be listed.                                                                                                                                                                           |
+| `bash .github/scripts/check-setup.sh --token-file <file> --checks` | Also the [checks](development.md#checks) of development.md inside the container. It mounts the host's Docker socket, so the container controls the host's Docker; the socket path is read from the Docker context, and the user in the container joins the group that owns the mounted socket (its gid is read there, as it depends on the host). It is written for rootless Docker. It doesn't run in CI.                                                                                                                                                                                             |
+| `bash .github/scripts/check-setup.sh --interactive`                | The same assertions as `--token-file`, but you paste the token at setup's hidden prompt, so the loose-modes tightening isn't checked.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ## Other distributions
 

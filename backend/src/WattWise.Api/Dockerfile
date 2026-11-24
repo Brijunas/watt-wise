@@ -3,8 +3,11 @@
 
 # restore: the SDK, the packages of the project closure, the folders the later stages write to.
 FROM mcr.microsoft.com/dotnet/sdk:11.0.100-resolute AS restore
-ENV NUGET_PACKAGES=/nuget
-RUN mkdir /src /nuget /out && chown $APP_UID:$APP_UID /src /nuget /out
+# bin and obj go to /artifacts, so nothing is written into /src (deploy/docs/images.md#build-output).
+ENV NUGET_PACKAGES=/nuget \
+    UseArtifactsOutput=true \
+    ArtifactsPath=/artifacts
+RUN mkdir /src /nuget /out /artifacts && chown $APP_UID:$APP_UID /src /nuget /out /artifacts
 USER $APP_UID
 WORKDIR /src
 COPY --chown=$APP_UID global.json .editorconfig ./
@@ -15,9 +18,13 @@ COPY --chown=$APP_UID backend/src/WattWise.Domain/WattWise.Domain.csproj backend
 COPY --chown=$APP_UID backend/src/WattWise.Infrastructure/WattWise.Infrastructure.csproj backend/src/WattWise.Infrastructure/
 RUN dotnet restore backend/src/WattWise.Api/WattWise.Api.csproj
 
-# dev: no source copied; Compose bind-mounts the tree at /src.
+# dev: no source copied; Compose bind-mounts the tree at /src. The OpenAPI document is generated and
+# committed by pnpm generate:api, so the generator is off here as in build. A rude edit restarts the
+# host instead of asking, since --non-interactive has nobody to ask.
 FROM restore AS dev
-ENTRYPOINT ["dotnet", "watch", "--project", "backend/src/WattWise.Api/WattWise.Api.csproj", "run", "--no-launch-profile"]
+ENV OpenApiGenerateDocuments=false \
+    DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true
+ENTRYPOINT ["dotnet", "watch", "--non-interactive", "--project", "backend/src/WattWise.Api/WattWise.Api.csproj", "run", "--no-launch-profile"]
 
 # build: publishes without the OpenAPI document generator, which would only write into this stage.
 FROM restore AS build

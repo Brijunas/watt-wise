@@ -1,8 +1,9 @@
 # Development environment: PostgreSQL, Grafana LGTM (traces, metrics and logs
-# over OTLP) and Mailpit (catches every email the Api sends). Bind addresses, ports and
-# user names come from 1Password, rendered into deploy/.env (read by compose automatically):
+# over OTLP), Mailpit (catches every email the Jobs host sends) and the system itself: the Api, the
+# Jobs host, the frontend and the admin. Bind addresses, ports and user names come from 1Password,
+# rendered into deploy/.env (read by compose automatically; ./setup renders it):
 #   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
-# Passwords are read only on first start of empty volumes, through op run:
+# Passwords and the apps' settings come from op run, so every up and watch goes through it:
 #   op run --env-file deploy/development/compose.env -- \
 #     docker compose -f deploy/docker-compose.development.yml up -d --wait
 # Application roles and their passwords are set up by hand once, see
@@ -66,6 +67,205 @@ services:
       - '${MAILPIT_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${MAILPIT_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:8025'
     # No volume: caught mail is throwaway.
 
+  # The four apps below are built from their Dockerfiles' dev targets and run the repo's tree, bind-mounted
+  # at /src: the hosts through dotnet watch, the web apps through the Vite dev server. Their settings come
+  # from op run (compose.env), each service getting only its own; `${VAR:-}` keeps ps, logs, exec, stop and
+  # down working without op run. Details: deploy/docs/development-stack.md.
+  api:
+    build:
+      context: ..
+      dockerfile: backend/src/WattWise.Api/Dockerfile
+      target: dev
+    pull_policy: build
+    restart: unless-stopped
+    # dotnet watch runs as PID 1 and ignores SIGTERM there: without an init process `stop` waits 10 s and kills it.
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      lgtm:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Database__Host: postgres
+      Database__Port: '5432'
+      Database__Name: ${API_DATABASE_NAME:-}
+      Database__Username: ${API_DATABASE_USERNAME:-}
+      Database__Password: ${API_DATABASE_PASSWORD:-}
+      Cors__AllowedOrigins__0: ${FRONTEND_URL:-}
+      Cors__AllowedOrigins__1: ${ADMIN_URL:-}
+      Cors__AdminOrigin: ${ADMIN_URL:-}
+      Observability__OtlpEndpoint: http://lgtm:4317
+      Jwt__SigningKey: ${API_JWT_SIGNING_KEY:-}
+    ports:
+      - '${API_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${API_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:8080'
+    volumes:
+      - ..:/src
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', '--max-time', '2', 'http://localhost:8080/health']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      # A cold dotnet watch build comes first.
+      start_period: 300s
+      start_interval: 2s
+    develop:
+      watch:
+        - action: rebuild
+          path: ../backend/src
+          include: ['**/*.csproj']
+        - action: rebuild
+          path: ../backend/Directory.Packages.props
+
+  jobs:
+    build:
+      context: ..
+      dockerfile: backend/src/WattWise.Jobs/Dockerfile
+      target: dev
+    pull_policy: build
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      lgtm:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Database__Host: postgres
+      Database__Port: '5432'
+      Database__Name: ${JOBS_DATABASE_NAME:-}
+      Database__Username: ${JOBS_DATABASE_USERNAME:-}
+      Database__Password: ${JOBS_DATABASE_PASSWORD:-}
+      Observability__OtlpEndpoint: http://lgtm:4317
+      # appsettings.Development.json has 127.0.0.1, which is the container itself here.
+      Smtp__Host: mailpit
+      Smtp__Port: '1025'
+      Smtp__Username: ${JOBS_SMTP_USERNAME:-}
+      Smtp__Password: ${JOBS_SMTP_PASSWORD:-}
+      Links__FrontendBaseUrl: ${FRONTEND_URL:-}
+    ports:
+      - '${JOBS_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${JOBS_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:8080'
+    volumes:
+      - ..:/src
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', '--max-time', '2', 'http://localhost:8080/health']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 300s
+      start_interval: 2s
+    develop:
+      watch:
+        - action: rebuild
+          path: ../backend/src
+          include: ['**/*.csproj']
+        - action: rebuild
+          path: ../backend/Directory.Packages.props
+
+  # The dev entry point installs the packages from the image's store into the node_modules volumes, then
+  # runs `pnpm --filter <app> dev` with this command's arguments: Vite listens on all addresses of the
+  # container, whatever APP_URL says, and Compose publishes the port the 1Password url names.
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+      target: dev
+    pull_policy: build
+    restart: unless-stopped
+    command: ['--host', '0.0.0.0', '--port', '8080']
+    environment:
+      API_BASE_URL: ${API_URL:-}
+      APP_URL: ${FRONTEND_URL:-}
+    ports:
+      - '${FRONTEND_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${FRONTEND_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:8080'
+    volumes:
+      - ..:/src
+      - frontend-nm-root:/src/node_modules
+      - frontend-nm-app:/src/frontend/node_modules
+      - frontend-nm-api-client:/src/packages/api-client/node_modules
+      - frontend-nm-core:/src/packages/core/node_modules
+      - frontend-nm-i18n:/src/packages/i18n/node_modules
+      - frontend-nm-ui:/src/packages/ui/node_modules
+    healthcheck:
+      # The node image has no curl. 127.0.0.1, not localhost: Vite listens on IPv4 only here.
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8080/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      # The first start installs the packages.
+      start_period: 180s
+      start_interval: 2s
+    develop:
+      watch:
+        - action: rebuild
+          path: ../pnpm-lock.yaml
+
+  admin:
+    build:
+      context: ..
+      dockerfile: admin/Dockerfile
+      target: dev
+    pull_policy: build
+    restart: unless-stopped
+    command: ['--host', '0.0.0.0', '--port', '8080']
+    environment:
+      API_BASE_URL: ${API_URL:-}
+      APP_URL: ${ADMIN_URL:-}
+      FRONTEND_URL: ${FRONTEND_URL:-}
+    ports:
+      - '${ADMIN_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${ADMIN_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:8080'
+    volumes:
+      - ..:/src
+      - admin-nm-root:/src/node_modules
+      - admin-nm-app:/src/admin/node_modules
+      - admin-nm-api-client:/src/packages/api-client/node_modules
+      - admin-nm-core:/src/packages/core/node_modules
+      - admin-nm-i18n:/src/packages/i18n/node_modules
+      - admin-nm-ui:/src/packages/ui/node_modules
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8080/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 180s
+      start_interval: 2s
+    develop:
+      watch:
+        - action: rebuild
+          path: ../pnpm-lock.yaml
+
 volumes:
   postgres-data:
   lgtm-data:
+  # No volume for dotnet's /artifacts (bin and obj): it lives in each host container's own layer, so a
+  # recreate starts from the image's restored copy and a worktree's output never reaches another's.
+  # node_modules of each web app: root, the app and the four workspace packages its filter needs.
+  frontend-nm-root:
+  frontend-nm-app:
+  frontend-nm-api-client:
+  frontend-nm-core:
+  frontend-nm-i18n:
+  frontend-nm-ui:
+  admin-nm-root:
+  admin-nm-app:
+  admin-nm-api-client:
+  admin-nm-core:
+  admin-nm-i18n:
+  admin-nm-ui:

@@ -49,7 +49,21 @@ Use `--filter` with the package name (`frontend`, `admin` or `@wattwise/<name>`)
 | `pnpm --filter @wattwise/core test src/runtime-config/read-runtime-config.test.ts` | The same in a package                                                                     |
 | `pnpm --filter frontend exec vitest`                                               | One app's or package's tests in watch mode (in a terminal; without one, Vitest runs once) |
 
-## Running the apps
+## Running the system
+
+The default: the Api, the Jobs host, the frontend and the admin run in containers next to PostgreSQL, Grafana LGTM and Mailpit, with the tree bind-mounted, so an edit reloads the running app. One stack per machine, from whichever worktree ran `up` last. Every `up` and `watch` goes through `op run` (the apps' settings come from 1Password); `ps`, `logs`, `exec`, `stop` and `down` need none. Details, and why the Hangfire dashboard answers 401 in the container: [development-stack.md](../deploy/docs/development-stack.md). To run an app on the host instead ([below](#running-on-the-host)), `stop` it in the stack first: the ports are the same, and the database is too.
+
+| Command                                                                                                                    | What it does                                                                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait` | Builds the four dev images, starts the stack and waits until it is healthy (`--remove-orphans` after removing a service).              |
+| `op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml watch`        | In its own terminal: rebuilds `api` and `jobs` on a `.csproj` or `Directory.Packages.props` change, the web apps on a lockfile change. |
+| `docker compose -f deploy/docker-compose.development.yml logs -f api`                                                      | Follows one service's log (`jobs`, `frontend`, `admin`).                                                                               |
+| `docker compose -f deploy/docker-compose.development.yml stop api jobs frontend admin`                                     | Stops the apps and leaves the infrastructure running.                                                                                  |
+| `docker compose -f deploy/docker-compose.development.yml down`                                                             | Stops and removes the containers. The data stays in the volumes.                                                                       |
+
+## Running on the host
+
+### Running the apps
 
 Each app's dev server and preview get their settings from 1Password through the app's own `.env.op.development`: the address to listen on (the `frontend` or `admin` item's `url`, the origin the Api's CORS allows) and the Api's URL, which they serve to the app as `/config.js` ([frontend/docs/architecture.md](../frontend/docs/architecture.md#runtime-config)). The app shows data only while the Api runs ([Running the hosts](#running-the-hosts)). Swap `frontend` for `admin` for the admin app; its `.env.op.development` also gives the frontend's address (`FRONTEND_URL`, the `frontend` item's `url`) for the forgot-password link. Vite's log shows the address as `<concealed by 1Password>`, like the hosts; the URLs are in the items.
 
@@ -58,6 +72,15 @@ Each app's dev server and preview get their settings from 1Password through the 
 | `op run --env-file frontend/.env.op.development -- pnpm --filter frontend dev`     | Starts the dev server with hot reload on the `frontend` item's `url`. No service worker in dev. |
 | `pnpm --filter frontend build`                                                     | Type-checks and builds `frontend/dist/`. Needs no settings: the API address is read at runtime. |
 | `op run --env-file frontend/.env.op.development -- pnpm --filter frontend preview` | Serves the last build on the same address, service worker included, to try the PWA.             |
+
+### Running the hosts
+
+Each host gets its settings and its database role from 1Password through its own `.env.development` file. Without `op run` it starts as Production and stops on the missing `Database` settings. The listen address in the log shows as `<concealed by 1Password>` (see "Troubleshooting" in [setup.md](setup.md#troubleshooting)); the URLs are in the 1Password items.
+
+| Command                                                                                                          | What it does                                                                                                                                             |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `op run --env-file backend/src/WattWise.Api/.env.development -- dotnet run --project backend/src/WattWise.Api`   | Starts the Api on the `api` item's `url`: `/health`, `/scalar` and `/openapi/v1.json` ([architecture.md](../backend/docs/architecture.md#http-surface)). |
+| `op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs` | Starts the Jobs host on the `jobs` item's `url`, with the Hangfire dashboard at `/hangfire` ([jobs.md](../backend/docs/jobs.md)).                        |
 
 ## Backend
 
@@ -82,17 +105,6 @@ The tests run on Microsoft.Testing.Platform. Filters match the fully qualified n
 | `dotnet test --project backend/tests/WattWise.Api.IntegrationTests --filter-class "*.OpenApiDocumentTests"` | One test class                  |
 | `dotnet test --project backend/tests/WattWise.Api.IntegrationTests --filter-method "*Scalar*"`              | Test methods whose name matches |
 
-### Running the hosts
-
-Each host gets its settings and its database role from 1Password through its own `.env.development` file. Without `op run` it starts as Production and stops on the missing `Database` settings.
-
-| Command                                                                                                          | What it does                                                                                                                                             |
-| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `op run --env-file backend/src/WattWise.Api/.env.development -- dotnet run --project backend/src/WattWise.Api`   | Starts the Api on the `api` item's `url`: `/health`, `/scalar` and `/openapi/v1.json` ([architecture.md](../backend/docs/architecture.md#http-surface)). |
-| `op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs` | Starts the Jobs host on the `jobs` item's `url`, with the Hangfire dashboard at `/hangfire` ([jobs.md](../backend/docs/jobs.md)).                        |
-
-The listen address in the log shows as `<concealed by 1Password>` (see "Troubleshooting" in [setup.md](setup.md#troubleshooting)); the URLs are in the 1Password items.
-
 ## Images
 
 The frontend and admin images build the same way from `frontend/Dockerfile` and `admin/Dockerfile` (`docker build -f frontend/Dockerfile -t wattwise-frontend .`; swap the names for the admin), and `bash .github/scripts/check-web-image.sh <image> frontend|admin` runs CI's container checks against a built runtime image.
@@ -107,13 +119,11 @@ Build from the repo root, with Docker running. The stages, base images and how t
 
 ## Development database
 
-First-time setup (roles, passwords, first start) is "Development database" in [setup.md](setup.md#5-development-database); the roles and the stack's settings are explained in [deploy/docs/postgres.md](../deploy/docs/postgres.md). Compose reads its settings from the rendered `deploy/.env`, so everyday compose commands need no `op run`.
+First-time setup (roles, passwords, first start) is "Development database" in [setup.md](setup.md#5-development-database); the roles and the stack's settings are explained in [deploy/docs/postgres.md](../deploy/docs/postgres.md). Compose reads its non-secret settings from the rendered `deploy/.env`, so everything but `up` and `watch` needs no `op run`.
 
 | Command                                                                                                              | What it does                                                                                                                           |
 | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `./setup`                                                                                                            | Renders the stack's settings (`deploy/.env`) again after one of them changes in 1Password, and does nothing else when nothing changed. |
-| `docker compose -f deploy/docker-compose.development.yml up -d --wait --remove-orphans`                              | Starts PostgreSQL, Grafana LGTM and Mailpit and waits until they are healthy.                                                          |
-| `docker compose -f deploy/docker-compose.development.yml down`                                                       | Stops and removes the containers. The data stays in the volumes.                                                                       |
 | `docker compose -f deploy/docker-compose.development.yml ps`                                                         | Shows the containers and their health.                                                                                                 |
 | `docker compose -f deploy/docker-compose.development.yml logs -f postgres`                                           | Follows one service's log.                                                                                                             |
 | `docker compose -f deploy/docker-compose.development.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d wattwise'` | Opens psql as `admin` in the `wattwise` database.                                                                                      |

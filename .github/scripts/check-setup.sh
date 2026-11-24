@@ -266,6 +266,24 @@ else
     x_dev grep -q "^$key=" "$repo/deploy/.env" || fail "deploy/.env has no $key"
   done
   pass "deploy/.env has every key of the template"
+  # The derived keys are not in the template: setup appends them (see "The URL derivation" below).
+  for app in API JOBS FRONTEND ADMIN; do
+    for suffix in BIND_ADDRESS PORT; do
+      x_dev grep -q "^${app}_${suffix}=" "$repo/deploy/.env" || fail "deploy/.env has no ${app}_${suffix}"
+    done
+    bind="$(x_dev sed -n "s/^${app}_BIND_ADDRESS=\"\(.*\)\"\$/\1/p" "$repo/deploy/.env")"
+    case "$bind" in 127.0.0.1 | ::1) ;; *) fail "deploy/.env's ${app}_BIND_ADDRESS is not a loopback address" ;; esac
+  done
+  pass "deploy/.env has the eight derived bind address and port keys, each app on a loopback address"
+  # Each rendered URL, fed through setup's own function, gives the two lines the file holds, once each.
+  for app in API JOBS FRONTEND ADMIN; do
+    for suffix in BIND_ADDRESS PORT; do
+      expect_eq "deploy/.env has ${app}_${suffix} exactly once" 1 "$(x_dev grep -c "^${app}_${suffix}=" "$repo/deploy/.env")"
+    done
+    rendered="$(x_dev sed -n "s/^${app}_URL=\"\(.*\)\"\$/\1/p" "$repo/deploy/.env")"
+    expect_eq "${app}_URL derives the ${app}_BIND_ADDRESS and ${app}_PORT lines of deploy/.env" \
+      "$(x_dev grep -E "^${app}_(BIND_ADDRESS|PORT)=" "$repo/deploy/.env")" "$(derive "$app" "$rendered")"
+  done
   if x_dev grep -q '{{' "$repo/deploy/.env"; then fail "deploy/.env still has an unresolved reference"; fi
   pass "deploy/.env has no unresolved reference"
 
@@ -281,6 +299,95 @@ else
   if dev_shell 'op item list --vault "Delegated signing" > /dev/null'; then fail "the service account lists another vault"; fi
   pass "the service account fails to list the Delegated signing vault"
 fi
+
+# --- The URL derivation -------------------------------------------------------------------------
+
+# setup's own function, through its --derive-url option, so the table tests the real code and needs
+# no token. A valid URL prints the two deploy/.env lines; any other stops setup with a message that
+# names the key and the 1Password item, and prints no line.
+derive() { x_dev bash -c 'cd ~/watt-wise && ./setup --derive-url "$@"' derive "$@" 2> /dev/null; }
+derive_error() { { x_dev bash -c 'cd ~/watt-wise && ./setup --derive-url "$@"' derive "$@" > /dev/null; } 2>&1; }
+expect_derived() { # url, bind address, port
+  local out rc=0
+  out="$(derive API "$1")" || rc=$?
+  expect_eq "'$1' is accepted" 0 "$rc"
+  expect_eq "'$1' derives $2 and $3" "API_BIND_ADDRESS=\"$2\"
+API_PORT=\"$3\"" "$out"
+}
+FORMAT_MESSAGE="is not exactly an http origin"
+PORT_MESSAGE="is not a number from 1 to 65535"
+expect_rejected() { # why, message fragment only that kind prints, url, [app]
+  local why="$1" fragment="$2" url="$3" app="${4:-FRONTEND}" item out rc=0 err
+  item="$(tr '[:upper:]' '[:lower:]' <<< "$app")"
+  out="$(derive "$app" "$url")" || rc=$?
+  [ "$rc" -ne 0 ] || fail "'$url' ($why) was accepted"
+  expect_eq "'$url' ($why) prints nothing" "" "$out"
+  err="$(derive_error "$app" "$url")" || true
+  case "$err" in *"${app}_URL"*) ;; *) fail "the message for '$url' ($why) doesn't name ${app}_URL: $err" ;; esac
+  case "$err" in *"'$item' item"*) ;; *) fail "the message for '$url' ($why) doesn't name the '$item' item: $err" ;; esac
+  case "$err" in *"$fragment"*) ;; *) fail "the message for '$url' ($why) isn't the '$fragment' kind: $err" ;; esac
+  pass "'$url' ($why) is rejected with the '$fragment' message naming ${app}_URL and the '$item' item"
+}
+expect_derived "http://localhost:5062" 127.0.0.1 5062
+expect_derived "http://127.0.0.1:5173" 127.0.0.1 5173
+expect_derived "http://[::1]:5174" ::1 5174
+expect_derived "http://localhost:1" 127.0.0.1 1
+expect_derived "http://localhost:65535" 127.0.0.1 65535
+expect_derived "http://127.0.0.1:65535" 127.0.0.1 65535
+expect_derived "http://[::1]:1" ::1 1
+expect_derived "http://[::1]:65535" ::1 65535
+out="$(derive ADMIN "http://localhost:5174")"
+expect_eq "an app other than API derives under its own name" "ADMIN_BIND_ADDRESS=\"127.0.0.1\"
+ADMIN_PORT=\"5174\"" "$out"
+for reject in \
+  "https|https://localhost:5062" \
+  "a path|http://localhost:5062/api" \
+  "a trailing slash|http://localhost:5062/" \
+  "two trailing slashes|http://localhost:5062//" \
+  "a public host|http://example.com:5062" \
+  "all interfaces|http://0.0.0.0:5062" \
+  "a host that only starts with localhost|http://localhost.example.com:5062" \
+  "a host that only starts with localhost, evil|http://localhost.evil:5062" \
+  "a host that only starts with 127.0.0.1|http://127.0.0.1.evil:5062" \
+  "credentials|http://localhost@evil.com:5062" \
+  "localhost in the path|http://evil.com/localhost:5062" \
+  "an uppercase host|http://LOCALHOST:5062" \
+  "a prefix before the scheme|xhttp://localhost:5062" \
+  "a leading space| http://localhost:5062" \
+  "a trailing space|http://localhost:5062 " \
+  "a trailing newline|http://localhost:5062"$'\n' \
+  "dots that aren't dots|http://127x0x0x1:5062" \
+  "an empty port|http://[::1]:" \
+  "no port, [::1]|http://[::1]" \
+  "no port|http://localhost" \
+  "an empty value|"; do
+  expect_rejected "${reject%%|*}" "$FORMAT_MESSAGE" "${reject#*|}"
+done
+for reject in \
+  "port 0|http://localhost:0" \
+  "port 65536|http://localhost:65536" \
+  "port 99999|http://localhost:99999" \
+  "port 100000|http://localhost:100000" \
+  "a leading zero|http://localhost:05062" \
+  "a leading zero on 1|http://localhost:00001"; do
+  expect_rejected "${reject%%|*}" "$PORT_MESSAGE" "${reject#*|}"
+done
+expect_rejected "an app's own item is named" "$FORMAT_MESSAGE" "https://localhost:5062" JOBS
+expect_rejected "an app's own item is named" "$FORMAT_MESSAGE" "https://localhost:5174" ADMIN
+
+# The argument guards: a wrong count prints the usage and no line, and an unknown app is refused.
+rc=0
+out="$(derive API)" || rc=$?
+[ "$rc" -ne 0 ] || fail "--derive-url with one argument exited 0"
+expect_eq "--derive-url with one argument prints nothing on stdout" "" "$out"
+case "$(derive_error API)" in *"usage:"*) ;; *) fail "--derive-url with one argument doesn't print the usage" ;; esac
+pass "--derive-url with one argument stops with the usage"
+rc=0
+out="$(derive BOGUS "http://localhost:5062")" || rc=$?
+[ "$rc" -ne 0 ] || fail "--derive-url accepted an unknown app"
+expect_eq "--derive-url with an unknown app prints nothing on stdout" "" "$out"
+case "$(derive_error BOGUS "http://localhost:5062")" in *"unknown app"*) ;; *) fail "--derive-url with an unknown app doesn't say so" ;; esac
+pass "--derive-url refuses an app other than API, JOBS, FRONTEND and ADMIN"
 
 # --- Fedora only --------------------------------------------------------------------------------
 

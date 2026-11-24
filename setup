@@ -13,15 +13,58 @@ set -euo pipefail
 usage() {
   cat << 'EOF'
 Usage: ./setup [--headless] [--skip-secrets]
+       ./setup --derive-url <APP> <url>
 
   --headless       Use the service-account token even when the 1Password desktop app is installed.
   --skip-secrets   Skip the token and deploy/.env steps (CI, or a machine without vault access).
+  --derive-url     Print the published bind address and port derived from an app's url, or stop
+                   with a message (what step 8 does for each app; check-setup.sh tests it).
   -h, --help       Show this help.
 EOF
 }
 
+step() { printf 'setup: %s: %s\n' "$1" "$2"; }
+die() {
+  echo "setup: $*" >&2
+  exit 1
+}
+
+# Derives the host side of an app's published port from its 1Password `url` field: prints
+# <APP>_BIND_ADDRESS and <APP>_PORT lines for deploy/.env. Only a bare loopback origin passes:
+# http://localhost, http://127.0.0.1 or http://[::1] (lowercase) and a port, nothing after it, not
+# even a slash, because the same value is the apps' API_BASE_URL, APP_URL and the CORS origins,
+# which accept only an origin. So a wrong value can't publish an app on a public address.
+# localhost becomes 127.0.0.1 and [::1] becomes ::1, because Docker binds an address, not a name.
+# The port is 1 to 65535 with no leading zero.
+derive_published() { # APP, url
+  local app="$1" url="$2" host port item
+  case "$app" in
+    API | JOBS | FRONTEND | ADMIN) ;;
+    *) die "unknown app '$app': expected API, JOBS, FRONTEND or ADMIN." ;;
+  esac
+  item="$(tr '[:upper:]' '[:lower:]' <<< "$app")"
+  if [[ ! "$url" =~ ^http://(localhost|127\.0\.0\.1|\[::1\]):([0-9]+)$ ]]; then
+    die "the ${app}_URL value (the 1Password '$item' item's url) is not exactly an http origin on localhost, 127.0.0.1 or [::1] with a port: lowercase, no path, no trailing slash. Fix the item."
+  fi
+  host="${BASH_REMATCH[1]}"
+  port="${BASH_REMATCH[2]}"
+  if [[ ! "$port" =~ ^[1-9][0-9]{0,4}$ ]] || [ "$port" -gt 65535 ]; then
+    die "the port of ${app}_URL (the 1Password '$item' item's url) is not a number from 1 to 65535 without a leading zero."
+  fi
+  case "$host" in
+    localhost) host=127.0.0.1 ;;
+    '[::1]') host='::1' ;;
+  esac
+  printf '%s_BIND_ADDRESS="%s"\n%s_PORT="%s"\n' "$app" "$host" "$app" "$port"
+}
+
 force_headless=false
 skip_secrets=false
+if [ "${1:-}" = --derive-url ]; then
+  [ "$#" -eq 3 ] || die "usage: ./setup --derive-url <APP> <url>"
+  derive_published "$2" "$3"
+  exit 0
+fi
 for arg in "$@"; do
   case "$arg" in
     --headless) force_headless=true ;;
@@ -37,12 +80,6 @@ for arg in "$@"; do
       ;;
   esac
 done
-
-step() { printf 'setup: %s: %s\n' "$1" "$2"; }
-die() {
-  echo "setup: $*" >&2
-  exit 1
-}
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$root"
@@ -242,6 +279,16 @@ render_env() {
   if ! op inject -f -i "$root/deploy/development/compose.settings.tpl" -o "$secret_tmp" > /dev/null; then
     die "op inject failed: $hint"
   fi
+  # The four apps' published bind address and port, derived from their rendered URLs. They are added
+  # before the comparison, so an unchanged vault still reports "unchanged".
+  local app line derived
+  for app in API JOBS FRONTEND ADMIN; do
+    line="$(grep -m1 "^${app}_URL=" "$secret_tmp")" || die "op inject rendered no ${app}_URL."
+    line="${line#*=}"
+    line="${line#\"}"
+    derived="$(derive_published "$app" "${line%\"}")" || exit 1
+    printf '%s\n' "$derived" >> "$secret_tmp"
+  done
   if [ -f "$target" ] && cmp -s "$secret_tmp" "$target"; then
     rm -f "$secret_tmp"
     step deploy/.env unchanged

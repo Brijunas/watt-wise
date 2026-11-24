@@ -14,9 +14,16 @@ WORKDIR /src
 COPY --chown=node pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm fetch
 
-# dev: no source copied; Compose bind-mounts the tree at /src.
+# dev: no source copied; Compose bind-mounts the tree at /src and puts a named volume on each node_modules
+# folder below. The folders exist here, owned by node, so a new volume starts with node as its owner. The
+# entry point installs from the store, then runs the dev server with the container's arguments (Compose's
+# `command`: --host and --port, which Vite's CLI takes over `server` in vite.config.ts).
 FROM deps AS dev
-ENTRYPOINT ["pnpm", "--filter", "admin", "dev"]
+# pnpm run would otherwise run a second, online install first (the filtered install leaves its state out of date).
+ENV pnpm_config_verify_deps_before_run=false
+RUN mkdir -p node_modules admin/node_modules \
+    packages/api-client/node_modules packages/core/node_modules packages/i18n/node_modules packages/ui/node_modules
+ENTRYPOINT ["sh", "-ec", "pnpm install --frozen-lockfile --offline --ignore-scripts --filter 'admin...' && exec pnpm --filter admin dev \"$@\"", "dev"]
 
 # build: the sources the build needs, then the same `tsc && vite build` that CI's js job runs.
 # --ignore-scripts: the root's preinstall (npx only-allow) needs the network and prepare (husky) needs git.

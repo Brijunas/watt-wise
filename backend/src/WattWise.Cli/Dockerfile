@@ -3,8 +3,11 @@
 
 # restore: the SDK, the packages of the project closure, the folders the later stages write to.
 FROM mcr.microsoft.com/dotnet/sdk:11.0.100-resolute AS restore
-ENV NUGET_PACKAGES=/nuget
-RUN mkdir /src /nuget /out && chown $APP_UID:$APP_UID /src /nuget /out
+# bin and obj go to /artifacts, so nothing is written into /src (deploy/docs/images.md#build-output).
+ENV NUGET_PACKAGES=/nuget \
+    UseArtifactsOutput=true \
+    ArtifactsPath=/artifacts
+RUN mkdir /src /nuget /out /artifacts && chown $APP_UID:$APP_UID /src /nuget /out /artifacts
 USER $APP_UID
 WORKDIR /src
 COPY --chown=$APP_UID global.json .editorconfig ./
@@ -15,7 +18,7 @@ COPY --chown=$APP_UID backend/src/WattWise.Domain/WattWise.Domain.csproj backend
 COPY --chown=$APP_UID backend/src/WattWise.Infrastructure/WattWise.Infrastructure.csproj backend/src/WattWise.Infrastructure/
 RUN dotnet restore backend/src/WattWise.Cli/WattWise.Cli.csproj
 
-# dev: no source copied; Compose bind-mounts the tree at /src.
+# dev: no source copied; mount the tree at /src to run it (the Cli is not part of the Development stack).
 FROM restore AS dev
 ENTRYPOINT ["dotnet", "run", "--project", "backend/src/WattWise.Cli/WattWise.Cli.csproj", "--no-launch-profile", "--"]
 
