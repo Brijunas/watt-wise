@@ -156,6 +156,7 @@ jobs:
           fi
 
   images:
+    name: images (${{ matrix.image }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -165,25 +166,41 @@ jobs:
       matrix:
         include:
           - image: Api
+            dockerfile: backend/src/WattWise.Api/Dockerfile
+            kind: dotnet
             healthcheck: 'true'
           - image: Jobs
+            dockerfile: backend/src/WattWise.Jobs/Dockerfile
+            kind: dotnet
             healthcheck: 'true'
           - image: Cli
+            dockerfile: backend/src/WattWise.Cli/Dockerfile
+            kind: dotnet
             healthcheck: 'false'
+          - image: Frontend
+            dockerfile: frontend/Dockerfile
+            kind: web
+            app: frontend
+          - image: Admin
+            dockerfile: admin/Dockerfile
+            kind: web
+            app: admin
     env:
-      PROJECT: WattWise.${{ matrix.image }}
+      IMAGE: ${{ matrix.image }}
+      DOCKERFILE: ${{ matrix.dockerfile }}
       HEALTHCHECK: ${{ matrix.healthcheck }}
+      APP: ${{ matrix.app }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Build the dev target
-        run: docker build -f "backend/src/$PROJECT/Dockerfile" --target dev -t "image-dev" .
+        run: docker build -f "$DOCKERFILE" --target dev -t "image-dev" .
       - name: Build the build stage
-        run: docker build -f "backend/src/$PROJECT/Dockerfile" --target build -t "image-build" .
+        run: docker build -f "$DOCKERFILE" --target build -t "image-build" .
       - name: Build the runtime image
-        run: docker build -f "backend/src/$PROJECT/Dockerfile" -t "image-runtime" .
-      - name: Assert the runtime image
+        run: docker build -f "$DOCKERFILE" -t "image-runtime" .
+      - name: Assert the images run as a non-root user
         run: |
           for image in image-dev image-runtime; do
             user="$(docker image inspect -f '{{.Config.User}}' "$image")"
@@ -191,12 +208,16 @@ jobs:
               ''|root|0|0:*|root:*) echo "::error::$image runs as '$user', not as a non-root user."; exit 1 ;;
             esac
           done
+      - name: Assert the .NET runtime image
+        if: matrix.kind == 'dotnet'
+        run: |
+          project="WattWise.$IMAGE"
           health="$(docker image inspect -f '{{json .Config.Healthcheck}}' image-runtime)"
           if [ "$HEALTHCHECK" = true ] && [ "$health" = null ]; then
             echo "::error::The runtime image has no health check."
             exit 1
           fi
-          for path in /app "/app/$PROJECT.dll"; do
+          for path in /app "/app/$project.dll"; do
             if ! docker run --rm --entrypoint sh -e CHECK_PATH="$path" image-runtime -c 'test -e "$CHECK_PATH" && test ! -w "$CHECK_PATH"'; then
               echo "::error::The runtime user can write $path."
               exit 1
@@ -215,9 +236,24 @@ jobs:
               exit 1
             fi
           done
+      - name: Assert the web images hold no settings files
+        if: matrix.kind == 'web'
+        run: |
+          # `.env*` anywhere, and `*.local` files where the app's sources and the served files are.
+          find_settings="find / -xdev -name '.env*' 2>/dev/null; find /src /usr/share/nginx/html /etc/nginx -xdev \( -name '*.local' -o -name '*.local.*' \) 2>/dev/null || true"
+          for image in image-runtime image-build; do
+            found="$(docker run --rm --entrypoint sh "$image" -c "$find_settings")"
+            if [ -n "$found" ]; then
+              echo "::error::$image holds settings files: $found"
+              exit 1
+            fi
+          done
+      - name: Check the running web image
+        if: matrix.kind == 'web'
+        run: bash .github/scripts/check-web-image.sh image-runtime "$APP"
 
   # The one check main's ruleset requires. It has no name: key, so its check context is exactly "ci".
-  # Later stories (S5B.3's frontend image builds) add their jobs to needs.
+  # `images` holds the backend and the frontend and admin image builds (one matrix entry each).
   ci:
     needs: [secrets, workflows, js, dotnet, api-client, images]
     if: always()

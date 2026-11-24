@@ -1,6 +1,30 @@
 import { describe, expect, it } from 'vitest'
 import html from '../../index.html?raw'
 
+const socialTags = (source: string) =>
+  (source.match(/<meta\s+(?:property|name)="(?:og|twitter):[^>]*>/g) ?? []).map((tag) =>
+    tag.replace(/\s+/g, ' '),
+  )
+
+describe('admin index.html social tags', () => {
+  it('has exactly the Open Graph and Twitter set', () => {
+    expect(socialTags(html)).toEqual([
+      '<meta property="og:type" content="website" />',
+      '<meta property="og:site_name" content="Watt-Wise" />',
+      '<meta property="og:title" content="Watt-Wise Admin" />',
+      '<meta property="og:description" content="Watt-Wise administravimas." />',
+      '<meta property="og:url" content="${APP_URL}/" />',
+      '<meta property="og:image" content="${APP_URL}/social-card.png" vite-ignore />',
+      '<meta property="og:image:width" content="1200" />',
+      '<meta property="og:image:height" content="630" />',
+      '<meta property="og:image:alt" content="Watt-Wise" />',
+      '<meta property="og:locale" content="lt_LT" />',
+      '<meta name="twitter:card" content="summary_large_image" />',
+      '<meta name="twitter:image" content="${APP_URL}/social-card.png" vite-ignore />',
+    ])
+  })
+})
+
 describe('admin index.html theme-color tags', () => {
   it('has exactly two, one per colour scheme', () => {
     const tags = html.match(/<meta\s+name="theme-color"[^>]*>/g) ?? []
