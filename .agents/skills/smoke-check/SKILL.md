@@ -11,10 +11,10 @@ Tell the user before each step that runs `op`: they approve it in the 1Password 
 
 ## 1. Setup
 
-1. Start the Development stack (the `docker compose ... up -d --wait` command).
+1. Start the containerized Development stack through `op run` (the `op run --env-file deploy/development/compose.env -- docker compose ... up -d --wait` command in [development.md](../../../docs/development.md#running-the-system)). It builds and starts PostgreSQL, LGTM, Mailpit, the Api, the Jobs host, the frontend and the admin; nothing else has to be started. Run the `up` from this worktree: it replaces another worktree's app containers.
 2. `migrate`. After a regenerated `Initial`, run the `reset-app-tables.sql` command first.
 3. Seed the fixed accounts: `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- seed smoke-accounts`. It is idempotent: both accounts exist, confirmed, unlocked, with the 1Password password and the right role.
-4. Start the Api, the Jobs host (only when a flow sends email) and the dev servers the flows need (`frontend`, `admin`), each through `op run` in the background.
+4. The Api, the Jobs host and the dev servers run in the stack: check that `docker compose -f deploy/docker-compose.development.yml ps` shows them healthy. Host-run commands ([development.md](../../../docs/development.md#running-on-the-host)) are only a fallback, after `stop`ping the same service in the stack. The Hangfire dashboard answers 401 in the container, which isn't a failure.
 5. Read URLs with `op read "op://Watt Wise Development/<item>/url"`, or in a window from the variables of the matching file.
 6. Before the walk, on each app's origin unregister stale service workers and clear caches, localStorage and cookies (`browser_evaluate`): a previous run's app can be served from the old service worker.
 
@@ -46,4 +46,4 @@ A table flow x width x language -> pass or fail, with the failing detail (screen
 
 ## 5. Clean up
 
-Stop every process this check started and close the browser: `pkill -P` on the recorded `op run` PIDs, then on the dotnet and vite children. Stop processes by PID or port, never with a broad `pkill -f`: it can kill your own shell. Check that the ports are closed (the Api and the app dev servers; read them from the items' URLs, e.g. 5062, 5173, 5174). Leave the Development stack running.
+Close the browser and stop only what this check started. Leave the containerized stack running: it is the machine's shared stack, and the next story's `up` replaces its app containers anyway. If the check ran a host-run fallback, stop those processes by PID or port (`pkill -P` on the recorded `op run` PIDs, then on the dotnet and vite children; never a broad `pkill -f`, which can kill your own shell), check that their ports are closed (read them from the items' URLs), and `docker compose ... up -d` the stopped service again through `op run`.
