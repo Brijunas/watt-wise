@@ -4,7 +4,7 @@ Watt-Wise helps Lithuanian households find the cheapest electricity setup: it re
 
 ## Getting started
 
-- New machine: follow [setup.md](docs/setup.md) to install the tools and dependencies.
+- New machine: clone the repo and run `./setup` (Fedora, with git and Docker); [setup.md](docs/setup.md) explains it and the steps after it.
 - Everyday work: [development.md](docs/development.md) lists the commands and checks.
 
 ## Layout

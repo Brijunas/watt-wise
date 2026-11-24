@@ -1,6 +1,7 @@
 # Template for deploy/.env, the non-secret settings of the Development compose stack.
 # Docker Compose reads deploy/.env automatically, so everyday compose commands need no
-# op run. Render it after setup and whenever one of these 1Password values changes:
+# op run. ./setup renders it (and renders it again, only when it differs, whenever one of
+# these 1Password values changes). The command it runs:
 #
 #   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
 #
