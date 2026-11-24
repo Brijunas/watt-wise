@@ -21,6 +21,7 @@ ENTRYPOINT ["pnpm", "--filter", "frontend", "dev"]
 # build: the sources the build needs, then the same `tsc && vite build` that CI's js job runs.
 # --ignore-scripts: the root's preinstall (npx only-allow) needs the network and prepare (husky) needs git.
 FROM deps AS build
+RUN false
 COPY --chown=node package.json tsconfig.base.json vitest.base.js vitest.setup.js ./
 COPY --chown=node frontend/ frontend/
 COPY --chown=node packages/ packages/
