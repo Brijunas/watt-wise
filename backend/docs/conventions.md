@@ -15,14 +15,14 @@ Build settings, package management and code style for the .NET solution. The lay
 
 `backend/Directory.Build.props` applies to every project, so individual `.csproj` files only hold what is specific to them (SDK, references, packages):
 
-| Property                  | Value     | Why                                                                                                                                                                                      |
-| ------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TargetFramework`         | `net11.0` | One target for the whole solution.                                                                                                                                                       |
-| `Nullable`                | `enable`  | Nullable reference types everywhere.                                                                                                                                                     |
-| `ImplicitUsings`          | `enable`  | SDK default usings.                                                                                                                                                                      |
-| `AnalysisLevel`           | `latest`  | The built-in .NET analyzers at the default rule set of the current SDK. Individual rules are tuned in `.editorconfig`.                                                                   |
-| `EnforceCodeStyleInBuild` | `true`    | `.editorconfig` code style (IDE rules) is reported during `dotnet build`, not only in the IDE.                                                                                           |
-| `TreatWarningsAsErrors`   | `false`   | A project decision: warnings are reported but don't fail the build. Keep the build at 0 warnings anyway. A rule that must block the build is set to `error` severity in `.editorconfig`. |
+| Property                  | Value     | Why                                                                                                                                                                                                                                                          |
+| ------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `TargetFramework`         | `net11.0` | One target for the whole solution.                                                                                                                                                                                                                           |
+| `Nullable`                | `enable`  | Nullable reference types everywhere.                                                                                                                                                                                                                         |
+| `ImplicitUsings`          | `enable`  | SDK default usings.                                                                                                                                                                                                                                          |
+| `AnalysisLevel`           | `latest`  | The built-in .NET analyzers at the default rule set of the current SDK. Individual rules are tuned in `.editorconfig`.                                                                                                                                       |
+| `EnforceCodeStyleInBuild` | `true`    | `.editorconfig` code style (IDE rules) is reported during `dotnet build`, not only in the IDE.                                                                                                                                                               |
+| `TreatWarningsAsErrors`   | `false`   | A project decision: warnings are reported but don't fail the build. Keep the build at 0 warnings anyway: CI builds with `-warnaserror`, so a warning fails the pull request. A rule that must block the build is set to `error` severity in `.editorconfig`. |
 
 ## Package management
 

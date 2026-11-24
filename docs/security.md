@@ -74,9 +74,9 @@ How releases reach the VMs and how their secrets are kept. The repository is pub
 - **Hosted runners only.** Every workflow runs on GitHub-hosted runners. No self-hosted runner is ever attached to this repository.
 - **Fork pull requests.** Workflows from every external contributor wait for the maintainer's approval (the repository's strictest setting). No workflow uses `pull_request_target`, which runs with the base repository's secrets and skips that approval. The pull request workflow gets no secrets.
 - **Least privilege.** The default `GITHUB_TOKEN` is read-only, and each job grants itself only the `permissions` it needs; only the signing job gets `id-token: write`. GitHub Actions may not create or approve pull requests.
-- **Pinned actions.** Every action is pinned to a full commit SHA, enforced by the repository's SHA-pinning policy and kept current by Renovate. The pull request workflow lints the workflows with zizmor.
+- **Pinned actions.** Every action is pinned to a full commit SHA, enforced by the repository's SHA-pinning policy and kept current by Renovate. The pull request workflow lints the workflows with zizmor, and `main`'s ruleset requires its `ci` check ([workflows README](../.github/workflows/README.md)).
 - **Signed commits.** `main` accepts only signed commits. Pull requests are squash-merged, so GitHub signs the commit that lands.
-- **External pull requests.** The maintainer reads the diff before approving its workflows, above all `.github/`, `*.csproj`, `Directory.Build.*`, `package.json` scripts and the hook configuration. If it has to run, it runs in a Codespace or a throwaway VM, never on a machine that holds SSH keys, a 1Password session or `.env` files.
+- **External pull requests.** The maintainer reads the diff before approving its workflows, above all `.github/`, `*.csproj`, `Directory.Build.*`, `package.json` scripts, the hook configuration and `.betterleaks.toml` (CI's secret scan reads it from the pull request itself). If it has to run, it runs in a Codespace or a throwaway VM, never on a machine that holds SSH keys, a 1Password session or `.env` files.
 
 ## Smoke accounts
 

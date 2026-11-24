@@ -15,7 +15,9 @@ dotnet format backend/WattWise.slnx --verify-no-changes
 dotnet test --solution backend/WattWise.slnx
 ```
 
-Run all eight before committing; CI enforces the same from E5B. `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. `pnpm build` must also print no `(!)` warning; a new one counts as a failure (compare against main when a shared package grows). The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
+Run all eight before committing; the pull request workflow runs them on every PR, plus the secret scan of the PR's commits, zizmor, the pending-model check and the API-client diff ([workflows README](../.github/workflows/README.md)). `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. `pnpm build` must also print no `(!)` warning; a new one counts as a failure (compare against main when a shared package grows). The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
+
+The workflows are linted with zizmor (from `mise.toml`): `zizmor --offline .` skips the audits that need GitHub, and `GH_TOKEN=$(gh auth token) zizmor .` runs them all, like CI.
 
 ## Workspace (JS)
 
@@ -120,7 +122,7 @@ Only `WattWise.Cli migrate` changes the schema, in every environment; never use 
 | `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet ef migrations remove <infra>`                                                              | Removes the last migration if it isn't applied. Connects to check that.                                                                                                 |
 | `docker compose -f deploy/docker-compose.development.yml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d wattwise' < deploy/development/reset-app-tables.sql` | Drops the `app` tables and the migration history, after `Initial` was regenerated ([architecture.md](../backend/docs/architecture.md#persistence)). Then run `migrate`. |
 | `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet ef migrations list <infra>`                                                                | Lists the migrations and marks the ones not yet applied `(Pending)`. Without `op run` it can't show that.                                                               |
-| `dotnet ef migrations has-pending-model-changes <infra>`                                                                                                          | Fails if the model has changes no migration covers. CI runs it from E5B.                                                                                                |
+| `dotnet ef migrations has-pending-model-changes <infra>`                                                                                                          | Fails if the model has changes no migration covers. CI runs it on every pull request.                                                                                   |
 | `dotnet ef migrations script --idempotent <infra> -o <file>.sql`                                                                                                  | Writes the SQL of every migration, for review.                                                                                                                          |
 
 ## Accounts for development
