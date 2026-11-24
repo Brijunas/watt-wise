@@ -1,0 +1,11 @@
+# Throwaway (S5B.1): a workflow zizmor must flag. Never merged; it only runs by hand.
+name: CI probe
+
+on: workflow_dispatch
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: echo probe
