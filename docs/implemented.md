@@ -90,8 +90,8 @@ Made running Watt-Wise the same on every machine: in containers by default, incl
 - **S5B.1 Pull request workflow.** The first CI: the checks on every PR to `main`, whose ruleset requires the `ci` check.
 - **S5B.2 Backend images.** A `Dockerfile` for the Api, Jobs host and Cli with a `dev` and a non-root runtime target, on Azure Linux 4.0.
 - **S5B.3 Frontend images.** A `Dockerfile` for `frontend/` and `admin/`: a runtime image built once for every environment, configured at start.
-- **S5B.4 Setup installer.** `./setup` sets up a Fedora machine that has only git and Docker.
+- **S5B.4 Setup installer.** `./setup` set up a Fedora machine that has only git and Docker. Superseded by the OS-independent setup: `./setup` is gone, replaced by `mise run setup` ([setup.md](setup.md)).
 - **S5B.5 Containerized development stack.** The Api, Jobs host and both web apps run in the Compose stack from the `dev` targets with the tree bind-mounted.
 - **S5B.6 Automated first start.** `db-init` and `cli` one-shots set up the database, migrate and seed on the first `up`.
 - **S5B.7 VS Code debugging.** Attach configs for the Api and Jobs containers and browser configs for the two apps.
-- **S5B.8 Dev VM tethys.** `deploy/provision/dev-vm.sh` provisions the dev VM; it is reached over SSH only.
+- **S5B.8 Dev VM tethys.** `deploy/provision/dev-vm.sh` provisioned the dev VM; it was reached over SSH only. Superseded by the OS-independent setup: the script and its CI check are deleted, hardening a remote machine is its owner's job, and the remote-machine guidance stays in [environments.md](../deploy/docs/environments.md#a-remote-machine).

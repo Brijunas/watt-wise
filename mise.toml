@@ -5,3 +5,53 @@ betterleaks = "latest"
 dotnet = "latest"
 zizmor = "latest"
 shellcheck = "latest"
+# The 1Password CLI (`op`) is not here: it is a prerequisite installed by hand on every OS, any build
+# (it signs in with the service-account token below, not through the desktop app).
+
+# The 1Password service-account token (docs/security.md): `mise run setup` writes this dotenv file,
+# owner-only, and every mise environment of the repo loads it, so `op` signs in with it. A missing file
+# (before the first setup) is fine.
+[env]
+_.file = { path = "{{ xdg_config_home }}/watt-wise/op.env", redact = true }
+
+# Every task is plain commands, with no shell syntax, so each runs the same on Linux, macOS and Windows.
+[tasks.setup]
+description = "Set up this machine: tools, dependencies, 1Password service-account token, deploy/.env. Flags go after --"
+# `mise run` installs the missing tools (node included) before the task starts; the script reports
+# whether the installed tools changed since its last run.
+run = "node tools/setup/setup.ts"
+# The 1Password token prompt reads the terminal.
+raw = true
+
+[tasks.up]
+description = "Build and start the Development stack and wait until it is healthy"
+run = "op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait"
+
+[tasks.watch]
+description = "Rebuild the apps' images when a project file or the lockfile changes (own terminal)"
+run = "op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml watch"
+
+[tasks.down]
+description = "Stop and remove the Development stack's containers (the data stays in the volumes)"
+run = "docker compose -f deploy/docker-compose.development.yml down"
+
+[tasks.logs]
+description = "Follow the Development stack's logs; name services after -- (api, jobs, frontend, admin)"
+run = "docker compose -f deploy/docker-compose.development.yml logs -f"
+
+[tasks.check]
+description = "The eight checks of docs/development.md"
+run = [
+  "pnpm lint",
+  "pnpm format:check",
+  "pnpm typecheck",
+  "pnpm test",
+  "pnpm build",
+  "dotnet build backend/WattWise.slnx",
+  "dotnet format backend/WattWise.slnx --verify-no-changes",
+  "dotnet test --solution backend/WattWise.slnx",
+]
+
+[tasks.shellcheck]
+description = "shellcheck over every tracked shell script and the husky hooks"
+run = "node tools/shellcheck.ts"

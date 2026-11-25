@@ -1,7 +1,7 @@
 # Development environment: PostgreSQL, Grafana LGTM (traces, metrics and logs
 # over OTLP), Mailpit (catches every email the Jobs host sends) and the system itself: the Api, the
 # Jobs host, the frontend and the admin. Bind addresses, ports and user names come from 1Password,
-# rendered into deploy/.env (read by compose automatically; ./setup renders it):
+# rendered into deploy/.env (read by compose automatically; `mise run setup` renders it):
 #   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
 # Passwords and the apps' settings come from op run, so every up and watch goes through it:
 #   op run --env-file deploy/development/compose.env -- \
@@ -154,6 +154,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
+      # setup writes WATCH_POLLING into deploy/.env: true where a bind mount sends no file events.
+      DOTNET_USE_POLLING_FILE_WATCHER: ${WATCH_POLLING:-false}
       Database__Host: postgres
       Database__Port: '5432'
       Database__Name: ${API_DATABASE_NAME:-}
@@ -206,6 +208,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
+      DOTNET_USE_POLLING_FILE_WATCHER: ${WATCH_POLLING:-false}
       Database__Host: postgres
       Database__Port: '5432'
       Database__Name: ${JOBS_DATABASE_NAME:-}
@@ -251,6 +254,8 @@ services:
     environment:
       API_BASE_URL: ${API_URL:-}
       APP_URL: ${FRONTEND_URL:-}
+      # Read by Vite's watcher (packages/core/src/vite.ts).
+      WATCH_POLLING: ${WATCH_POLLING:-false}
     ports:
       - '${FRONTEND_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${FRONTEND_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:8080'
     volumes:
@@ -293,6 +298,7 @@ services:
       API_BASE_URL: ${API_URL:-}
       APP_URL: ${ADMIN_URL:-}
       FRONTEND_URL: ${FRONTEND_URL:-}
+      WATCH_POLLING: ${WATCH_POLLING:-false}
     ports:
       - '${ADMIN_BIND_ADDRESS:?render deploy/.env, see deploy/development/compose.settings.tpl}:${ADMIN_PORT:?render deploy/.env, see deploy/development/compose.settings.tpl}:8080'
     volumes:

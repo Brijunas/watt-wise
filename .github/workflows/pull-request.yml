@@ -67,7 +67,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
         with:
-          install_args: shellcheck
+          install_args: shellcheck node
       # Every tracked *.sh file, the husky hooks (no shebang; each carries a shellcheck directive),
       # and every other tracked file whose first line is a sh or bash shebang.
       - name: Lint the shell scripts
@@ -308,36 +308,40 @@ jobs:
         run: bash .github/scripts/check-web-image.sh image-runtime "$APP"
 
   setup:
+    name: setup (${{ matrix.os-image }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # One entry per distribution that runs the setup check. Another one adds an `install` key (its
+        # package-manager line for git, the Docker CLI and Compose, curl, sudo, tar and libatomic) and an
+        # `install-op` key (the official way to install the 1Password CLI there).
+        include:
+          - os-image: fedora:latest
+    env:
+      OS_IMAGE: ${{ matrix.os-image }}
+      OS_INSTALL: ${{ matrix.install }}
+      OS_INSTALL_OP: ${{ matrix.install-op }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Runs ./setup twice on a throwaway Fedora container that has only git and the Docker CLI. The
-      # token only lifts mise's GitHub rate limit inside the container.
-      - name: Check ./setup on a clean Fedora
+      # Runs `mise run setup` twice on a throwaway container of the matrix image that has only git,
+      # the Docker CLI and mise, then the eight development.md checks on it, with the runner's Docker
+      # socket for Testcontainers.
+      - name: Check mise run setup and the checks on a clean ${{ matrix.os-image }}
         env:
           # The job's read-only, ephemeral token, passed into the container by name only, to lift
           # mise's GitHub API rate limit.
           GITHUB_TOKEN: ${{ github.token }}
-        run: bash .github/scripts/check-setup.sh
-
-  dev-vm:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      # Runs the dev-VM provisioning script four times on a throwaway Fedora container with systemd,
-      # sshd and firewalld, on two Docker networks of documentation addresses.
-      - name: Check the dev-VM provisioning script
-        run: bash .github/scripts/check-dev-vm.sh
+        run: |
+          args=(--base "$OS_IMAGE")
+          if [ -n "$OS_INSTALL" ]; then args+=(--install "$OS_INSTALL"); fi
+          if [ -n "$OS_INSTALL_OP" ]; then args+=(--install-op "$OS_INSTALL_OP"); fi
+          bash .github/scripts/check-setup.sh "${args[@]}"
 
   first-start:
     runs-on: ubuntu-24.04
@@ -356,7 +360,7 @@ jobs:
   # The one check main's ruleset requires. It has no name: key, so its check context is exactly "ci".
   # `images` holds the backend and the frontend and admin image builds (one matrix entry each).
   ci:
-    needs: [secrets, workflows, shell, js, dotnet, api-client, images, setup, dev-vm, first-start]
+    needs: [secrets, workflows, shell, js, dotnet, api-client, images, setup, first-start]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5

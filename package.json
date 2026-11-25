@@ -12,8 +12,8 @@
     "lint": "eslint . --cache --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run --config eslint/vitest.config.js && pnpm -r --if-present run test",
-    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "vitest run --config eslint/vitest.config.js && node --test tools/ && pnpm -r --if-present run test",
+    "typecheck": "tsc -p tools && pnpm -r --if-present run typecheck",
     "build": "pnpm -r --if-present run build",
     "generate:api": "dotnet build backend/src/WattWise.Api && pnpm --filter @wattwise/api-client generate"
   },
@@ -22,6 +22,7 @@
     "@eslint/js": "^10.0.1",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
+    "@types/node": "^26.6.6",
     "@typescript/native": "npm:typescript@^7",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",

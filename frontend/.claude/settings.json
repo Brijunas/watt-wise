@@ -3,7 +3,7 @@
     "allow": [
       "Bash(gh pr merge:*)",
       "Bash(shellcheck:*)",
-      "Bash(op read \"op://Watt Wise Development/smoke-accounts/*\")",
+      "Bash(mise exec -- op read \"op://Watt Wise Development/smoke-accounts/*\")",
       "mcp__mui__useMuiDocs",
       "mcp__mui__fetchDocs"
     ],

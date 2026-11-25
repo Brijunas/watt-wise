@@ -1,15 +1,16 @@
 # Template for deploy/.env, the non-secret settings of the Development compose stack.
 # Docker Compose reads deploy/.env automatically, so everyday compose commands need no
-# op run. ./setup renders it (and renders it again, only when it differs, whenever one of
+# op run. `mise run setup` renders it (and renders it again, only when it differs, whenever one of
 # these 1Password values changes). The command it runs:
 #
-#   op inject -f -i deploy/development/compose.settings.tpl -o deploy/.env
+#   op inject -i deploy/development/compose.settings.tpl
 #
 # Passwords are never rendered; they stay in compose.env (op run).
 # GRAFANA_URL is not used by compose: the grafana MCP server reads it (.claude/mcp/grafana.sh).
-# API_URL, JOBS_URL, FRONTEND_URL and ADMIN_URL are the four apps' browser URLs. ./setup derives
+# API_URL, JOBS_URL, FRONTEND_URL and ADMIN_URL are the four apps' browser URLs. setup derives
 # each app's published <APP>_BIND_ADDRESS and <APP>_PORT from them and appends those eight keys
-# to deploy/.env (docs in deploy/docs/development-stack.md); they are not in this template.
+# to deploy/.env (docs in deploy/docs/development-stack.md), then WATCH_POLLING=true|false (whether
+# the containers poll for file changes); they are not in this template.
 # Vault: "Watt Wise Development", items postgres-admin, grafana, otlp, mailpit-smtp, mailpit,
 # api, jobs, frontend and admin.
 POSTGRES_BIND_ADDRESS="{{ op://Watt Wise Development/postgres-admin/server }}"

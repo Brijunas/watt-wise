@@ -1,4 +1,5 @@
 # shellcheck shell=sh
 # After a pull or merge, rebuild the Development stack if it runs from this checkout.
-[ -f deploy/development/follow-stack.sh ] || exit 0
-sh deploy/development/follow-stack.sh
+[ -f tools/follow-stack.ts ] || exit 0
+command -v node >/dev/null 2>&1 || exit 0
+node tools/follow-stack.ts

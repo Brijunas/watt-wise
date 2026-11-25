@@ -172,12 +172,16 @@ export const vendorChunks = {
   ],
 }
 
-// The address `vite dev` and `vite preview` listen on, taken from the app's own URL. The port is
-// strict so a busy port fails loudly instead of moving to one the API's CORS doesn't allow. An URL
-// without a port gets its scheme's default (80 or 443). Unset means Vite's defaults apply.
+// The dev-server options (address and watch) for `vite dev` and `vite preview`. The address comes
+// from the app's own URL. The port is strict so a busy port fails loudly instead of moving to one
+// the API's CORS doesn't allow. An URL without a port gets its scheme's default (80 or 443). Unset
+// returns undefined, so Vite's defaults apply and polling is off too (intended: APP_URL is always
+// set). `watchPolling` is the WATCH_POLLING setting: exactly 'true' turns on file-watch polling, for
+// bind mounts whose file events don't arrive (Docker Desktop on macOS, Windows with an NTFS clone).
 export const serverAddress = (
   appUrl?: string,
-): { host: string; port: number; strictPort: true } | undefined => {
+  watchPolling?: string,
+): { host: string; port: number; strictPort: true; watch?: { usePolling: true } } | undefined => {
   if (!appUrl) return undefined
   let url: URL
   try {
@@ -186,5 +190,10 @@ export const serverAddress = (
     throw new Error(`APP_URL is not a valid URL: ${JSON.stringify(appUrl)}`)
   }
   const port = url.port ? Number(url.port) : url.protocol === 'https:' ? 443 : 80
-  return { host: url.hostname.replace(/^\[(.*)\]$/, '$1'), port, strictPort: true }
+  return {
+    host: url.hostname.replace(/^\[(.*)\]$/, '$1'),
+    port,
+    strictPort: true,
+    ...(watchPolling === 'true' ? { watch: { usePolling: true as const } } : {}),
+  }
 }
