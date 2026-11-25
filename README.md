@@ -4,12 +4,12 @@ Watt-Wise helps Lithuanian households find the cheapest electricity setup: it re
 
 ## Getting started
 
-- New machine: clone the repo and run `./setup` (Fedora, with git and Docker); [setup.md](docs/setup.md) explains it and the steps after it.
+- New machine: install git, Docker and mise, clone the repo and run `mise run setup` (Linux, macOS or Windows); [setup.md](docs/setup.md) explains it and the steps after it.
 - Everyday work: [development.md](docs/development.md) lists the commands and checks.
 
 ## Layout
 
-A monorepo with plain top-level folders and no task runner: a pnpm workspace for the web apps and shared packages, and a .NET solution for the backend. The folder tree is under "Repository" in [technical.md](docs/technical.md).
+A monorepo with plain top-level folders and no build orchestrator (mise tasks wrap the everyday commands): a pnpm workspace for the web apps and shared packages, and a .NET solution for the backend. The folder tree is under "Repository" in [technical.md](docs/technical.md).
 
 ## Docs
 

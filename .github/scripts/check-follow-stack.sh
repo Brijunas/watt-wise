@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Asserts deploy/development/follow-stack.sh and the husky hooks that call it (deploy/docs/development-stack.md,
-# "Following git"). Needs only git and sh: docker and op are stubs on PATH, the repo is a throwaway one.
+# Asserts tools/follow-stack.ts and the husky hooks that call it (deploy/docs/development-stack.md,
+# "Following git"). Needs git, sh and node: docker and op are stubs on PATH, the repo is a throwaway one.
 #   bash .github/scripts/check-follow-stack.sh
 set -euo pipefail
 
@@ -9,14 +9,19 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
 stubs="$work/stubs"
-bare="$work/bare" # a PATH with git and sh only: no docker
+bare="$work/bare" # a PATH with git, sh and node only: no docker
 repo="$work/repo"
-mkdir -p "$stubs" "$bare" "$repo/deploy/development" "$repo/.husky"
+mkdir -p "$stubs" "$bare" "$repo/tools" "$repo/.husky"
 
 for tool in git sh; do
   ln -s "$(command -v "$tool")" "$stubs/$tool"
   ln -s "$(command -v "$tool")" "$bare/$tool"
 done
+# node: a wrapper around the real binary, so a version manager's shim needs nothing else on PATH.
+node_real="$(node -p 'process.execPath')"
+printf '#!/bin/sh\nexec "%s" "$@"\n' "$node_real" > "$stubs/node"
+chmod +x "$stubs/node"
+cp "$stubs/node" "$bare/node"
 
 # docker: `inspect` prints STUB_SRC and exits with STUB_INSPECT_EXIT (0 by default).
 cat > "$stubs/docker" << 'STUB'
@@ -33,7 +38,7 @@ exit "${STUB_OP_EXIT:-0}"
 STUB
 chmod +x "$stubs/docker" "$stubs/op"
 
-cp "$root/deploy/development/follow-stack.sh" "$repo/deploy/development/"
+cp "$root/tools/follow-stack.ts" "$root/tools/follow-stack-rules.ts" "$repo/tools/"
 for hook in post-merge post-checkout post-rewrite; do cp "$root/.husky/$hook" "$repo/.husky/"; done
 
 git -C "$repo" init -q -b main
@@ -129,7 +134,7 @@ STUB_OP_EXIT=1 run_hook "$stubs" post-merge 0
 [ "$status" = 0 ] || fail "a failed rebuild: hook exit code $status, expected 0"
 [ "$(wc -l < "$log")" = 1 ] || fail "a failed rebuild: op was not called once"
 grep -qxF 'follow-stack: rebuild failed; run it yourself:' "$out" || fail "a failed rebuild: no hint line"
-grep -qxF "  op $expected_cmd" "$out" || fail "a failed rebuild: the command is not printed"
+grep -qxF "  mise run up" "$out" || fail "a failed rebuild: the command is not printed"
 pass "a failed rebuild prints the command and the hook exits 0"
 
 # 6. An agent session prints the command and never calls op.
@@ -137,7 +142,7 @@ expect_hint_only() { # description
   [ "$status" = 0 ] || fail "$1: exit code $status, expected 0"
   [ ! -s "$log" ] || fail "$1: op was called: $(cat "$log")"
   grep -qxF 'follow-stack: the Development stack runs from this checkout; rebuild it with:' "$out" || fail "$1: no hint line"
-  grep -qxF "  op $expected_cmd" "$out" || fail "$1: the command is not printed"
+  grep -qxF "  mise run up" "$out" || fail "$1: the command is not printed"
   pass "$1"
 }
 AGENT_ENV=(CLAUDECODE=1)
@@ -188,7 +193,7 @@ commit_file feat
 g switch -q main
 real_git "git switch to another commit rebuilds once" 1 switch -q feat
 real_git "git switch back rebuilds once" 1 switch -q main
-real_git "git checkout of a file does nothing" 0 checkout -q -- deploy/development/follow-stack.sh
+real_git "git checkout of a file does nothing" 0 checkout -q -- tools/follow-stack.ts
 real_git "git switch to the same commit does nothing" 0 switch -q -c same
 g switch -q main
 real_git "a fast-forward git merge rebuilds once" 1 merge -q --ff-only feat

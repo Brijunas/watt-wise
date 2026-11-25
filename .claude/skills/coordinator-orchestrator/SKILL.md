@@ -58,7 +58,7 @@ Write every answer into the progress file under "Settled answers", grouped per s
 ## 3. Setup
 
 1. **Orca run.** `orca orchestration run-create --objective "<run name>: <epic title>" --from $ORCA_TERMINAL_HANDLE --json`. Record the run id.
-2. **The window**, if `~/.config/git/delegated-signing.md` exists: start it for the agreed length with the commands in its "Agentic window" section (the user approves one 1Password prompt, then leaves). It starts delegated signing and resolves the Development settings into `$XDG_RUNTIME_DIR/agentic-window/<name>.env` files. Check that `SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/delegated-signing.sock ssh-add -l` lists 2 keys. From now on run every documented `op run --env-file <f> -- <cmd>` in a story worktree as `set -a; . $XDG_RUNTIME_DIR/agentic-window/<name>.env; set +a; <cmd>`, so nothing asks 1Password. Without that file there is no window: story sessions escalate when a commit asks for 1Password, and `op` steps go to "User steps".
+2. **The window**, if `~/.config/git/delegated-signing.md` exists: start it for the agreed length with the commands in its "Agentic window" section. It starts delegated signing. Check that `SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/delegated-signing.sock ssh-add -l` lists 2 keys. `op` needs no window: every documented `op run --env-file <f> -- <cmd>` runs as written in a story worktree, because the service-account token is in the environment (`docs/setup.md`) and nothing asks 1Password. Without that file there is no window: story sessions escalate when a commit asks for a signing key.
 3. **Goal.** Call **SetGoal**: "every story of `<run name>` is merged on `origin/main`, the end-of-run PR is merged, and your final report ends with the line `<run name> DONE`" (the progress file is deleted at cleanup, so the goal never reads it). The user approves it before leaving; record it in the progress file. When SetGoal or PauseGoal isn't available as a tool, keep the goal line in the progress file instead.
 4. **Watchdog.** Create an automation that reuses this session. Its precheck uses no tokens and passes only when the run isn't DONE and you have stopped: your transcript ends on a usage-limit error, or your session is gone ([references/watchdog.sh](references/watchdog.sh)).
 
@@ -113,7 +113,7 @@ Push-notify the user (PushNotification) only when the run ends or stops.
 
 When the story session reports its PR ready (all checks green, review loop clean) and before anyone runs `gh pr merge <n> --squash`:
 
-1. Run the story's QUEUED OP STEPS yourself in the story worktree, from the window's files (reset or migrate the database first when the story regenerated `Initial`).
+1. Run the story's QUEUED OP STEPS yourself in the story worktree (reset or migrate the database first when the story regenerated `Initial`).
 2. Run `/smoke-check` in the story worktree, with the flows from the story's Done criteria.
 3. Bugs go back to the story session (`orca orchestration send --to dispatch:<id>`); it fixes them, the review loop runs again on the fix, and you repeat steps 1-2 for the affected flows. Merge only when the smoke check is clean.
 

@@ -1,6 +1,6 @@
 # Running on the host
 
-The commands to run the apps and the hosts directly on the machine, as an option next to the containerized stack ([development.md](development.md#running-the-system)). Stop the same service in the stack first: the ports are the same, and the database is too. Every command runs from the repo root.
+The commands to run the apps and the hosts directly on the machine, as an option next to the containerized stack ([development.md](development.md#running-the-system)). Stop the same service in the stack first: the ports are the same, and the database is too. Every command runs from the repo root. Outside an interactive shell with mise activated (an agent's or tool's shell), write `mise exec -- op run …` for the `op run` commands.
 
 ## Running the apps
 

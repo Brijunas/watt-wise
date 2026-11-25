@@ -374,6 +374,40 @@ describe('serverAddress', () => {
   it('throws a clear error for an invalid URL', () => {
     expect(() => serverAddress('not a url')).toThrow(/APP_URL is not a valid URL/)
   })
+
+  it('turns on file-watch polling when watchPolling is exactly "true"', () => {
+    expect(serverAddress('http://localhost:5173', 'true')).toEqual({
+      host: 'localhost',
+      port: 5173,
+      strictPort: true,
+      watch: { usePolling: true },
+    })
+  })
+
+  it.each([undefined, 'false', 'TRUE', '1', ''])(
+    'has no watch key when watchPolling is %j',
+    (value) => {
+      expect(serverAddress('http://localhost:5173', value)).toStrictEqual({
+        host: 'localhost',
+        port: 5173,
+        strictPort: true,
+      })
+    },
+  )
+
+  it('keeps the IPv6 host and adds polling for "true"', () => {
+    expect(serverAddress('http://[::1]:5173', 'true')).toStrictEqual({
+      host: '::1',
+      port: 5173,
+      strictPort: true,
+      watch: { usePolling: true },
+    })
+  })
+
+  it('is undefined without APP_URL even when watchPolling is "true"', () => {
+    expect(serverAddress(undefined, 'true')).toBeUndefined()
+    expect(serverAddress('', 'true')).toBeUndefined()
+  })
 })
 
 describe('vendorChunks', () => {

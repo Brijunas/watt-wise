@@ -182,6 +182,16 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
   },
   {
+    // The setup and git-hook scripts run in Node, not in a browser.
+    files: ['tools/**/*.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    // node:test's describe and it return promises that the runner collects.
+    files: ['tools/**/*.test.ts'],
+    rules: { '@typescript-eslint/no-floating-promises': 'off' },
+  },
+  {
     files: ['**/*.{js,mjs,cjs,jsx}'],
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: { globals: globals.node },

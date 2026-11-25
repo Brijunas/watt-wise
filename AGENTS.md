@@ -15,7 +15,7 @@ Keep each fact in one owning document and link to it elsewhere. Read the relevan
 | Changing architecture, dependencies, or shared conventions                     | [Technical specification](docs/technical.md)                                           |
 | Touching accounts, permissions, personal data, secrets, or deployment security | [Security](docs/security.md)                                                           |
 | Setting up a machine                                                           | [Setup](docs/setup.md)                                                                 |
-| Setting up the dev VM (tethys) or reaching it over SSH                         | [Environments](deploy/docs/environments.md)                                            |
+| The environments, or reaching a remote Development machine over SSH            | [Environments](deploy/docs/environments.md)                                            |
 | Running apps, tests, builds, or commit checks                                  | [Development](docs/development.md)                                                     |
 | Running an app on the host instead of the stack                                | [Running on the host](docs/running-on-the-host.md)                                     |
 | Debugging the apps in VS Code                                                  | [Debugging](deploy/docs/debugging.md)                                                  |
@@ -41,7 +41,7 @@ There is no root rules directory. Path rules live in [backend/.claude/rules](bac
 
 Read the matching skill for [migrations](.agents/skills/ef-migration/SKILL.md), [dependency updates](.agents/skills/update-deps/SKILL.md), [story writing](.agents/skills/write-story/SKILL.md), or [shipping PRs](.agents/skills/ship-pr/SKILL.md). Also [frontend translations](.agents/skills/frontend-translations/SKILL.md) and [smoke checks](.agents/skills/smoke-check/SKILL.md). Claude equivalents live in [.claude/skills](.claude/skills/).
 
-Run all eight [development checks](docs/development.md#checks) before committing; keep backend warnings at zero. Notify the user before `op` commands requiring desktop authorization. Preserve secret-scanning hooks.
+Run all eight [development checks](docs/development.md#checks) before committing; keep backend warnings at zero. `op` runs unattended with the service-account token mise loads (see [setup](docs/setup.md)); no approval is needed. Preserve secret-scanning hooks.
 
 Use descriptive scope/story commit subjects. PRs explain behavior, reference stories, report validation, and include relevant UI screenshots. Never add AI attribution or Codex session links. Update epics when stories ship; archive completed epics. Give concurrent sessions separate worktrees and delegated workers explicit file ownership. Infrastructure files (Dockerfiles, Compose, nginx, shell scripts, workflows, `mise.toml`) go to the [`dev-ops-engineer`](.codex/agents/dev-ops-engineer.toml) agent.
 

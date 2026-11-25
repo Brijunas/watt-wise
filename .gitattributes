@@ -1,3 +1,6 @@
+# Text files are LF in the work tree on every OS (the shell scripts and the Dockerfiles run in Linux containers).
+* text=auto eol=lf
+
 # Binary files: no line-ending conversion, no text diff or merge.
 *.png binary
 *.ico binary

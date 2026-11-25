@@ -7,7 +7,7 @@ import pwaManifest from './src/app/pwa-manifest.ts'
 
 // In Development, 1Password supplies APP_URL (see .env.op.development); without it (CI, tests,
 // builds) Vite's defaults apply.
-const listen = serverAddress(process.env.APP_URL)
+const listen = serverAddress(process.env.APP_URL, process.env.WATCH_POLLING)
 
 export default defineConfig({
   server: listen,
