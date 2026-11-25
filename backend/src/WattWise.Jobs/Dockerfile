@@ -22,7 +22,8 @@ RUN set -eu; \
     mkdir /vsdbg; \
     tar -xzf /tmp/vsdbg.tar.gz -C /vsdbg; \
     rm /tmp/vsdbg.tar.gz; \
-    chmod +x /vsdbg/vsdbg /vsdbg/createdump; \
+    chmod -R a=rX /vsdbg; \
+    chmod a+x /vsdbg/vsdbg /vsdbg/createdump; \
     [ "$(head -n 1 /vsdbg/version.txt | cut -d ' ' -f 1)" = "$VSDBG_VERSION" ]
 
 # restore: the SDK, the packages of the project closure, the folders the later stages write to.
@@ -46,7 +47,9 @@ RUN dotnet restore backend/src/WattWise.Jobs/WattWise.Jobs.csproj
 # of asking, since --non-interactive has nobody to ask. /vsdbg is root-owned and read-only for the
 # app user, which only runs it.
 FROM restore AS dev
-COPY --from=vsdbg --chown=root:root --chmod=a=rX /vsdbg /vsdbg
+# No --chmod on this copy: a symbolic one stripped the directories' x bit on CI's BuildKit (note in
+# frontend/Dockerfile). The vsdbg stage sets the modes.
+COPY --from=vsdbg --chown=root:root /vsdbg /vsdbg
 ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true
 ENTRYPOINT ["dotnet", "watch", "--non-interactive", "--project", "backend/src/WattWise.Jobs/WattWise.Jobs.csproj", "run", "--no-launch-profile"]
 
