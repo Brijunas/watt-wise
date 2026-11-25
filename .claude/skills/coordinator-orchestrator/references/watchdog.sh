@@ -19,7 +19,7 @@ if grep -qF -e "$run DONE" -e "$run STOPPED" "$progress" 2>/dev/null; then
 fi
 
 # Newest top-level transcript (subagent transcripts live in subfolders).
-newest=$(ls -t "$folder"/*.jsonl 2>/dev/null | head -n 1)
+newest=$(find "$folder" -maxdepth 1 -name '*.jsonl' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -n 1 | cut -d' ' -f2-)
 [ -n "$newest" ] || exit 1
 
 # Last conversation entry; the file ends with metadata entries (pr-link, cost-state, ...).

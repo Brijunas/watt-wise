@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(gh pr merge:*)",
+      "Bash(shellcheck:*)",
       "Bash(op read \"op://Watt Wise Development/smoke-accounts/*\")"
     ],
     "deny": [

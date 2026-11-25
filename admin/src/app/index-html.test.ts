@@ -14,13 +14,8 @@ describe('admin index.html social tags', () => {
       '<meta property="og:title" content="Watt-Wise Admin" />',
       '<meta property="og:description" content="Watt-Wise administravimas." />',
       '<meta property="og:url" content="${APP_URL}/" />',
-      '<meta property="og:image" content="${APP_URL}/social-card.png" vite-ignore />',
-      '<meta property="og:image:width" content="1200" />',
-      '<meta property="og:image:height" content="630" />',
-      '<meta property="og:image:alt" content="Watt-Wise" />',
       '<meta property="og:locale" content="lt_LT" />',
-      '<meta name="twitter:card" content="summary_large_image" />',
-      '<meta name="twitter:image" content="${APP_URL}/social-card.png" vite-ignore />',
+      '<meta name="twitter:card" content="summary" />',
     ])
   })
 })

@@ -145,13 +145,13 @@ expected_config() {
   fi
 }
 for pair in "$a $api_a" "$b $api_b"; do
-  set -- $pair
-  get "$1" /config.js
-  expect_eq "/config.js status of $2" 200 "$status"
-  expect_eq "/config.js body of $2" "$(expected_config "$2")" "$(cat "$work/body")"
-  expect_eq "/config.js cache of $2" no-cache "$(header cache-control)"
+  read -r pair_url pair_api <<< "$pair"
+  get "$pair_url" /config.js
+  expect_eq "/config.js status of $pair_api" 200 "$status"
+  expect_eq "/config.js body of $pair_api" "$(expected_config "$pair_api")" "$(cat "$work/body")"
+  expect_eq "/config.js cache of $pair_api" no-cache "$(header cache-control)"
   case "$(header content-type)" in
-    text/javascript* | application/javascript*) pass "/config.js content type of $2" ;;
+    text/javascript* | application/javascript*) pass "/config.js content type of $pair_api" ;;
     *) fail "/config.js content type: '$(header content-type)'" ;;
   esac
 done
@@ -163,10 +163,9 @@ expect_eq "/index.html cache" no-cache "$(header cache-control)"
 cp "$work/body" "$work/index.html"
 grep -qF "<div id=\"root\">" "$work/index.html" || fail "/index.html is not the app's page"
 grep -qF "property=\"og:url\" content=\"$app_url/\"" "$work/index.html" || fail "og:url is not $app_url/"
-grep -qF "property=\"og:image\" content=\"$app_url/social-card.png\"" "$work/index.html" || fail "og:image is not $app_url/social-card.png"
-grep -qF "name=\"twitter:image\" content=\"$app_url/social-card.png\"" "$work/index.html" || fail "twitter:image is not $app_url/social-card.png"
+# shellcheck disable=SC2016 # the literal `${` is the placeholder being searched for
 if grep -qF '${' "$work/index.html"; then fail "/index.html still holds a placeholder"; fi
-pass "og:url, og:image and twitter:image hold the container's APP_URL"
+pass "og:url holds the container's APP_URL"
 for path in / /settings /a/b/c; do
   get "$a" "$path"
   expect_eq "$path status" 200 "$status"

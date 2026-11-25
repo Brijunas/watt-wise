@@ -6,6 +6,7 @@
 set -euo pipefail
 
 if ! token=$(gh auth token 2>/dev/null) || [[ -z "$token" ]]; then
+  # shellcheck disable=SC2016 # the backticks are literal Markdown code, not a command substitution
   echo 'github MCP: run `gh auth login` first' >&2
   exit 1
 fi

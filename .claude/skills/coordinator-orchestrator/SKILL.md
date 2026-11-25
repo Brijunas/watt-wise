@@ -38,6 +38,7 @@ After a compaction, a restart or a watchdog resume, read the progress file befor
 2. **Latest code.** `git fetch --prune`, then fast-forward this worktree's branch to `origin/main` (`git merge --ff-only origin/main`). Stop if it can't fast-forward.
 3. **The stories.** Every story of the run must still be a bullet in `docs/epics.md`, and the run must start at the first unshipped story of its epic, because each story builds on the last. Read the epic's intro and every story in the run, plus the docs they name.
 4. **Your handle.** `$ORCA_TERMINAL_HANDLE` is your terminal; every `orca orchestration` call takes `--from` with it. Record it in the progress file. It changes after an Orca restart (see Recovery).
+5. **Codex hooks**, with the Codex flow: if `.codex/hooks` changed since Codex last ran here, the user trusts them once in Codex's hooks menu (`codex` in the repo, pick trust) before the grilling ends. An agent can't answer that menu, and it blocks unattended Codex workers.
 
 ## 2. Grilling
 
@@ -48,6 +49,8 @@ The only time the user is asked. Load the `grilling` skill and follow it, asking
    - **Window length**, in hours, for signing and the settings files (see Setup).
    - **How the run behaves**, only what the CLAUDE.md rules don't already settle.
 2. **Then story by story, in run order**, until nothing in that story is open: what the story text, its Done line and the docs leave open, product and security choices included, so no story stops on them later.
+   - **Infra stories** also cover container env exposure (which settings reach which container) and rootful vs rootless Docker.
+   - **Base-image tags:** before the grilling settles one, check that it exists (Microsoft images: `https://mcr.microsoft.com/v2/dotnet/<repo>/tags/list`).
 3. **In the same pass, collect what only the user can give later:** new `op://` lines (the user adds them during the grilling), allowlist or security-control changes, anything paid.
 
 Write every answer into the progress file under "Settled answers", grouped per story. Show a short summary, and confirm each story's answers. Then confirm with one AskUserQuestion that **from here on the user answers nothing**. Nothing starts before that.
@@ -97,6 +100,12 @@ Each batch the wait loop returns (see Waiting): handle each message:
 - **"Worker stopped without reporting"**: read the screen every time. It is usually waiting on your answer, or stopped on a usage limit (see Recovery), or Claude Code's "Teach auto mode about your environment?" dialog blocks it silently: dismiss that with `orca terminal send --terminal <S> --text $'\x1b'`. Send what it needs with `orca orchestration send --to dispatch:<id> --from $ORCA_TERMINAL_HANDLE`.
 - **A block it escalates** (signing, push, merge, a hook): see Recovery. A blocked merge gets the Astra review below.
 - **`worker_done`**: see Finish.
+
+Message bodies of `orca orchestration` calls always go in single quotes, or through `--body-file`: a double-quoted `$(...)` once expanded a secret into a message.
+
+Poll a PR's checks with `gh pr checks <n>`, not `gh run list --branch`, which lags.
+
+Inside the sandbox (bwrap), `op` works with the read-only service-account token file that [docs/security.md](../../../docs/security.md) names; the 1Password desktop-app path doesn't work there.
 
 Push-notify the user (PushNotification) only when the run ends or stops.
 

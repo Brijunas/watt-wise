@@ -11,13 +11,13 @@ public class CorsStartupTests(DatabaseFixture fixture) : IClassFixture<DatabaseF
         {
             ["Cors:AllowedOrigins:0"] = "https://app.example.test/path",
         };
-        await using TestHostFactory<Program> factory = new(settings);
+        StartupFailureCapture capture = new();
+        await using TestHostFactory<Program> factory = new(settings, capture.Decorate);
 
         Exception? exception = Record.Exception(() => factory.CreateClient());
 
-        Assert.Contains(
-            ExceptionChain.Of(exception!),
-            e => e is OptionsValidationException && e.Message.Contains("Cors:AllowedOrigins", StringComparison.Ordinal));
+        OptionsValidationException failure = capture.AssertValidationFailure(exception);
+        Assert.Contains("Cors:AllowedOrigins", failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -28,12 +28,12 @@ public class CorsStartupTests(DatabaseFixture fixture) : IClassFixture<DatabaseF
             ["Cors:AllowedOrigins:0"] = "https://app.example.test",
             ["Cors:AdminOrigin"] = "https://admin.example.test",
         };
-        await using TestHostFactory<Program> factory = new(settings);
+        StartupFailureCapture capture = new();
+        await using TestHostFactory<Program> factory = new(settings, capture.Decorate);
 
         Exception? exception = Record.Exception(() => factory.CreateClient());
 
-        Assert.Contains(
-            ExceptionChain.Of(exception!),
-            e => e is OptionsValidationException && e.Message.Contains("Cors:AdminOrigin", StringComparison.Ordinal));
+        OptionsValidationException failure = capture.AssertValidationFailure(exception);
+        Assert.Contains("Cors:AdminOrigin", failure.Message, StringComparison.Ordinal);
     }
 }

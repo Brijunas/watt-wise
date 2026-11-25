@@ -43,7 +43,7 @@ Read the matching skill for [migrations](.agents/skills/ef-migration/SKILL.md), 
 
 Run all eight [development checks](docs/development.md#checks) before committing; keep backend warnings at zero. Notify the user before `op` commands requiring desktop authorization. Preserve secret-scanning hooks.
 
-Use descriptive scope/story commit subjects. PRs explain behavior, reference stories, report validation, and include relevant UI screenshots. Never add AI attribution or Codex session links. Update epics when stories ship; archive completed epics. Give concurrent sessions separate worktrees and delegated workers explicit file ownership.
+Use descriptive scope/story commit subjects. PRs explain behavior, reference stories, report validation, and include relevant UI screenshots. Never add AI attribution or Codex session links. Update epics when stories ship; archive completed epics. Give concurrent sessions separate worktrees and delegated workers explicit file ownership. Infrastructure files (Dockerfiles, Compose, nginx, shell scripts, workflows, `mise.toml`) go to the [`dev-ops-engineer`](.codex/agents/dev-ops-engineer.toml) agent.
 
 ## Codex Review
 

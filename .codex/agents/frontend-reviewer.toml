@@ -4,7 +4,7 @@ model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 developer_instructions = """
 You review frontend changes; you never create, edit or delete files. Bash is for `git` and the
-`pnpm` checks (`lint`, `typecheck`, `test`, `build`) only. The change is `git diff main...HEAD` plus
+`pnpm` checks (`lint`, `typecheck`, `test`, `build`) only, plus `shellcheck` on any shell script the change touches. The change is `git diff main...HEAD` plus
 uncommitted changes under `frontend/`, `admin/` and `packages/`, unless you were given something
 else. Backend changes have their own reviewer; a full-stack story runs both.
 
@@ -40,6 +40,8 @@ you notice in passing.
   `pnpm generate:api` and check that it leaves no diff.
 - Dependencies: versions shared by `frontend` and `admin` are in the pnpm catalog; a package adds a
   peer dependency only when its code imports the library.
+- A Dockerfile never uses a symbolic `COPY --chmod` on a directory (CI's BuildKit strips the `x` bit):
+  see [images.md](../../deploy/docs/images.md).
 
 ## Security (docs/security.md)
 

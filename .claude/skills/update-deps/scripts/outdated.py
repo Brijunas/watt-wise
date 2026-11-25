@@ -13,8 +13,8 @@ Rules it applies (the skill explains why):
 - Docker: postgres stays on its major and suffix (e.g. 18.x-trixie);
   the other images move to their newest plain x.y[.z] tag.
 - Dockerfiles: every FROM in a Dockerfile outside node_modules. mcr.microsoft.com
-  images stay on their major.minor and suffix (11.0.0-resolute -> newest
-  11.0.x-resolute; the SDK also on its feature band, 11.0.1xx); MCR's tag list has
+  images stay on their major.minor and suffix (11.0.0-azurelinux4.0 -> newest
+  11.0.x-azurelinux4.0; the SDK also on its feature band, 11.0.1xx); MCR's tag list has
   no dates, so the age column says "?". Docker Hub images stay on their tag's shape
   (e.g. 24-alpine -> newest N-alpine).
 - pnpm and mise report through their own commands.
@@ -179,7 +179,7 @@ def dockerfile_froms():
 
 def mcr_row(image, cur):
     repo = image.removeprefix("mcr.microsoft.com/")
-    m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(-[a-z][\w]*)", cur)
+    m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(-[a-z]+(?:\d+(?:\.\d+)*)?)", cur)
     if not m:
         return (image, cur, "->", "?", "tag shape not understood", "")
     maj, minor, patch, suffix = m.group(1), m.group(2), int(m.group(3)), m.group(4)

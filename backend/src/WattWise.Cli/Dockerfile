@@ -2,7 +2,7 @@
 # Stages and base images: deploy/docs/images.md.
 
 # restore: the SDK, the packages of the project closure, the folders the later stages write to.
-FROM mcr.microsoft.com/dotnet/sdk:11.0.100-resolute AS restore
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100-azurelinux4.0 AS restore
 # bin and obj go to /artifacts, so nothing is written into /src (deploy/docs/images.md#build-output).
 ENV NUGET_PACKAGES=/nuget \
     UseArtifactsOutput=true \
@@ -24,11 +24,13 @@ ENTRYPOINT ["dotnet", "run", "--project", "backend/src/WattWise.Cli/WattWise.Cli
 
 FROM restore AS build
 COPY --chown=$APP_UID backend/src/ backend/src/
-RUN dotnet publish backend/src/WattWise.Cli/WattWise.Cli.csproj -c Release -o /out --no-restore
+RUN dotnet publish backend/src/WattWise.Cli/WattWise.Cli.csproj -c Release -o /out --no-restore \
+    && chmod -R a+rX,go-w /out
 
 # runtime: the last stage, so a plain docker build gives it. The Cli needs only Microsoft.NETCore.App.
-FROM mcr.microsoft.com/dotnet/runtime:11.0.0-resolute AS runtime
+FROM mcr.microsoft.com/dotnet/runtime:11.0.0-azurelinux4.0 AS runtime
 WORKDIR /app
-COPY --from=build --chown=root:root --chmod=a=rX /out .
+# No --chmod on this copy: the build stage sets the modes (deploy/docs/images.md, runtime stage).
+COPY --from=build --chown=root:root /out .
 USER $APP_UID
 ENTRYPOINT ["dotnet", "WattWise.Cli.dll"]

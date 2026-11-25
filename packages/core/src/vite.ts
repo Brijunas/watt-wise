@@ -86,7 +86,7 @@ const readAppUrl = (): { origin: string } | { error: string } => {
 const wantsHtml = (accept: string | undefined): boolean =>
   accept === undefined || accept === '' || accept.includes('text/html') || accept.includes('*/*')
 
-// Fills the `${APP_URL}` placeholder of `index.html` (the social card tags) in `vite dev` and
+// Fills the `${APP_URL}` placeholder of `index.html` (the `og:url` tag) in `vite dev` and
 // `vite preview`. `vite build` never substitutes: the deployed image renders the same placeholder
 // with nginx's envsubst at container start. Without APP_URL the HTML request answers an error that
 // names the command; the server still starts, because Vitest merges `vite.config.ts` without it.

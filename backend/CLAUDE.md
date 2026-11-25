@@ -25,6 +25,10 @@ Hook scripts are in the root `.claude/hooks/`, registered in all five `.claude/s
 
 Run the backend [checks](../docs/development.md#checks) (`dotnet build`, `dotnet format --verify-no-changes`, `dotnet test`); all must pass with 0 warnings. `dotnet format` also reports unused usings across the whole solution.
 
+## Dockerfiles
+
+Never use a symbolic `COPY --chmod` on a directory: CI's BuildKit strips the `x` bit. The rule and the modes to use are in [deploy/docs/images.md](../deploy/docs/images.md).
+
 ## Testing rules
 
 The rules are in "Writing tests that catch bugs" in [docs/testing.md](docs/testing.md#writing-tests-that-catch-bugs). In short:

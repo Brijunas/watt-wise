@@ -56,6 +56,33 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: zizmor --format=github .
 
+  shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
+        with:
+          install_args: shellcheck
+      # Every tracked *.sh file, .husky/pre-commit (no shebang; it carries a shellcheck directive),
+      # and every other tracked file whose first line is a sh or bash shebang.
+      - name: Lint the shell scripts
+        run: |
+          scripts=()
+          while IFS= read -r -d '' f; do
+            [ -f "$f" ] || continue
+            case "$f" in
+              *.sh | .husky/pre-commit) scripts+=("$f") ;;
+              *) if head -n 1 "$f" | grep -aqE '^#!.*[/ ](ba)?sh( |$)'; then scripts+=("$f"); fi ;;
+            esac
+          done < <(git ls-files -z)
+          echo "shellcheck on ${#scripts[@]} scripts"
+          shellcheck "${scripts[@]}"
+
   js:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -225,12 +252,30 @@ jobs:
             echo "::error::The runtime image has no health check."
             exit 1
           fi
+          if [ "$HEALTHCHECK" = true ]; then
+            # The tools the HEALTHCHECK command uses (sh runs it, sed and curl are in it), found as the image's user.
+            for tool in sh sed curl; do
+              if ! docker run --rm --entrypoint sh -e TOOL="$tool" image-runtime -c 'command -v "$TOOL" > /dev/null'; then
+                echo "::error::The runtime image has no $tool, which its health check needs."
+                exit 1
+              fi
+            done
+          fi
           for path in /app "/app/$project.dll"; do
             if ! docker run --rm --entrypoint sh -e CHECK_PATH="$path" image-runtime -c 'test -e "$CHECK_PATH" && test ! -w "$CHECK_PATH"'; then
               echo "::error::The runtime user can write $path."
               exit 1
             fi
           done
+          # As the image's user: nothing under /app is unreadable and no directory lacks x. A failing find is an error.
+          if ! unreadable="$(docker run --rm --entrypoint find image-runtime /app \( ! -readable -o \( -type d ! -executable \) \) -print)"; then
+            echo "::error::Listing the unreadable paths under /app failed."
+            exit 1
+          fi
+          if [ -n "$unreadable" ]; then
+            echo "::error::The runtime user can't read or enter these paths under /app: $unreadable"
+            exit 1
+          fi
           sdks="$(docker run --rm --entrypoint sh image-runtime -c 'dotnet --list-sdks 2>/dev/null || true')"
           if [ -n "$sdks" ]; then
             echo "::error::The runtime image holds a .NET SDK: $sdks"
@@ -309,7 +354,7 @@ jobs:
   # The one check main's ruleset requires. It has no name: key, so its check context is exactly "ci".
   # `images` holds the backend and the frontend and admin image builds (one matrix entry each).
   ci:
-    needs: [secrets, workflows, js, dotnet, api-client, images, setup, dev-vm, first-start]
+    needs: [secrets, workflows, shell, js, dotnet, api-client, images, setup, dev-vm, first-start]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5

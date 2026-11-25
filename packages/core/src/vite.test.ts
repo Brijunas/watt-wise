@@ -113,7 +113,7 @@ const notSet =
   'APP_URL is not set. Start the server through 1Password: ' +
   'op run --env-file <app>/.env.op.development -- pnpm --filter <app> dev'
 
-const template = '<meta content="${APP_URL}/"><meta content="${APP_URL}/social-card.png">'
+const template = '<meta content="${APP_URL}/"><meta content="${APP_URL}/x">'
 
 describe('appUrl factory', () => {
   it('is named', () => {
@@ -164,7 +164,7 @@ describe('appUrl transformIndexHtml', () => {
   it('fills every placeholder when serving and drops a trailing slash', () => {
     vi.stubEnv('APP_URL', 'https://app.example.test/')
     expect(getHtmlHandler()(template, { server: {} })).toBe(
-      '<meta content="https://app.example.test/"><meta content="https://app.example.test/social-card.png">',
+      '<meta content="https://app.example.test/"><meta content="https://app.example.test/x">',
     )
   })
 
@@ -242,7 +242,7 @@ describe('appUrl preview middleware', () => {
   }
 
   const filled =
-    '<meta content="https://app.example.test/"><meta content="https://app.example.test/social-card.png">'
+    '<meta content="https://app.example.test/"><meta content="https://app.example.test/x">'
 
   it.each(['/', '/index.html', '/settings', '/a/b?x=1', '/a#frag', '/index.html?v=2'])(
     'serves %s filled with both headers',
