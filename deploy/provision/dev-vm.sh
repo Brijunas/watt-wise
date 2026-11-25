@@ -184,9 +184,10 @@ printf '%s\n' \
   'gpgkey=https://download.docker.com/linux/fedora/gpg' > "$work/docker-ce.repo"
 if install_file 644 "$work/docker-ce.repo" "$repo_file"; then step docker-repo changed; else step docker-repo unchanged; fi
 
-# git is for the clone that comes after this script; passt and fuse-overlayfs are what rootless Docker
-# needs for its network and its storage.
-packages=(git firewalld openssh-server passt fuse-overlayfs
+# git is for the clone that comes after this script; slirp4netns and fuse-overlayfs are what rootless
+# Docker needs for its network and its storage. slirp4netns is installed on purpose: without it
+# Docker would pick pasta (see the network drop-in below).
+packages=(git firewalld openssh-server slirp4netns fuse-overlayfs
   docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras)
 missing=()
 for package in "${packages[@]}"; do
@@ -295,7 +296,28 @@ until [ "$manager_state" = running ] || [ "$manager_state" = degraded ]; do
   manager_state="$(systemctl --user is-system-running 2> /dev/null || true)"
 done
 
+# The network and port drivers are pinned. Without slirp4netns Docker picks pasta, whose default port
+# driver (implicit) forwards every port bound in the namespace on ALL host addresses and ignores the
+# host IP of a published port, so `-p 127.0.0.1:...` would listen on every address. The builtin port
+# driver binds the given host IP. The drop-in is written before the first start, so that uses it.
+network_dropin_dir="$HOME/.config/systemd/user/docker.service.d"
+network_dropin="$network_dropin_dir/10-dev-vm-network.conf"
+printf '%s\n' \
+  '# Managed by deploy/provision/dev-vm.sh. See deploy/docs/environments.md.' \
+  '[Service]' \
+  'Environment=DOCKERD_ROOTLESS_ROOTLESSKIT_NET=slirp4netns' \
+  'Environment=DOCKERD_ROOTLESS_ROOTLESSKIT_PORT_DRIVER=builtin' > "$work/10-dev-vm-network.conf"
 rootless_changed=false
+dropin_changed=false
+was_active=false
+if systemctl --user is-active --quiet docker.service; then was_active=true; fi
+if ! cmp -s "$work/10-dev-vm-network.conf" "$network_dropin"; then
+  install -d -m 755 "$network_dropin_dir"
+  install -m 644 "$work/10-dev-vm-network.conf" "$network_dropin"
+  systemctl --user daemon-reload
+  dropin_changed=true
+  rootless_changed=true
+fi
 if [ ! -e "$HOME/.config/systemd/user/docker.service" ] || ! docker context inspect rootless > /dev/null 2>&1; then
   dockerd-rootless-setuptool.sh install
   rootless_changed=true
@@ -303,6 +325,12 @@ fi
 if ! systemctl --user is-enabled --quiet docker.service || ! systemctl --user is-active --quiet docker.service; then
   systemctl --user enable --now docker.service
   rootless_changed=true
+fi
+# A daemon that was already running before this run keeps its old drivers until it restarts. So a run
+# that changes the drop-in on a machine with a running stack restarts the daemon, which stops the
+# stack's containers; a rerun restarts nothing.
+if [ "$dropin_changed" = true ] && [ "$was_active" = true ]; then
+  systemctl --user restart docker.service
 fi
 if [ "$rootless_changed" = true ]; then step docker-rootless changed; else step docker-rootless unchanged; fi
 
@@ -324,6 +352,15 @@ until docker info > /dev/null 2>&1; do
 done
 docker info --format '{{.SecurityOptions}}' | grep -q rootless || die "docker info doesn't list rootless: the daemon isn't the rootless one."
 docker compose version > /dev/null || die "docker compose version fails."
+# The running daemon must use the pinned drivers: its rootlesskit's command line shows them.
+docker_pid="$(systemctl --user show docker.service -p MainPID --value)"
+rootlesskit_args="$(tr '\0' ' ' < "/proc/$docker_pid/cmdline" 2> /dev/null || true)"
+for flag in --net=slirp4netns --port-driver=builtin; do
+  case "$rootlesskit_args" in
+    *"$flag "*) ;;
+    *) die "the running rootless daemon doesn't use $flag; published ports could ignore their host IP. Check $network_dropin and restart docker." ;;
+  esac
+done
 
 # --- 6. Firewall --------------------------------------------------------------------------------
 

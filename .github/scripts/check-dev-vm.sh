@@ -298,6 +298,38 @@ done
 x_user docker compose version > /dev/null || fail "docker compose version fails"
 pass "docker compose version works"
 
+# The network and port drivers are pinned: pasta's implicit port driver would publish every port on
+# all addresses and ignore the host IP.
+x_root test -f "$dev_home/.config/systemd/user/docker.service.d/10-dev-vm-network.conf" || fail "the network drop-in is missing"
+pass "the user's Docker unit has the network drop-in"
+docker_pid="$(x_user systemctl --user show docker.service -p MainPID --value)"
+rootlesskit_args="$(x_root sh -c "tr '\\0' ' ' < /proc/$docker_pid/cmdline")"
+for flag in --net=slirp4netns --port-driver=builtin; do
+  case "$rootlesskit_args" in *"$flag "*) ;; *) fail "the rootlesskit command line lacks $flag: $rootlesskit_args" ;; esac
+done
+pass "rootlesskit runs with --net=slirp4netns and --port-driver=builtin"
+
+# A real published port binds the loopback address it was given and nothing else. The container runs
+# this check's own image (saved on the host, loaded into the nested daemon: no pull, and every file
+# in it has an owner inside the 55000 subordinate ids the test user has, which a public image's
+# uid 65534 files wouldn't) with a listener on port 80.
+pub_port=18081
+# The nested daemon's image and container live in the VM container's /home volume and go with the
+# VM container and that volume, which the EXIT trap removes.
+docker save "$image" | docker exec -i -u dev -e HOME="$dev_home" -e XDG_RUNTIME_DIR=/run/user/1000 \
+  -e DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus "$vm" docker load > /dev/null
+x_user docker run -d --rm --name pub-check -p "127.0.0.1:$pub_port:80" "$image" ncat -lk 0.0.0.0 80 > /dev/null
+wait_for "the published port" 30 x_root bash -c "ss -Htln | grep -q ':$pub_port '"
+expect_eq "a published 127.0.0.1 port listens on 127.0.0.1 only" "127.0.0.1:$pub_port" \
+  "$(x_root bash -c "ss -Htln | awk '{print \$4}' | grep -E ':$pub_port\$'")"
+# From inside the VM, its own lan address goes through lo, which the firewall accepts: this connects
+# only if the listener is on all addresses, so it tells the pinned driver from pasta's.
+if x_root nc -z -w 3 "$vm_lan_ip" "$pub_port" > /dev/null 2>&1; then fail "the published loopback port answers on the VM's own lan address"; fi
+pass "the published loopback port doesn't answer on the VM's own lan address"
+if port_open "$lan_client" "$vm_lan_ip" "$pub_port"; then fail "the published loopback port is reachable from the LAN"; fi
+pass "the published loopback port doesn't connect from the LAN"
+x_user docker rm -f pub-check > /dev/null
+
 # --- cockpit ----------------------------------------------------------------------------------------
 
 expect_eq "cockpit.socket is disabled" disabled "$(x_root systemctl is-enabled cockpit.socket 2>&1 || true)"
