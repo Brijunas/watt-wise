@@ -68,7 +68,7 @@ jobs:
       - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
         with:
           install_args: shellcheck
-      # Every tracked *.sh file, .husky/pre-commit (no shebang; it carries a shellcheck directive),
+      # Every tracked *.sh file, the husky hooks (no shebang; each carries a shellcheck directive),
       # and every other tracked file whose first line is a sh or bash shebang.
       - name: Lint the shell scripts
         run: |
@@ -76,12 +76,14 @@ jobs:
           while IFS= read -r -d '' f; do
             [ -f "$f" ] || continue
             case "$f" in
-              *.sh | .husky/pre-commit) scripts+=("$f") ;;
+              *.sh | .husky/pre-commit | .husky/post-merge | .husky/post-checkout | .husky/post-rewrite) scripts+=("$f") ;;
               *) if head -n 1 "$f" | grep -aqE '^#!.*[/ ](ba)?sh( |$)'; then scripts+=("$f"); fi ;;
             esac
           done < <(git ls-files -z)
           echo "shellcheck on ${#scripts[@]} scripts"
           shellcheck "${scripts[@]}"
+      - name: Check the follow-stack hooks
+        run: bash .github/scripts/check-follow-stack.sh
 
   js:
     runs-on: ubuntu-24.04

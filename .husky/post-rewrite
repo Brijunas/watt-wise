@@ -1,0 +1,5 @@
+# shellcheck shell=sh
+# After a rebase (including git pull --rebase), rebuild the Development stack if it runs from this checkout.
+[ "${1-}" = rebase ] || exit 0
+[ -f deploy/development/follow-stack.sh ] || exit 0
+sh deploy/development/follow-stack.sh
