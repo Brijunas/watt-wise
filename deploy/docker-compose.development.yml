@@ -334,8 +334,8 @@ secrets:
     environment: JOBS_DATABASE_PASSWORD
   postgres-backup-password:
     environment: BACKUP_DATABASE_PASSWORD
-  # In Development this must resolve to a value: an empty variable mounts no file, db-init then
-  # skips reader and the Postgres MCP has no login.
+  # In Development this must resolve to a value: an empty variable mounts no file or an empty one
+  # (by Compose version): db-init then skips reader or stops, and the Postgres MCP has no login.
   postgres-reader-password:
     environment: READER_DATABASE_PASSWORD
 

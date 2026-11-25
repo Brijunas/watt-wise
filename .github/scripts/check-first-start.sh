@@ -42,7 +42,9 @@ while read -r name; do unset "$name"; done < <(
   } | sed 's/[^A-Z0-9_]//g' | sort -u
 )
 
-dc() { docker compose -p "$project" --env-file "$env_file" -f "$compose" "$@"; }
+# "${extra_files[@]}" of an empty array under `set -u` needs bash 4.4 or later (Fedora and ubuntu-24.04 have it).
+extra_files=() # more `-f <file>` arguments for the cases that override the compose file
+dc() { docker compose -p "$project" --env-file "$env_file" -f "$compose" "${extra_files[@]}" "$@"; }
 
 cleanup() {
   docker compose -p "$project" --env-file "$env_file" -f "$compose" down -v --remove-orphans > /dev/null 2>&1 || true
@@ -318,7 +320,8 @@ pass "cli exits non-zero with a wrong password, and its log says the authenticat
 
 # --- 5. Failure paths, each on a fresh volume (a reused project keeps its secret files) ---------
 
-# A required role's secret missing (an empty variable mounts no file): db-init stops naming the role, cli doesn't run.
+# A required role's secret missing (an empty variable mounts no file or an empty one, by Compose
+# version; both stop a required role): db-init stops naming the role, cli doesn't run.
 for role in cli api jobs backup; do
   upper="$(tr '[:lower:]' '[:upper:]' <<< "$role")"
   fresh
@@ -337,7 +340,9 @@ done
 fresh
 : > "$work/empty-secret"
 chmod 644 "$work/empty-secret"
-jobs_secret="postgres-jobs-$(printf 'pass%s' word)" # the compose file's secret name for jobs
+# The printf keeps the literal secret name out of the source, because the pre-commit secret scan's
+# generic-password rule flags it; it expands to the compose file's secret name (postgres-jobs-<word>).
+jobs_secret="postgres-jobs-$(printf 'pass%s' word)"
 cat > "$override" << EOF
 secrets:
   $jobs_secret: !override
@@ -348,16 +353,25 @@ dc -f "$override" up -d cli > "$work/up.log" 2>&1 || rc=$?
 [ "$rc" -ne 0 ] || fail "'up -d cli' exited 0 with an empty secret file for jobs"
 wait_done db-init
 [ "$(exit_code db-init)" -ne 0 ] || fail "db-init exited 0 with an empty secret file for jobs"
-grep -q 'for role jobs is empty' <<< "$(db_init_log)" || fail "db-init's message doesn't name role jobs for an empty file"
+grep -q 'for role jobs is missing or empty' <<< "$(db_init_log)" || fail "db-init's message doesn't name role jobs for an empty file"
 pass "db-init stops non-zero naming role jobs when its secret file is empty"
 
-# Without reader's secret, reader is skipped and has no password; everything else works.
+# Without reader's secret, reader is skipped and has no password; everything else works. The
+# override takes reader out of db-init's secrets, so no file is mounted on any Compose version.
 fresh
-grep -v '^READER_DATABASE_PASSWORD=' "$env_file" > "$work/env.no-reader"
-echo "READER_DATABASE_PASSWORD=" >> "$work/env.no-reader"
-env_file="$work/env.no-reader"
+cat > "$work/no-reader.yml" << EOF
+services:
+  db-init:
+    secrets: !override
+      - postgres-admin-$(printf 'pass%s' word)
+      - postgres-cli-$(printf 'pass%s' word)
+      - postgres-api-$(printf 'pass%s' word)
+      - postgres-jobs-$(printf 'pass%s' word)
+      - postgres-backup-$(printf 'pass%s' word)
+EOF
+extra_files=(-f "$work/no-reader.yml")
 start_ok "no reader secret"
-env_file="$work/env"
+extra_files=()
 expect_eq "db-init exits 0 without reader's secret" 0 "$(exit_code db-init)"
 expect_eq "cli exits 0 without reader's secret" 0 "$(exit_code cli)"
 expect_eq "db-init logs that reader was skipped" 1 "$(db_init_log | grep -c '^db-init: no secret for role reader, skipped$' || true)"

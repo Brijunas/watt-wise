@@ -31,9 +31,9 @@ export PGPASSWORD
 unset admin_password
 
 # The roles to set up. cli, api, jobs and backup are required in every environment: a missing or
-# empty secret stops here (Compose mounts no file for an empty variable). Only `reader` is
-# optional: outside Development it gets no password, so a missing file skips it. An existing
-# empty file is always a mistake.
+# empty secret stops here (depending on the Compose version, an empty variable mounts no file or
+# an empty one; both stop a required role). Only `reader` is optional: outside Development it
+# gets no password, so a missing file skips it. An existing empty file is always a mistake.
 set_roles=''
 names=''
 for role in cli api jobs backup reader; do
@@ -43,7 +43,10 @@ for role in cli api jobs backup reader; do
     log "no secret for role $role, skipped"
     continue
   fi
-  [ -s "$file" ] || fail "the secret postgres-$role-password for role $role is empty"
+  if [ ! -s "$file" ]; then
+    [ "$role" = reader ] && fail "the secret postgres-$role-password for role $role is empty"
+    fail "the secret postgres-$role-password for role $role is missing or empty"
+  fi
   set_roles="$set_roles $role"
   names="${names:+$names,}'$role'"
 done
