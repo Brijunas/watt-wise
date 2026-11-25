@@ -18,7 +18,7 @@ COPY --chown=$APP_UID backend/src/WattWise.Domain/WattWise.Domain.csproj backend
 COPY --chown=$APP_UID backend/src/WattWise.Infrastructure/WattWise.Infrastructure.csproj backend/src/WattWise.Infrastructure/
 RUN dotnet restore backend/src/WattWise.Cli/WattWise.Cli.csproj
 
-# dev: no source copied; mount the tree at /src to run it (the Cli is not part of the Development stack).
+# dev: no source copied; mount the tree at /src to run it (the Development stack runs the runtime target as its one-shot `cli` service).
 FROM restore AS dev
 ENTRYPOINT ["dotnet", "run", "--project", "backend/src/WattWise.Cli/WattWise.Cli.csproj", "--no-launch-profile", "--"]
 

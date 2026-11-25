@@ -12,8 +12,8 @@ Tell the user before each step that runs `op`: they approve it in the 1Password 
 ## 1. Setup
 
 1. Start the containerized Development stack through `op run` (the `op run --env-file deploy/development/compose.env -- docker compose ... up -d --wait` command in [development.md](../../../docs/development.md#running-the-system)). It builds and starts PostgreSQL, LGTM, Mailpit, the Api, the Jobs host, the frontend and the admin; nothing else has to be started. Run the `up` from this worktree: it replaces another worktree's app containers.
-2. `migrate`. After a regenerated `Initial`, run the `reset-app-tables.sql` command first.
-3. Seed the fixed accounts: `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- seed smoke-accounts`. It is idempotent: both accounts exist, confirmed, unlocked, with the 1Password password and the right role.
+2. That `up` also migrated (the stack's one-shot `cli`). After a regenerated `Initial`, run the `reset-app-tables.sql` command first, then the `up`.
+3. That `up` also seeded the fixed accounts: both exist, confirmed, unlocked, with the 1Password password and the right role. To reset them later, run `seed smoke-accounts` with the host-run command (`op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- seed smoke-accounts`) or another `up`; it is idempotent.
 4. The Api, the Jobs host and the dev servers run in the stack: check that `docker compose -f deploy/docker-compose.development.yml ps` shows them healthy. Host-run commands ([development.md](../../../docs/development.md#running-on-the-host)) are only a fallback, after `stop`ping the same service in the stack. The Hangfire dashboard answers 401 in the container, which isn't a failure.
 5. Read URLs with `op read "op://Watt Wise Development/<item>/url"`, or in a window from the variables of the matching file.
 6. Before the walk, on each app's origin unregister stale service workers and clear caches, localStorage and cookies (`browser_evaluate`): a previous run's app can be served from the old service worker.
@@ -22,7 +22,7 @@ Tell the user before each step that runs `op`: they approve it in the 1Password 
 
 - Fixed accounts (a `permissions.allow` rule `Bash(op read "op://Watt Wise Development/smoke-accounts/*")` in all five `settings.json` files allows exactly these reads; any other `op read` of a secret stays denied): `op read "op://Watt Wise Development/smoke-accounts/<user-email|user-password|admin-email|admin-password>"`. Inside a window, read them from the `cli` file instead (`SmokeAccounts__UserEmail`, `SmokeAccounts__UserPassword`, `SmokeAccounts__AdminEmail`, `SmokeAccounts__AdminPassword`), with no `op read`.
 - Flows that need a new account (sign-up, confirmation) use a fresh `smoke-<timestamp>@example.test`. Take the email links from Mailpit's API: `<mailpit>/api/v1/search?query=to:<email>`, then `/api/v1/message/<ID>`.
-- **Rerun the seed** after any flow that changes a fixed account: password change or reset, lockout, sign-out-everywhere, admin revoke.
+- **Rerun the seed** (host-run command or another `up`) after any flow that changes a fixed account: password change or reset, lockout, sign-out-everywhere, admin revoke.
 
 ## 3. Check each flow
 

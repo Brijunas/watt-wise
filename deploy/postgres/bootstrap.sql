@@ -3,12 +3,14 @@
 -- Idempotent: safe to re-run. Missing objects are created, role settings and grants are
 -- re-applied.
 --
--- Sets no passwords: login roles are created without one and can't log in until an
--- admin sets it with psql's \password (sent hashed, so it never reaches the server
+-- Sets no passwords: login roles are created without one and can't log in until their
+-- password is set with psql's \password (sent hashed, so it never reaches the server
 -- log). See deploy/docs/postgres.md.
 --
--- Run by hand as the superuser `admin`, connected to the `postgres` database, in every
--- environment. Development: see "Development database" in docs/setup.md.
+-- Run as the superuser `admin`, connected to the `postgres` database, by the db-init
+-- service (deploy/postgres/db-init.sh) on a new volume, which then sets the passwords.
+-- Later changes to this file on an existing volume are run by hand
+-- (deploy/docs/postgres.md).
 --
 -- Roles: admin (superuser, created by the image), owner (NOLOGIN, owns the database
 -- and schemas), cli (migrations, SET ROLE owner), api, jobs, backup, reader.

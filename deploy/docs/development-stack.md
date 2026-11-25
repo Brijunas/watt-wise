@@ -4,25 +4,27 @@ The whole system in containers on one machine: `deploy/docker-compose.developmen
 
 ## Services
 
-| Service    | Runs                                                                                           | Published (host side)                                    | Waits for                             |
-| ---------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------- |
-| `api`      | `dotnet watch` on `WattWise.Api`, listening on `8080` in the container                         | `API_BIND_ADDRESS:API_PORT`, from the `api` item's `url` | `postgres` healthy, `lgtm`            |
-| `jobs`     | `dotnet watch` on `WattWise.Jobs`                                                              | `JOBS_…`, from the `jobs` item                           | `postgres` healthy, `mailpit`, `lgtm` |
-| `frontend` | Vite dev server (`--host 0.0.0.0 --port 8080`, which replaces the address `APP_URL` would set) | `FRONTEND_…`, from the `frontend` item                   | nothing                               |
-| `admin`    | the same for the admin app                                                                     | `ADMIN_…`, from the `admin` item                         | nothing                               |
+| Service    | Runs                                                                                           | Published (host side)                                    | Waits for                                                         |
+| ---------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
+| `db-init`  | one-shot: `deploy/postgres/db-init.sh` on the `postgres` image ([First start](#first-start))   | nothing                                                  | `postgres` healthy                                                |
+| `cli`      | one-shot: the Cli's runtime image runs `migrate`, then `seed smoke-accounts`                   | nothing                                                  | `db-init` completed                                               |
+| `api`      | `dotnet watch` on `WattWise.Api`, listening on `8080` in the container                         | `API_BIND_ADDRESS:API_PORT`, from the `api` item's `url` | `postgres` healthy, `db-init`, `cli` completed, `lgtm`            |
+| `jobs`     | `dotnet watch` on `WattWise.Jobs`                                                              | `JOBS_…`, from the `jobs` item                           | `postgres` healthy, `db-init`, `cli` completed, `mailpit`, `lgtm` |
+| `frontend` | Vite dev server (`--host 0.0.0.0 --port 8080`, which replaces the address `APP_URL` would set) | `FRONTEND_…`, from the `frontend` item                   | nothing                                                           |
+| `admin`    | the same for the admin app                                                                     | `ADMIN_…`, from the `admin` item                         | nothing                                                           |
 
 Inside the network the topology is fixed in the compose file: the hosts reach PostgreSQL at `postgres:5432`, Mailpit at `mailpit:1025` (Jobs only) and LGTM at `lgtm:4317`. The published ports, the browser URLs and the CORS origins are the 1Password values, so a browser, the Playwright MCP and a host-run process see the same addresses as before. The Api and Jobs hosts run as `Development`, so `appsettings.Development.json` applies except for the Smtp host and port, which the compose file overrides (its `127.0.0.1` would be the container itself).
 
-Every app service is built on every `up` (`pull_policy: build`), from cache when nothing changed, so a worktree with other `.csproj` files or another lockfile never runs another worktree's stale image.
+Every app service and `cli` is built on every `up` (`pull_policy: build`), from cache when nothing changed, so a worktree with other `.csproj` files or another lockfile never runs another worktree's stale image. The `cli` runtime image rebuilds its publish stage after any backend source change, so the next `up` takes about a minute longer; that is the price of running the same image the deployed stacks run.
 
 ## Settings: two files
 
-| File                             | Rendered or resolved by | Holds                                                                                                                                                                                                                                 |
-| -------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deploy/.env`                    | `./setup` (`op inject`) | Non-secret settings, read by Compose on its own: bind addresses and ports of the existing services, user names, the four apps' `*_URL` and the derived `*_BIND_ADDRESS`, `*_PORT`.                                                    |
-| `deploy/development/compose.env` | `op run`                | Every container's secret or vault-held settings under per-service names: `POSTGRES_PASSWORD`, `API_DATABASE_*`, `API_JWT_SIGNING_KEY`, `JOBS_DATABASE_*`, `JOBS_SMTP_*`, and the browser URLs `API_URL`, `FRONTEND_URL`, `ADMIN_URL`. |
+| File                             | Rendered or resolved by | Holds                                                                                                                                                                                                                                                                                                                          |
+| -------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `deploy/.env`                    | `./setup` (`op inject`) | Non-secret settings, read by Compose on its own: bind addresses and ports of the existing services, user names, the four apps' `*_URL` and the derived `*_BIND_ADDRESS`, `*_PORT`.                                                                                                                                             |
+| `deploy/development/compose.env` | `op run`                | Every container's secret or vault-held settings under per-service names: `POSTGRES_PASSWORD`, `CLI_DATABASE_*`, `CLI_SMOKE_*`, `API_DATABASE_*`, `API_JWT_SIGNING_KEY`, `JOBS_DATABASE_*`, `JOBS_SMTP_*`, `BACKUP_DATABASE_PASSWORD`, `READER_DATABASE_PASSWORD`, and the browser URLs `API_URL`, `FRONTEND_URL`, `ADMIN_URL`. |
 
-The compose file hands each service only its own names through `environment:`, never an `env_file:`, so `docker inspect` of `api` holds no `jobs` password and no password of the Cli's role (`postgres-cli` is in no file of the stack: the Cli runs on the host). What `docker inspect` shows and to whom is accepted in [security.md](../../docs/security.md#deployment). The browser URLs are in both files: `deploy/.env` needs them for the port derivation, `compose.env` for the containers, and the value from `op run` wins with the same field behind both.
+The compose file hands each service only its own names through `environment:`, never an `env_file:`, so `docker inspect` of `api` holds no `jobs` password and no password of the Cli's role (`cli` gets its own). `db-init` gets every password as a Compose secret instead ([First start](#first-start)). What `docker inspect` shows and to whom is accepted in [security.md](../../docs/security.md#deployment). The browser URLs are in both files: `deploy/.env` needs them for the port derivation, `compose.env` for the containers, and the value from `op run` wins with the same field behind both.
 
 App settings are written `${VAR:-}`, never `:?`, so `ps`, `logs`, `exec`, `stop` and `down` work without `op run`. Only `up` and `watch` need it. A host started without it stops at start on its missing `Database` and `Jwt` settings. The browser URLs (and so the CORS origins and the web apps' `/config.js`) still resolve, because `deploy/.env` holds them too. A container keeps the environment it was created with, so a restart after a reboot needs no `op run`; changing a value in 1Password needs another `up` through `op run`, which recreates the container.
 
@@ -62,8 +64,17 @@ The `dev` targets have none, so the compose file defines them. Timings: every 10
 
 - `api`, `jobs`: `curl -fsS --max-time 2 http://localhost:8080/health` (the SDK image has curl); 503 when the database check fails ([images.md](images.md#ports-and-health-check)).
 - `frontend`, `admin`: a `node` one-liner that fetches `http://127.0.0.1:8080/` (the node image has no curl; Vite listens on IPv4 here).
+- `postgres`: `pg_isready -h 127.0.0.1`, over TCP. While the image initializes an empty volume its temporary server listens only on its socket, so a socket check could pass before `db-init` can connect.
 
-`api` can't turn healthy before the roles, their passwords and `migrate` exist, so the first-start steps in [setup.md](../../docs/setup.md#5-development-database) start only `postgres lgtm mailpit` and end with the full `up`.
+## First start
+
+`up` on an empty volume does the whole first start ([setup.md](../../docs/setup.md#5-development-database)):
+
+1. `db-init` connects as `admin` and runs [`db-init.sh`](../postgres/db-init.sh), which runs the bootstrap and sets each login role's password ([postgres.md](postgres.md#bootstrap)). Every password is a Compose secret from the environment `op run` sets: a file under `/run/secrets` in the container, so `docker inspect` shows none.
+2. `cli` runs `migrate` and then `seed smoke-accounts` (Development only; the deployed stacks run `migrate` alone). Both are idempotent.
+3. `api` and `jobs` start only when both exited 0 (`depends_on` with `service_completed_successfully`). When `migrate` fails, `up` fails and neither host starts.
+
+One-shots run again on every `up`: `db-init` finds the passwords set and does nothing, `migrate` applies nothing and the seed puts the smoke accounts back to their known state. `ps`, `logs` and `down` need no `op run`: an unset secret variable fails only `up`.
 
 ## The Hangfire dashboard
 
@@ -76,7 +87,7 @@ The containerized Jobs host answers `/hangfire` with 401. The dashboard allows l
 | `up` says to render `deploy/.env`, or a `*_PORT` is missing         | Run `./setup`: it renders `deploy/.env` with the derived keys.                                                                                                                                                    |
 | `./setup` stops on a `*_URL` value                                  | The item's `url` must be an `http` loopback origin with a port ([Published ports](#published-ports)); fix the item.                                                                                               |
 | A host exits at start on its missing `Database` or `Jwt` setting    | The container was created without `op run`. Run `up` through `op run`.                                                                                                                                            |
-| `api` stays `starting`, then `unhealthy`                            | The roles or the migration are missing (`docker compose logs api`). Do the first-start steps of setup.md; a cold build takes up to 5 minutes.                                                                     |
+| `up` fails, or `api` and `jobs` don't start                         | A one-shot failed: read `docker compose logs db-init cli`. Else `api` is still building: a cold build takes up to 5 minutes.                                                                                      |
 | A web app's `pnpm install` fails with a permission or missing error | A new workspace package needs a `node_modules` volume line, or run `up` again after the lockfile changed so the image is rebuilt.                                                                                 |
 | Port already in use on `up`                                         | A host-run process holds it. Stop it, or `stop` the container and keep the host-run one.                                                                                                                          |
 | Container names show as `<concealed by 1Password>-development-…-1`  | Under `op run`, compose's output masks every injected value, and `wattwise`, `api` and `jobs` are values of the database name and usernames. Cosmetic: `docker compose ps` without `op run` shows the real names. |

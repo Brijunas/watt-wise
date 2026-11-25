@@ -48,7 +48,7 @@ Their `HEALTHCHECK` runs every 30 s (timeout 3 s, 3 retries); during the first 3
 
 ## The Cli
 
-`docker run <image> migrate` runs `WattWise.Cli migrate`: the entry point is the Cli, so the arguments are its commands (`docker run <image> --help` lists them). The Cli's `dev` target runs `dotnet run`, so its arguments follow the same way.
+`docker run <image> migrate` runs `WattWise.Cli migrate`: the entry point is the Cli, so the arguments are its commands (`docker run <image> --help` lists them). The Cli's `dev` target runs `dotnet run`, so its arguments follow the same way. The Development stack's one-shot `cli` service runs the `runtime` target with an entry point that runs `migrate` and then `seed smoke-accounts`; the deployed stacks keep the image's entry point with `command: ['migrate']` ([development-stack.md](development-stack.md#first-start)).
 
 ## Running an image against Development
 
