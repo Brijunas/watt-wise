@@ -58,6 +58,14 @@ Vite in the container serves app modules at `<origin>/src/...`, relative to the 
 
 The Edge configs are `msedge` twins with the same settings. They are untested: vidar has only Chrome.
 
+## Remote (tethys)
+
+To debug the stack that runs on tethys ([environments.md](environments.md#development-on-tethys)), VS Code opens the tethys checkout (`~/watt-wise`) over Remote-SSH, so the extensions install on the remote and every config above works as written.
+
+- The .NET configs' `docker exec` runs on tethys, where the containers are.
+- The browser configs open the browser on vidar (js-debug's companion extension) at the `FRONTEND_URL` or `ADMIN_URL` of tethys's `deploy/.env`, which the SSH forward makes a local `http://localhost` port. Start the forwards first.
+- Set `remote.autoForwardPorts` to `false`: VS Code would add a second forward of the same ports on another local port, and the Api's CORS allows only the `url` origin.
+
 ## Troubleshooting
 
 | Symptom                                              | Cause and fix                                                                                            |

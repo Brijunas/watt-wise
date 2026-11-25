@@ -15,6 +15,7 @@ Keep each fact in one owning document and link to it elsewhere. Read the relevan
 | Changing architecture, dependencies, or shared conventions                     | [Technical specification](docs/technical.md)                                           |
 | Touching accounts, permissions, personal data, secrets, or deployment security | [Security](docs/security.md)                                                           |
 | Setting up a machine                                                           | [Setup](docs/setup.md)                                                                 |
+| Setting up the dev VM (tethys) or reaching it over SSH                         | [Environments](deploy/docs/environments.md)                                            |
 | Running apps, tests, builds, or commit checks                                  | [Development](docs/development.md)                                                     |
 | Running an app on the host instead of the stack                                | [Running on the host](docs/running-on-the-host.md)                                     |
 | Debugging the apps in VS Code                                                  | [Debugging](deploy/docs/debugging.md)                                                  |

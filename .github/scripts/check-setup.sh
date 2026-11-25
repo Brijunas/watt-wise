@@ -84,6 +84,10 @@ x_dev() { docker exec -u dev -e HOME="$dev_home" -w "$dev_home" "$container" "$@
 # A shell for `dev` that reads ~/.bashrc, like a new terminal. Its job-control warnings go to stderr.
 dev_shell() { x_dev bash -ic "cd $repo && $1" 2> /dev/null; }
 
+# setup's own --derive-url, used by the deploy/.env checks and by the URL derivation's case table.
+derive() { x_dev bash -c 'cd ~/watt-wise && ./setup --derive-url "$@"' derive "$@" 2> /dev/null; }
+derive_error() { { x_dev bash -c 'cd ~/watt-wise && ./setup --derive-url "$@"' derive "$@" > /dev/null; } 2>&1; }
+
 run_setup() { # log file, setup arguments; prints the output and returns setup's exit code
   local log="$1"
   shift
@@ -275,6 +279,13 @@ else
     case "$bind" in 127.0.0.1 | ::1) ;; *) fail "deploy/.env's ${app}_BIND_ADDRESS is not a loopback address" ;; esac
   done
   pass "deploy/.env has the eight derived bind address and port keys, each app on a loopback address"
+  for key in POSTGRES_BIND_ADDRESS GRAFANA_BIND_ADDRESS OTLP_BIND_ADDRESS MAILPIT_SMTP_BIND_ADDRESS MAILPIT_BIND_ADDRESS; do
+    bind="$(x_dev sed -n "s/^${key}=\"\(.*\)\"\$/\1/p" "$repo/deploy/.env")"
+    [ -n "$bind" ] || fail "deploy/.env has no $key"
+    # setup's own guard, through its --check-bind option.
+    x_dev bash -c 'cd ~/watt-wise && ./setup --check-bind "$@"' check-bind "$key" "$bind" > /dev/null 2>&1 || fail "deploy/.env's $key is not a loopback address"
+  done
+  pass "deploy/.env has the five infrastructure bind addresses, each on a loopback address"
   # Each rendered URL, fed through setup's own function, gives the two lines the file holds, once each.
   for app in API JOBS FRONTEND ADMIN; do
     for suffix in BIND_ADDRESS PORT; do
@@ -305,8 +316,6 @@ fi
 # setup's own function, through its --derive-url option, so the table tests the real code and needs
 # no token. A valid URL prints the two deploy/.env lines; any other stops setup with a message that
 # names the key and the 1Password item, and prints no line.
-derive() { x_dev bash -c 'cd ~/watt-wise && ./setup --derive-url "$@"' derive "$@" 2> /dev/null; }
-derive_error() { { x_dev bash -c 'cd ~/watt-wise && ./setup --derive-url "$@"' derive "$@" > /dev/null; } 2>&1; }
 expect_derived() { # url, bind address, port
   local out rc=0
   out="$(derive API "$1")" || rc=$?
@@ -388,6 +397,73 @@ out="$(derive BOGUS "http://localhost:5062")" || rc=$?
 expect_eq "--derive-url with an unknown app prints nothing on stdout" "" "$out"
 case "$(derive_error BOGUS "http://localhost:5062")" in *"unknown app"*) ;; *) fail "--derive-url with an unknown app doesn't say so" ;; esac
 pass "--derive-url refuses an app other than API, JOBS, FRONTEND and ADMIN"
+
+# --- The bind guard -----------------------------------------------------------------------------
+
+# setup's own function, through its --check-bind option. A loopback address passes and prints nothing;
+# any other value stops setup with a message that names the key, the 1Password item and the rule.
+bind_check() { # key, address; prints stdout and stderr, returns setup's exit code
+  x_dev bash -c 'cd ~/watt-wise && ./setup --check-bind "$@"' check-bind "$@" 2>&1
+}
+bind_item() {
+  case "$1" in
+    POSTGRES_BIND_ADDRESS) echo postgres-admin ;;
+    GRAFANA_BIND_ADDRESS) echo grafana ;;
+    OTLP_BIND_ADDRESS) echo otlp ;;
+    MAILPIT_SMTP_BIND_ADDRESS) echo mailpit-smtp ;;
+    MAILPIT_BIND_ADDRESS) echo mailpit ;;
+  esac
+}
+BIND_KEYS=(POSTGRES_BIND_ADDRESS GRAFANA_BIND_ADDRESS OTLP_BIND_ADDRESS MAILPIT_SMTP_BIND_ADDRESS MAILPIT_BIND_ADDRESS)
+for key in "${BIND_KEYS[@]}"; do
+  for address in 127.0.0.1 127.0.0.2 127.255.255.255 127.0.0.0 ::1; do
+    rc=0
+    out="$(bind_check "$key" "$address")" || rc=$?
+    expect_eq "$key '$address' is accepted" 0 "$rc"
+    expect_eq "$key '$address' prints nothing" "" "$out"
+  done
+  item="$(bind_item "$key")"
+  for reject in \
+    "all interfaces|0.0.0.0" \
+    "all IPv6 interfaces|::" \
+    "a documentation address|192.0.2.10" \
+    "another documentation address|198.51.100.7" \
+    "a name|localhost" \
+    "a bracketed IPv6 loopback|[::1]" \
+    "another IPv6 address|::2" \
+    "an IPv4-mapped loopback|::ffff:127.0.0.1" \
+    "just outside 127/8|128.0.0.1" \
+    "an octet above 255|127.0.0.256" \
+    "a leading zero|127.0.0.01" \
+    "three octets|127.0.0" \
+    "a host that only starts with 127.0.0.1|127.0.0.1.evil" \
+    "a prefix length|127.0.0.1/8" \
+    "a port|127.0.0.1:5432" \
+    "a leading space| 127.0.0.1" \
+    "a trailing newline|127.0.0.1"$'\n' \
+    "an extra digit|1270.0.0.1" \
+    "an empty value|"; do
+    why="${reject%%|*}"
+    address="${reject#*|}"
+    rc=0
+    out="$(bind_check "$key" "$address")" || rc=$?
+    [ "$rc" -ne 0 ] || fail "$key '$address' ($why) was accepted"
+    case "$out" in *"$key"*) ;; *) fail "the message for $key '$address' ($why) doesn't name the key: $out" ;; esac
+    case "$out" in *"'$item' item"*) ;; *) fail "the message for $key '$address' ($why) doesn't name the '$item' item: $out" ;; esac
+    case "$out" in *"not a loopback address"*) ;; *) fail "the message for $key '$address' ($why) doesn't say so: $out" ;; esac
+    pass "$key '$address' ($why) is rejected, naming the key and the '$item' item"
+  done
+done
+rc=0
+out="$(bind_check BOGUS_BIND_ADDRESS 127.0.0.1)" || rc=$?
+[ "$rc" -ne 0 ] || fail "--check-bind accepted an unknown key"
+case "$out" in *"unknown key"*) ;; *) fail "--check-bind with an unknown key doesn't say so: $out" ;; esac
+pass "--check-bind refuses a key that isn't one of the five bind addresses"
+rc=0
+out="$(bind_check POSTGRES_BIND_ADDRESS)" || rc=$?
+[ "$rc" -ne 0 ] || fail "--check-bind with one argument exited 0"
+case "$out" in *"usage:"*) ;; *) fail "--check-bind with one argument doesn't print the usage: $out" ;; esac
+pass "--check-bind with one argument stops with the usage"
 
 # --- Fedora only --------------------------------------------------------------------------------
 

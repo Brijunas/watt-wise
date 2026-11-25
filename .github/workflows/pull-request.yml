@@ -278,6 +278,20 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: bash .github/scripts/check-setup.sh
 
+  dev-vm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Runs the dev-VM provisioning script four times on a throwaway Fedora container with systemd,
+      # sshd and firewalld, on two Docker networks of documentation addresses.
+      - name: Check the dev-VM provisioning script
+        run: bash .github/scripts/check-dev-vm.sh
+
   first-start:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -295,7 +309,7 @@ jobs:
   # The one check main's ruleset requires. It has no name: key, so its check context is exactly "ci".
   # `images` holds the backend and the frontend and admin image builds (one matrix entry each).
   ci:
-    needs: [secrets, workflows, js, dotnet, api-client, images, setup, first-start]
+    needs: [secrets, workflows, js, dotnet, api-client, images, setup, dev-vm, first-start]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5
