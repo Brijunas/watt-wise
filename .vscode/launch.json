@@ -1,0 +1,123 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Api (container)",
+      "type": "coreclr",
+      "request": "attach",
+      "processName": "WattWise.Api",
+      "justMyCode": true,
+      "sourceFileMap": { "/src": "${workspaceFolder}" },
+      "pipeTransport": {
+        "pipeProgram": "docker",
+        "pipeArgs": ["exec", "-i", "wattwise-development-api-1"],
+        "debuggerPath": "/vsdbg/vsdbg",
+        "pipeCwd": "${workspaceFolder}",
+        "quoteArgs": false
+      }
+    },
+    {
+      "name": "Jobs (container)",
+      "type": "coreclr",
+      "request": "attach",
+      "processName": "WattWise.Jobs",
+      "justMyCode": true,
+      "sourceFileMap": { "/src": "${workspaceFolder}" },
+      "pipeTransport": {
+        "pipeProgram": "docker",
+        "pipeArgs": ["exec", "-i", "wattwise-development-jobs-1"],
+        "debuggerPath": "/vsdbg/vsdbg",
+        "pipeCwd": "${workspaceFolder}",
+        "quoteArgs": false
+      }
+    },
+    {
+      "name": "Frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "${input:frontendUrl}",
+      "webRoot": "${workspaceFolder}/frontend",
+      "pathMapping": {
+        "/": "${workspaceFolder}/frontend/",
+        "/@fs/src/": "${workspaceFolder}/"
+      }
+    },
+    {
+      "name": "Admin (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "${input:adminUrl}",
+      "webRoot": "${workspaceFolder}/admin",
+      "pathMapping": {
+        "/": "${workspaceFolder}/admin/",
+        "/@fs/src/": "${workspaceFolder}/"
+      }
+    },
+    {
+      "name": "Frontend (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "${input:frontendUrl}",
+      "webRoot": "${workspaceFolder}/frontend",
+      "pathMapping": {
+        "/": "${workspaceFolder}/frontend/",
+        "/@fs/src/": "${workspaceFolder}/"
+      }
+    },
+    {
+      "name": "Admin (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "${input:adminUrl}",
+      "webRoot": "${workspaceFolder}/admin",
+      "pathMapping": {
+        "/": "${workspaceFolder}/admin/",
+        "/@fs/src/": "${workspaceFolder}/"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "frontendUrl",
+      "type": "command",
+      "command": "extension.commandvariable.transform",
+      "args": {
+        "text": "${command:url}",
+        "find": "^\"|\"$",
+        "flags": "g",
+        "replace": "",
+        "command": {
+          "url": {
+            "command": "extension.commandvariable.file.content",
+            "args": {
+              "fileName": "${workspaceFolder}/deploy/.env",
+              "key": "FRONTEND_URL",
+              "default": "http://deploy-env-missing.invalid"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "adminUrl",
+      "type": "command",
+      "command": "extension.commandvariable.transform",
+      "args": {
+        "text": "${command:url}",
+        "find": "^\"|\"$",
+        "flags": "g",
+        "replace": "",
+        "command": {
+          "url": {
+            "command": "extension.commandvariable.file.content",
+            "args": {
+              "fileName": "${workspaceFolder}/deploy/.env",
+              "key": "ADMIN_URL",
+              "default": "http://deploy-env-missing.invalid"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

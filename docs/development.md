@@ -15,7 +15,7 @@ dotnet format backend/WattWise.slnx --verify-no-changes
 dotnet test --solution backend/WattWise.slnx
 ```
 
-Run all eight before committing; the pull request workflow runs them on every PR, plus the secret scan of the PR's commits, zizmor, the pending-model check, the API-client diff and the five image builds (three backend, two web) with their assertions (the local way is the `docker build` commands under [Images](#images)), the `./setup` check on a clean Fedora (`bash .github/scripts/check-setup.sh`, [setup.md](setup.md#checking-setup)) and the first-start check of the Development stack on a throwaway project (`bash .github/scripts/check-first-start.sh`: roles, SCRAM logins from another container, migrations, a no-op second start, no leaked password, failure paths; needs Docker and jq) ([workflows README](../.github/workflows/README.md)). `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. `pnpm build` must also print no `(!)` warning; a new one counts as a failure (compare against main when a shared package grows). The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
+Run all eight before committing; the pull request workflow runs them on every PR, plus the secret scan of the PR's commits, zizmor, the pending-model check, the API-client diff and the five image builds (three backend, two web) with their assertions, the dev images' debugger included (the local way is the `docker build` commands under [Images](#images)), the `./setup` check on a clean Fedora (`bash .github/scripts/check-setup.sh`, [setup.md](setup.md#checking-setup)) and the first-start check of the Development stack on a throwaway project (`bash .github/scripts/check-first-start.sh`: roles, SCRAM logins from another container, migrations, a no-op second start, no leaked password, failure paths; needs Docker and jq) ([workflows README](../.github/workflows/README.md)). `typecheck` and `test` run in both apps and in every package under `packages/`; `build` runs in both apps. `pnpm build` must also print no `(!)` warning; a new one counts as a failure (compare against main when a shared package grows). The backend build must end with 0 warnings, and its integration tests need Docker running (Testcontainers).
 
 The workflows are linted with zizmor (from `mise.toml`): `zizmor --offline .` skips the audits that need GitHub, and `GH_TOKEN=$(gh auth token) zizmor .` runs them all, like CI.
 
@@ -51,7 +51,7 @@ Use `--filter` with the package name (`frontend`, `admin` or `@wattwise/<name>`)
 
 ## Running the system
 
-The default: the Api, the Jobs host, the frontend and the admin run in containers next to PostgreSQL, Grafana LGTM and Mailpit, with the tree bind-mounted, so an edit reloads the running app. One stack per machine, from whichever worktree ran `up` last. Every `up` and `watch` goes through `op run` (the apps' settings come from 1Password); `ps`, `logs`, `exec`, `stop` and `down` need none. Details, and why the Hangfire dashboard answers 401 in the container: [development-stack.md](../deploy/docs/development-stack.md). To run an app on the host instead ([below](#running-on-the-host)), `stop` it in the stack first: the ports are the same, and the database is too.
+The default: the Api, the Jobs host, the frontend and the admin run in containers next to PostgreSQL, Grafana LGTM and Mailpit, with the tree bind-mounted, so an edit reloads the running app. One stack per machine, from whichever worktree ran `up` last. Every `up` and `watch` goes through `op run` (the apps' settings come from 1Password); `ps`, `logs`, `exec`, `stop` and `down` need none. Details, and why the Hangfire dashboard answers 401 in the container: [development-stack.md](../deploy/docs/development-stack.md). To run an app on the host instead ([running-on-the-host.md](running-on-the-host.md)), `stop` it in the stack first: the ports are the same, and the database is too.
 
 | Command                                                                                                                    | What it does                                                                                                                                                                                                                                                                                                     |
 | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -61,26 +61,22 @@ The default: the Api, the Jobs host, the frontend and the admin run in container
 | `docker compose -f deploy/docker-compose.development.yml stop api jobs frontend admin`                                     | Stops the apps and leaves the infrastructure running.                                                                                                                                                                                                                                                            |
 | `docker compose -f deploy/docker-compose.development.yml down`                                                             | Stops and removes the containers. The data stays in the volumes.                                                                                                                                                                                                                                                 |
 
+## Debugging
+
+In VS Code, opened on the worktree that last ran `up`, with the stack running. The configs are in the committed `.vscode/launch.json`; a .NET config attaches to the host that already runs in its container, it doesn't start one. How it works, and troubleshooting: [debugging.md](../deploy/docs/debugging.md).
+
+| Config              | How to start it                                                                                                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Api (container)`   | The stack up (`up -d --wait`, above), then Run and Debug, pick the config, F5. Attaches to the Api host in `wattwise-development-api-1`; a `dotnet watch` restart ends the session.                                |
+| `Jobs (container)`  | The stack up (`up -d --wait`, above), then Run and Debug, pick the config, F5. Attaches to the Jobs host in `wattwise-development-jobs-1`; a `dotnet watch` restart ends the session.                              |
+| `Frontend (Chrome)` | The stack up (`up -d --wait`, above) and `deploy/.env` rendered by `./setup`, then Run and Debug, pick the config, F5. Opens a fresh Chrome profile on the frontend's URL from `deploy/.env`; sign in again there. |
+| `Admin (Chrome)`    | The same, on the admin's URL.                                                                                                                                                                                      |
+| `Frontend (Edge)`   | The same as `Frontend (Chrome)` in Edge. Untested: vidar has only Chrome.                                                                                                                                          |
+| `Admin (Edge)`      | The same as `Admin (Chrome)` in Edge. Untested: vidar has only Chrome.                                                                                                                                             |
+
 ## Running on the host
 
-### Running the apps
-
-Each app's dev server and preview get their settings from 1Password through the app's own `.env.op.development`: the address to listen on (the `frontend` or `admin` item's `url`, the origin the Api's CORS allows) and the Api's URL, which they serve to the app as `/config.js` ([frontend/docs/architecture.md](../frontend/docs/architecture.md#runtime-config)). The app shows data only while the Api runs ([Running the hosts](#running-the-hosts)). Swap `frontend` for `admin` for the admin app; its `.env.op.development` also gives the frontend's address (`FRONTEND_URL`, the `frontend` item's `url`) for the forgot-password link. Vite's log shows the address as `<concealed by 1Password>`, like the hosts; the URLs are in the items.
-
-| Command                                                                            | What it does                                                                                    |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `op run --env-file frontend/.env.op.development -- pnpm --filter frontend dev`     | Starts the dev server with hot reload on the `frontend` item's `url`. No service worker in dev. |
-| `pnpm --filter frontend build`                                                     | Type-checks and builds `frontend/dist/`. Needs no settings: the API address is read at runtime. |
-| `op run --env-file frontend/.env.op.development -- pnpm --filter frontend preview` | Serves the last build on the same address, service worker included, to try the PWA.             |
-
-### Running the hosts
-
-Each host gets its settings and its database role from 1Password through its own `.env.development` file. Without `op run` it starts as Production and stops on the missing `Database` settings. The listen address in the log shows as `<concealed by 1Password>` (see "Troubleshooting" in [setup.md](setup.md#troubleshooting)); the URLs are in the 1Password items.
-
-| Command                                                                                                          | What it does                                                                                                                                             |
-| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `op run --env-file backend/src/WattWise.Api/.env.development -- dotnet run --project backend/src/WattWise.Api`   | Starts the Api on the `api` item's `url`: `/health`, `/scalar` and `/openapi/v1.json` ([architecture.md](../backend/docs/architecture.md#http-surface)). |
-| `op run --env-file backend/src/WattWise.Jobs/.env.development -- dotnet run --project backend/src/WattWise.Jobs` | Starts the Jobs host on the `jobs` item's `url`, with the Hangfire dashboard at `/hangfire` ([jobs.md](../backend/docs/jobs.md)).                        |
+The Api, the Jobs host and the two dev servers can run on the host instead of in the stack: [running-on-the-host.md](running-on-the-host.md).
 
 ## Backend
 

@@ -1,6 +1,6 @@
 # Development stack
 
-The whole system in containers on one machine: `deploy/docker-compose.development.yml` runs PostgreSQL, Grafana LGTM and Mailpit ([postgres.md](postgres.md), [lgtm.md](lgtm.md), [mailpit.md](mailpit.md)) and the four apps, built from the `dev` targets of their Dockerfiles ([images.md](images.md)) with the repo's tree bind-mounted. The commands are in [development.md](../../docs/development.md#running-the-system); this page is how it works. Running the hosts and the dev servers on the host stays an option ([development.md](../../docs/development.md#running-on-the-host)).
+The whole system in containers on one machine: `deploy/docker-compose.development.yml` runs PostgreSQL, Grafana LGTM and Mailpit ([postgres.md](postgres.md), [lgtm.md](lgtm.md), [mailpit.md](mailpit.md)) and the four apps, built from the `dev` targets of their Dockerfiles ([images.md](images.md)) with the repo's tree bind-mounted. The commands are in [development.md](../../docs/development.md#running-the-system); this page is how it works. Running the hosts and the dev servers on the host stays an option ([running-on-the-host.md](../../docs/running-on-the-host.md)). Debugging the apps in VS Code: [debugging.md](debugging.md).
 
 ## Services
 
@@ -78,7 +78,7 @@ One-shots run again on every `up`: `db-init` finds the passwords set and does no
 
 ## The Hangfire dashboard
 
-The containerized Jobs host answers `/hangfire` with 401. The dashboard allows local requests only, and a request through the published port reaches the host from Docker's gateway address, which is not local. That filter is a security control ([jobs.md](../../backend/docs/jobs.md), [security.md](../../docs/security.md)), so it stays. To use the dashboard, stop `jobs` and run the Jobs host on the host ([development.md](../../docs/development.md#running-on-the-host)).
+The containerized Jobs host answers `/hangfire` with 401. The dashboard allows local requests only, and a request through the published port reaches the host from Docker's gateway address, which is not local. That filter is a security control ([jobs.md](../../backend/docs/jobs.md), [security.md](../../docs/security.md)), so it stays. To use the dashboard, stop `jobs` and run the Jobs host on the host ([running-on-the-host.md](../../docs/running-on-the-host.md)).
 
 ## Troubleshooting
 

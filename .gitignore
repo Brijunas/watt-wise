@@ -28,6 +28,7 @@ coverage/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch.json
 !.vscode/settings.json
 
 # Mutation testing output

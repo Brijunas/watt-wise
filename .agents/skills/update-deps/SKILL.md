@@ -62,6 +62,7 @@ Work through the sources in this order. The SDK goes first because the NuGet cho
 - Grafana LGTM and Mailpit: the survey's tag in `deploy/docker-compose.development.yml`.
 - Testcontainers fixture image tags under `backend/tests/` (e.g. the Mailpit fixture) get the same tag as their compose service; the survey doesn't see them, so `git grep` for the old tag.
 - Dockerfile base images (every `FROM` in the repo's Dockerfiles, [images.md](../../../deploy/docs/images.md#base-images)): the survey's "Dockerfile base images" section. Exact tags, never digests. The .NET SDK image tag equals `global.json`'s SDK and the aspnet and runtime tags its runtime, so they move together with the SDK step; a `-resolute` suffix stays. MCR's tag list has no dates, so the survey's age column says `?`: check the release date by hand against the one-day rule.
+- vsdbg in the Api and Jobs Dockerfiles (`VSDBG_VERSION`, `VSDBG_BASE_URL`, `VSDBG_SHA256_AMD64`, `VSDBG_SHA256_ARM64`): bump to getvsdbg.sh's current `latest` version and its meta base URL, with the new sha256 of both the x64 and arm64 archives, in both files ([debugging.md](../../../deploy/docs/debugging.md#bumping-vsdbg)); the survey doesn't see it.
 - The pnpm version in `frontend/Dockerfile` and `admin/Dockerfile` (`npm install -g pnpm@<version>`) follows mise's pnpm: set both to the version the pnpm step installed, and the Node tag equals mise's Node LTS.
 
 ## 4. Fix what the majors broke

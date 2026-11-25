@@ -169,22 +169,27 @@ jobs:
             dockerfile: backend/src/WattWise.Api/Dockerfile
             kind: dotnet
             healthcheck: 'true'
+            debugger: 'true'
           - image: Jobs
             dockerfile: backend/src/WattWise.Jobs/Dockerfile
             kind: dotnet
             healthcheck: 'true'
+            debugger: 'true'
           - image: Cli
             dockerfile: backend/src/WattWise.Cli/Dockerfile
             kind: dotnet
             healthcheck: 'false'
+            debugger: 'false'
           - image: Frontend
             dockerfile: frontend/Dockerfile
             kind: web
             app: frontend
+            debugger: 'false'
           - image: Admin
             dockerfile: admin/Dockerfile
             kind: web
             app: admin
+            debugger: 'false'
     env:
       IMAGE: ${{ matrix.image }}
       DOCKERFILE: ${{ matrix.dockerfile }}
@@ -200,6 +205,9 @@ jobs:
         run: docker build -f "$DOCKERFILE" --target build -t "image-build" .
       - name: Build the runtime image
         run: docker build -f "$DOCKERFILE" -t "image-runtime" .
+      - name: Assert the dev image's debugger
+        if: matrix.debugger == 'true'
+        run: bash .github/scripts/check-debugger.sh image-dev "$DOCKERFILE" "${IMAGE,,}" image-runtime image-build
       - name: Assert the images run as a non-root user
         run: |
           for image in image-dev image-runtime; do

@@ -16,6 +16,8 @@ Keep each fact in one owning document and link to it elsewhere. Read the relevan
 | Touching accounts, permissions, personal data, secrets, or deployment security | [Security](docs/security.md)                                                           |
 | Setting up a machine                                                           | [Setup](docs/setup.md)                                                                 |
 | Running apps, tests, builds, or commit checks                                  | [Development](docs/development.md)                                                     |
+| Running an app on the host instead of the stack                                | [Running on the host](docs/running-on-the-host.md)                                     |
+| Debugging the apps in VS Code                                                  | [Debugging](deploy/docs/debugging.md)                                                  |
 | Changing tools or encountering upstream problems                               | [Known issues](docs/known-issues.md)                                                   |
 | Implementing or planning stories                                               | [Epics](docs/epics.md)                                                                 |
 | Investigating completed work                                                   | [Implemented epics](docs/implemented.md)                                               |
