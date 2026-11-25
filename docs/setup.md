@@ -66,47 +66,15 @@ The vault's items are listed under "Passwords" in [deploy/docs/postgres.md](../d
 
 ## 5. Development database
 
-One-time setup of the Development PostgreSQL. The roles and why they exist are in [deploy/docs/postgres.md](../deploy/docs/postgres.md).
+The first start of the Development PostgreSQL runs by itself. The roles and why they exist are in [deploy/docs/postgres.md](../deploy/docs/postgres.md).
 
-1. Start the infrastructure for the first time. The PostgreSQL image reads the `admin` password only to initialize an empty volume. Only these three services start: `api` can't turn healthy before the roles and the migration below exist. Every `up` goes through `op run`; `down`, `logs` and `exec` need none.
+Start the whole system with one `up`, through `op run` (every `up` does; `down`, `logs` and `exec` need none). On an empty volume it initializes PostgreSQL, then the one-shot `db-init` creates the roles, the database, the schemas and the privileges and sets every login role's password from its 1Password item, then the one-shot `cli` creates the tables (the app's and Hangfire's) and seeds the smoke accounts, and only then do the Api, the Jobs host, the frontend and the admin start, built from their `dev` targets. The first run takes a few minutes. The apps connect as `api` and `jobs` from the `postgres-api` and `postgres-jobs` items and are published on the `url`s of the `api`, `jobs`, `frontend` and `admin` items. The Jobs host's Hangfire dashboard answers 401 in the container ([why](../deploy/docs/development-stack.md#the-hangfire-dashboard)); [development.md](development.md#running-on-the-host) runs the host on the host.
 
-   ```bash
-   op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait postgres lgtm mailpit
-   ```
+```bash
+op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait
+```
 
-2. Create the roles, the database, the schemas and the privileges:
-
-   ```bash
-   docker compose -f deploy/docker-compose.development.yml exec -T postgres sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < deploy/postgres/bootstrap.sql
-   ```
-
-3. Set each role's password. Open psql as the superuser:
-
-   ```bash
-   docker compose -f deploy/docker-compose.development.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-   ```
-
-   Then run these one at a time. For each one, paste the password from the matching 1Password item (`postgres-api`, `postgres-cli`, `postgres-jobs`, `postgres-backup`, `postgres-reader`) twice. Quit with `\q`.
-
-   ```
-   \password api
-   \password cli
-   \password jobs
-   \password backup
-   \password reader
-   ```
-
-4. Create the tables, both the app's and Hangfire's. On a machine set up before S2.9, run this again to add Hangfire's. The Cli takes every connection field (host, port, database, user, password, options) from the `postgres-cli` item:
-
-   ```bash
-   op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- migrate
-   ```
-
-5. Start the whole system: the Api, the Jobs host, the frontend and the admin, built from their `dev` targets (the first build takes a few minutes). They connect as `api` and `jobs` from the `postgres-api` and `postgres-jobs` items and are published on the `url`s of the `api`, `jobs`, `frontend` and `admin` items. The Jobs host's Hangfire dashboard answers 401 in the container ([why](../deploy/docs/development-stack.md#the-hangfire-dashboard)); [development.md](development.md#running-on-the-host) runs the host on the host.
-
-   ```bash
-   op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait
-   ```
+If it fails, read `docker compose -f deploy/docker-compose.development.yml logs db-init cli`. A machine that already has a database volume keeps it: `db-init` finds the passwords set and changes nothing. How it works: [development-stack.md](../deploy/docs/development-stack.md#first-start).
 
 For an optional GUI client, see [Connecting with pgAdmin](../deploy/docs/postgres.md#connecting-with-pgadmin).
 

@@ -270,10 +270,24 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: bash .github/scripts/check-setup.sh
 
+  first-start:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Starts the Development compose file's db-init and cli under their own project, with
+      # throwaway passwords: roles, migrations, a second start, no leaked password, failure paths.
+      - name: Check the first start of the Development stack
+        run: bash .github/scripts/check-first-start.sh
+
   # The one check main's ruleset requires. It has no name: key, so its check context is exactly "ci".
   # `images` holds the backend and the frontend and admin image builds (one matrix entry each).
   ci:
-    needs: [secrets, workflows, js, dotnet, api-client, images, setup]
+    needs: [secrets, workflows, js, dotnet, api-client, images, setup, first-start]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 5

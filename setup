@@ -314,4 +314,4 @@ fi
 # --- 9. Summary ---------------------------------------------------------------------------------
 
 echo "setup: done. Open a new terminal (or run 'source ~/.bashrc') so the tools are on PATH."
-echo "setup: next: the first database start is step 5 of docs/setup.md."
+echo "setup: next: the first start (one compose up) is step 5 of docs/setup.md."

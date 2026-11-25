@@ -21,5 +21,5 @@ disable-model-invocation: true
    Hand edits go only in the migration's `Up`/`Down` (e.g. a revoke on one table); never in `*.Designer.cs` or the snapshot.
 5. **Review the SQL:** `dotnet ef migrations script --idempotent <infra> -o <scratchpad>/migration.sql`
    and read it: names in snake_case in schema `app`, `timestamptz` for `Instant`, the expected indexes and constraints.
-6. **Apply:** `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- migrate`.
+6. **Apply:** `op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- migrate`. The stack's `up` applies it too (its `cli` service), so with the stack running either works.
 7. **Verify:** `has-pending-model-changes` passes; `dotnet test --project backend/tests/WattWise.Infrastructure.IntegrationTests` passes (`InitialMigrationTests`, `RoleAccessTests`).
