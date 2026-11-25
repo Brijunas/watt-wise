@@ -29,9 +29,8 @@ export default defineConfig({
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api\//],
         // `/config.js` is the deployment's own file (see the runtime config in technical.md), so it
-        // must never be precached: a precached copy would outlive a change of the API URL. The
-        // social card is only for link previews, so it is not needed offline.
-        globIgnores: ['**/config.js', '**/social-card.png'],
+        // must never be precached: a precached copy would outlive a change of the API URL.
+        globIgnores: ['**/config.js'],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

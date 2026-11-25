@@ -70,7 +70,7 @@ Report the PR URL. In create-only mode, stop here.
 
 1. Check CI: `gh pr checks <n>`.
    - No checks reported: fine, say so.
-   - Pending: wait for them with `gh pr checks <n> --watch`.
+   - Pending: wait for them with `gh pr checks <n> --watch`. The ruleset requires the `ci` check, so never merge before it has finished green; poll `gh pr checks`, not `gh run list --branch`, which lags.
    - Failing: stop and report. Don't merge red builds.
 2. Check mergeability: `gh pr view <n> --json mergeable,mergeStateStatus`.
    - Conflicting: stop and report.

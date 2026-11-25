@@ -5,13 +5,16 @@
 # restore, so a .csproj change doesn't download it again. A pinned per-release URL with its hash, not
 # getvsdbg.sh, so the build is reproducible. amd64 and arm64; an empty TARGETARCH (the classic
 # builder) is amd64.
-FROM mcr.microsoft.com/dotnet/sdk:11.0.100-resolute AS vsdbg
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100-azurelinux4.0 AS vsdbg
 ARG TARGETARCH
 ARG VSDBG_VERSION=18.10.10709.3
 ARG VSDBG_BASE_URL=https://download.visualstudio.microsoft.com/download/pr/d93f66b9-311f-4c85-8812-48e1350348ff
 ARG VSDBG_SHA256_AMD64=1a337cf2c3d240d4fde58d1a4988c17215dc653c4d63f9e6e9339e67a8a47ed8
 ARG VSDBG_SHA256_ARM64=3012f912c67b1146bb29251825e165158234f341717418edcfd1854984aebb7a
+# gzip: why in deploy/docs/images.md.
 RUN set -eu; \
+    dnf install -y gzip; \
+    dnf clean all; \
     case "${TARGETARCH:-amd64}" in \
         amd64) file=vsdbg-linux-x64.tar.gz; sha256=$VSDBG_SHA256_AMD64 ;; \
         arm64) file=vsdbg-linux-arm64.tar.gz; sha256=$VSDBG_SHA256_ARM64 ;; \
@@ -27,7 +30,7 @@ RUN set -eu; \
     [ "$(head -n 1 /vsdbg/version.txt | cut -d ' ' -f 1)" = "$VSDBG_VERSION" ]
 
 # restore: the SDK, the packages of the project closure, the folders the later stages write to.
-FROM mcr.microsoft.com/dotnet/sdk:11.0.100-resolute AS restore
+FROM mcr.microsoft.com/dotnet/sdk:11.0.100-azurelinux4.0 AS restore
 # bin and obj go to /artifacts, so nothing is written into /src (deploy/docs/images.md#build-output).
 ENV NUGET_PACKAGES=/nuget \
     UseArtifactsOutput=true \
@@ -48,8 +51,7 @@ RUN dotnet restore backend/src/WattWise.Api/WattWise.Api.csproj
 # host instead of asking, since --non-interactive has nobody to ask. /vsdbg is root-owned and
 # read-only for the app user, which only runs it.
 FROM restore AS dev
-# No --chmod on this copy: a symbolic one stripped the directories' x bit on CI's BuildKit (note in
-# frontend/Dockerfile). The vsdbg stage sets the modes.
+# No --chmod on this copy (deploy/docs/images.md, runtime stage). The vsdbg stage sets the modes.
 COPY --from=vsdbg --chown=root:root /vsdbg /vsdbg
 ENV OpenApiGenerateDocuments=false \
     DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true
@@ -58,15 +60,14 @@ ENTRYPOINT ["dotnet", "watch", "--non-interactive", "--project", "backend/src/Wa
 # build: publishes without the OpenAPI document generator, which would only write into this stage.
 FROM restore AS build
 COPY --chown=$APP_UID backend/src/ backend/src/
-RUN dotnet publish backend/src/WattWise.Api/WattWise.Api.csproj -c Release -o /out --no-restore -p:OpenApiGenerateDocuments=false
+RUN dotnet publish backend/src/WattWise.Api/WattWise.Api.csproj -c Release -o /out --no-restore -p:OpenApiGenerateDocuments=false \
+    && chmod -R a+rX,go-w /out
 
-# runtime: the last stage, so a plain docker build gives it.
-FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-resolute AS runtime
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+# runtime: the last stage, so a plain docker build gives it. curl comes with the base image.
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-azurelinux4.0 AS runtime
 WORKDIR /app
-COPY --from=build --chown=root:root --chmod=a=rX /out .
+# No --chmod on this copy: the build stage sets the modes (deploy/docs/images.md, runtime stage).
+COPY --from=build --chown=root:root /out .
 USER $APP_UID
 # The first ASPNETCORE_URLS entry with a wildcard host turned into localhost, else the first HTTP port.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --start-interval=2s --retries=3 \

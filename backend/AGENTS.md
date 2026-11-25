@@ -38,6 +38,8 @@ Follow each rule's linked specification for rationale and details; update the ow
 
 Use the root [development commands](../docs/development.md) for build, formatting, and tests. Integration tests require Docker; follow [mutation-testing instructions](docs/testing.md#mutation-testing) and run Stryker separately from builds and Docker tests.
 
+Never use a symbolic `COPY --chmod` on a directory in a Dockerfile: CI's BuildKit strips the `x` bit. The rule and the modes to use are in [images](../deploy/docs/images.md).
+
 Model changes use the [migration skill](../.agents/skills/ef-migration/SKILL.md). Endpoint changes require `pnpm generate:api`; include the OpenAPI document and generated client together.
 
 Use [.codex/agents](../.codex/agents/) briefs when delegating production code, tests, and reviews; [Claude briefs](../.claude/agents/) serve Claude tooling. Run `backend-reviewer` before backend PRs and `backend-test-reviewer` for test reviews; as a Codex review worker, follow [Codex Review](../AGENTS.md#codex-review) instead. Report unavailable roles explicitly. Give workers this guide and exact file ownership; resolve stale brief paths against the verified links above.

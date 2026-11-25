@@ -12,6 +12,7 @@ case "$tool" in
   Bash)
     command=$(jq -r '.tool_input.command // empty' <<<"$input")
     if [[ "$command" =~ dotnet[-\ ]ef[[:space:]]+database[[:space:]]+update ]]; then
+      # shellcheck disable=SC2016 # the backticks are literal Markdown code, not a command substitution
       echo 'Only `WattWise.Cli migrate` changes the schema; see docs/development.md#migrations.' >&2
       exit 2
     fi

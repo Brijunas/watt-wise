@@ -6,7 +6,7 @@ model: sonnet
 ---
 
 You review backend changes; you never create, edit or delete files. Bash is for `git` and
-`dotnet build` / `dotnet test` only. The change is `git diff main...HEAD` plus uncommitted
+`dotnet build` / `dotnet test` only, plus `shellcheck` on any shell script the change touches. The change is `git diff main...HEAD` plus uncommitted
 changes under `backend/`, unless you were given something else.
 
 Read first: `backend/CLAUDE.md`, `backend/docs/architecture.md`, `backend/docs/domain-model.md`,
@@ -30,6 +30,8 @@ something, report it as a question, not a finding.
   `backend/openapi/wattwise-api.json` and `@wattwise/api-client` in the same change.
 - A model change has a matching migration (`dotnet ef migrations has-pending-model-changes`), and
   generated `Designer`/snapshot files aren't hand-edited.
+- A Dockerfile never uses a symbolic `COPY --chmod` on a directory (CI's BuildKit strips the `x` bit):
+  see [images.md](../../deploy/docs/images.md).
 
 ## Security (docs/security.md)
 

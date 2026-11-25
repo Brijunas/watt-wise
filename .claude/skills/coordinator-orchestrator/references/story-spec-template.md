@@ -41,6 +41,8 @@ The user answers nothing during this run: no questions, no permission prompts, n
    In either flow:
    - Frontend code goes to `frontend-developer`, frontend tests to `frontend-test-writer` (in the Codex flow, the Codex test-writer worker). When you decide the story needs it, run `frontend-wcag` after the frontend code: it reviews and fixes UI accessibility, alone, before the reviewers start.
    - `frontend-reviewer` and `frontend-test-reviewer` run next to the backend reviewers; `frontend-test-reviewer` scopes StrykerJS with `--mutate <changed files>`.
+   - Reviewer briefs for an infra story list the Dockerfiles, nginx, shell and CI files explicitly.
+   - A subagent can hand back only once, so ask for fix-round reports as plain replies.
    - Release each worker once the review of its work is clean. Every Agent call passes `model: "sonnet"`.
    - If a usage limit kills an agent, wait for the reset and resume it with SendMessage. Escalate only if that fails twice.
 
@@ -64,6 +66,7 @@ The user answers nothing during this run: no questions, no permission prompts, n
    - A twin of an answer the coordinator already gave is yours to decide and log in the report.
    - A lint error about a new import: delete `.eslintcache` first.
    - Keep the developer, test writer and reviewers alive across fix rounds and send each fix round with SendMessage; a fresh agent re-derives the context.
+   - A throwaway probe that a pre-commit hook would fix or skip (ESLint, Prettier, dotnet-format-fixable warnings) can't be tested by an agent commit: plan it as a user step up front.
    - While StrykerJS runs, reviewers read from a saved diff snapshot, because it mutates files in place.
 
 ## What is already settled for <story id>

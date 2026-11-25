@@ -39,6 +39,8 @@ PostgreSQL gets `POSTGRES_PASSWORD` on every `up` ([postgres.md](postgres.md#pas
 - `./setup --derive-url <APP> <url>` runs the same function and prints the two lines, or the message. `.github/scripts/check-setup.sh` tests it with a case table, in CI too ([setup.md](../../docs/setup.md#checking-setup)).
 - The other five bind addresses (`POSTGRES_`, `GRAFANA_`, `OTLP_`, `MAILPIT_SMTP_` and `MAILPIT_BIND_ADDRESS`, the `server` fields of their items) are vault values too, and `./setup` stops unless each is a loopback address: `127.x.x.x` or `::1`, naming the key and the item. `./setup --check-bind <KEY> <address>` runs that check, with its own case table. So every published port of the stack binds to loopback, which tethys needs ([environments.md](environments.md#development-on-tethys)). On rootless Docker that holds only with a port driver that honours the host IP (`builtin`); [environments.md](environments.md#why-rootless-docker) says why and how tethys pins it.
 
+An agent can't read `deploy/.env` (deny rule), so it reads a published port from the container: `docker inspect <container> --format '{{json .HostConfig.PortBindings}}'`.
+
 The compose file keeps `:?` on these keys (and on the other bind addresses and ports): without a rendered `deploy/.env`, every compose command says to run `./setup`.
 
 ## The tree and what the containers write

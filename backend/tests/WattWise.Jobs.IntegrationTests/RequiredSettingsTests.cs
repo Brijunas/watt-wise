@@ -17,13 +17,13 @@ public class RequiredSettingsTests(DatabaseFixture fixture) : IClassFixture<Data
     public async Task A_host_with_a_missing_or_invalid_setting_stops_at_start_naming_it(string key, string value, string expectedInMessage)
     {
         Dictionary<string, string?> settings = new(JobsTestSettings.For(fixture)) { [key] = value };
-        await using TestHostFactory<Program> factory = new(settings);
+        StartupFailureCapture capture = new();
+        await using TestHostFactory<Program> factory = new(settings, capture.Decorate);
 
         Exception? exception = Record.Exception(() => factory.CreateClient());
 
-        Assert.Contains(
-            ExceptionChain.Of(exception!),
-            e => e is OptionsValidationException && e.Message.Contains(expectedInMessage, StringComparison.Ordinal));
+        OptionsValidationException failure = capture.AssertValidationFailure(exception);
+        Assert.Contains(expectedInMessage, failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -35,13 +35,12 @@ public class RequiredSettingsTests(DatabaseFixture fixture) : IClassFixture<Data
             settings[key] = "";
         }
 
-        await using TestHostFactory<Program> factory = new(settings);
+        StartupFailureCapture capture = new();
+        await using TestHostFactory<Program> factory = new(settings, capture.Decorate);
 
         Exception? exception = Record.Exception(() => factory.CreateClient());
 
-        Assert.Contains(
-            ExceptionChain.Of(exception!),
-            e => e is OptionsValidationException
-                && e.Message.StartsWith("Smtp configuration is missing or invalid: ", StringComparison.Ordinal));
+        OptionsValidationException failure = capture.AssertValidationFailure(exception);
+        Assert.StartsWith("Smtp configuration is missing or invalid: ", failure.Message, StringComparison.Ordinal);
     }
 }

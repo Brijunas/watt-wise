@@ -80,3 +80,18 @@ Brings both apps to the look in [style.md](../frontend/docs/style.md) and the sh
 - **S5A.5 Existing pages in the new look.** Every existing page and the update prompt use only mapped MUI components, variants and `Ww` components: `h1` titles, cards for account pages, Settings and about, themed Alerts and Snackbar, outlined secondary buttons, and one primary button per form.
 - **S5A.6 Component variants.** The custom variants (highlighted card, segmented choice, chips, typography) in the theme.
 - **S5A.8 Themed @wattwise/ui components.** The `Ww` components styled through the theme's slots, with their types registered in `mui-augmentation.ts`.
+
+## E5B. Development environment
+
+Made running Watt-Wise the same on every machine: in containers by default, including on the developer's laptop vidar, with the host-run flow kept as an option. It delivered the pull request workflow (the first CI), the Docker images of api, jobs, cli, frontend and admin with a `dev` and a runtime target, a one-command `setup`, the containerized Development stack with an automated first start, VS Code debugging, and tethys, the dev VM on saturn that runs Development remotely ([technical.md](technical.md#hosting-and-operations)). The toolchain stays on the host: Claude, Codex, Orca, the pre-commit hook, Testcontainers and the IDE need it. The social card image was dropped for good.
+
+### Stories
+
+- **S5B.1 Pull request workflow.** The first CI: the checks on every PR to `main`, whose ruleset requires the `ci` check.
+- **S5B.2 Backend images.** A `Dockerfile` for the Api, Jobs host and Cli with a `dev` and a non-root runtime target, on Azure Linux 4.0.
+- **S5B.3 Frontend images.** A `Dockerfile` for `frontend/` and `admin/`: a runtime image built once for every environment, configured at start.
+- **S5B.4 Setup installer.** `./setup` sets up a Fedora machine that has only git and Docker.
+- **S5B.5 Containerized development stack.** The Api, Jobs host and both web apps run in the Compose stack from the `dev` targets with the tree bind-mounted.
+- **S5B.6 Automated first start.** `db-init` and `cli` one-shots set up the database, migrate and seed on the first `up`.
+- **S5B.7 VS Code debugging.** Attach configs for the Api and Jobs containers and browser configs for the two apps.
+- **S5B.8 Dev VM tethys.** `deploy/provision/dev-vm.sh` provisions the dev VM; it is reached over SSH only.

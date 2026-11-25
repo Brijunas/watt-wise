@@ -18,6 +18,8 @@ How `WattWise.Jobs` runs background work. Where Jobs sits among the hosts is in 
 4. the job classes, registered in DI, then `AddHealthChecks().AddDbContextCheck<AppDbContext>("database")`;
 5. after `Build`: `UseJobsRequestLogging()` first, then `/health`, then the dashboard, then `RecurringJobs.Register`.
 
+The host can't start without its database: Hangfire connects at start, so a missing or unreachable database stops it.
+
 `/health` is the Api's ([architecture.md](architecture.md#http-surface)): 200 when Healthy or Degraded, 503 when Unhealthy, and no exception text in the body. `Health/` holds a copy of the Api's `HealthResponseWriter` and its two records, as `Observability/` holds a copy of the request logging. It is what the Jobs image's container health check calls ([images.md](../../deploy/docs/images.md)).
 
 ## Storage

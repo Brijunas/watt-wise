@@ -51,6 +51,7 @@ Writing an integration test:
 - Take `IClassFixture<DatabaseFixture>` and connect as the role the code under test uses: `api` for Api code, `jobs` for jobs, `cli` only for migration checks. `DatabaseFixture.BuildServices(role)` gives a service provider with `AddInfrastructure()` wired to the clone.
 - ASP.NET Core Identity comes with `AddInfrastructure()`, so `BuildServices(role)` already has `UserManager`. To test expiry, swap the clock with `BuildServices(role, services => services.Replace(ServiceDescriptor.Singleton<IClock>(fakeClock)))`.
 - Api tests start the host through `TestHostFactory<Program>` (`WattWise.Testing`, a `WebApplicationFactory` for any web host) with the clone's `api` settings. It runs as Development unless given an `environment`, e.g. `"Production"` to check what is hidden there.
+- A test that expects the host to stop at start through `ValidateOnStart` passes `StartupFailureCapture.Decorate` to `TestHostFactory` and asserts with `capture.AssertValidationFailure(exception)`: the host runs on its own thread, so `CreateClient` can surface an `ObjectDisposedException` instead of the validation failure.
 - Jobs tests start the Jobs host through the same `TestHostFactory<Program>`, with the clone's `jobs` settings. How to test a job, and why those classes run one host at a time, is in [jobs.md](jobs.md#testing-a-job).
 - Tests need Docker running and usable without `sudo` ([setup.md](../../docs/setup.md)). The first run pulls the image.
 
@@ -103,6 +104,10 @@ PostgreSQL integration tests (fixtures: [Shared PostgreSQL fixture](#shared-post
   - `numeric` precision and rounding for money and energy amounts; `jsonb` mapping and queries, if used;
   - stable pagination (`ORDER BY` with a unique tie-breaker);
   - null, empty and missing values in requests and columns.
+
+## Reading test output
+
+When you grep test output, write the Microsoft.Testing.Platform output to a file (or use `--report-trx`) and grep that: grep on piped output once hid a flaky failure.
 
 ## Mutation testing
 

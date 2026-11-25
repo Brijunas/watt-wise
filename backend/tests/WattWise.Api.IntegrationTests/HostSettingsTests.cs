@@ -15,12 +15,12 @@ public class HostSettingsTests(DatabaseFixture fixture) : IClassFixture<Database
             ["Database:Username"] = "",
             ["Database:Password"] = "",
         };
-        await using TestHostFactory<Program> factory = new(settings);
+        StartupFailureCapture capture = new();
+        await using TestHostFactory<Program> factory = new(settings, capture.Decorate);
 
         Exception? exception = Record.Exception(() => factory.CreateClient());
 
-        Assert.Contains(
-            ExceptionChain.Of(exception!),
-            e => e is OptionsValidationException && e.Message.Contains("Database configuration is missing or invalid", StringComparison.Ordinal));
+        OptionsValidationException failure = capture.AssertValidationFailure(exception);
+        Assert.Contains("Database configuration is missing or invalid", failure.Message, StringComparison.Ordinal);
     }
 }

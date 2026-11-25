@@ -5,23 +5,30 @@
 #   bash .github/scripts/check-setup.sh --token-file <file>     also the secrets steps, with that token
 #   bash .github/scripts/check-setup.sh --token-file <file> --checks   also the development.md checks
 #   bash .github/scripts/check-setup.sh --interactive           the token is typed at setup's prompt
-# It tests the committed HEAD of the repository this script is in (a clone), not the working tree.
+#   bash .github/scripts/check-setup.sh --source <dir>          test <dir>'s working tree, uncommitted changes included
+# By default it tests the committed HEAD of the repository this script is in (a clone), not the working tree.
 # The token file is mounted read-only into the container; no value is ever printed.
 set -euo pipefail
 
 usage() {
-  echo "usage: check-setup.sh [--token-file <file> [--checks] | --interactive [--checks]]" >&2
+  echo "usage: check-setup.sh [--source <dir>] [--token-file <file> [--checks] | --interactive [--checks]]" >&2
   exit 2
 }
 
 token_src=""
 run_checks=false
 interactive=false
+source_dir=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --token-file)
       [ "$#" -ge 2 ] || usage
       token_src="$2"
+      shift 2
+      ;;
+    --source)
+      [ "$#" -ge 2 ] || usage
+      source_dir="$2"
       shift 2
       ;;
     --checks)
@@ -128,7 +135,26 @@ echo "Building the setup-check image"
 docker build -q -t wattwise-setup-check - < "$root/.github/setup-check/Dockerfile" > /dev/null
 
 # The committed HEAD, as a clone: this worktree's .git can be a pointer file.
-git clone -q --no-local "$root" "$work/src"
+if [ -n "$source_dir" ]; then
+  # The given working tree, as the container's clone source: its tracked and untracked files that
+  # git doesn't ignore, committed into a throwaway repository (the real one is never touched).
+  [ -d "$source_dir" ] || {
+    echo "The source directory does not exist." >&2
+    exit 2
+  }
+  source_dir="$(cd "$source_dir" && pwd)"
+  git -C "$source_dir" rev-parse --is-inside-work-tree > /dev/null 2>&1 || {
+    echo "The source directory is not a git working tree." >&2
+    exit 2
+  }
+  mkdir "$work/src"
+  (cd "$source_dir" && git ls-files -z --cached --others --exclude-standard | while IFS= read -r -d '' f; do [ -e "$f" ] && printf '%s\0' "$f"; done | tar --null -T - -cf -) | tar -xf - -C "$work/src"
+  git -C "$work/src" init -q
+  git -C "$work/src" -c core.excludesFile=/dev/null add -A
+  git -C "$work/src" -c user.name=setup-check -c user.email=setup-check@localhost -c commit.gpgsign=false commit -q --no-verify -m "working tree of $source_dir"
+else
+  git clone -q --no-local "$root" "$work/src"
+fi
 chmod 755 "$work"
 chmod -R a+rX "$work/src"
 
