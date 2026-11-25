@@ -59,7 +59,18 @@ The repo root is bind-mounted read-write at `/src`, with no user mapping. A cont
 
 ## One stack per machine
 
-The project is named `wattwise-development`, so a machine has one PostgreSQL, one Mailpit, one LGTM and one set of app containers, built from whichever worktree ran `up` last. `up` from another worktree changes the bind source and the dev image, so Compose recreates the four app containers (they then serve that worktree's code); `postgres`, `lgtm` and `mailpit` keep their containers and volumes, because their configuration is unchanged. The `node_modules` volumes are shared across worktrees: the install at start reconciles them. The hosts' build output is not (see above), so every switch is a cold build. Run `up` again in the first worktree to switch back.
+The project is named `wattwise-development`, so a machine has one PostgreSQL, one Mailpit, one LGTM and one set of app containers, built from whichever checkout ran `up` last. The stack's home is the main checkout (the clone kept on `main`): run `up` there first, and `git switch <branch>` there moves the stack to that branch. `up` from a worktree changes the bind source and the dev image, so Compose recreates the four app containers (they then serve that worktree's code); `up` from the main checkout gives the stack back. `postgres`, `lgtm` and `mailpit` keep their containers and volumes, because their configuration is unchanged. The `node_modules` volumes are shared across checkouts: the install at start reconciles them. The hosts' build output is not (see above), so every switch is a cold build.
+
+## Following git
+
+A committed husky hook rebuilds the stack after a `git pull`, `merge`, `rebase` or branch switch, so a changed `.csproj`, lockfile, `Directory.Packages.props` or migration takes effect without a command; plain code edits already reload. The hooks are `post-merge`, `post-checkout` (only a branch switch that changes HEAD, not a file checkout) and `post-rewrite` (only `rebase`, which covers `git pull --rebase`). All three call [`follow-stack.sh`](../development/follow-stack.sh).
+
+- It acts only when the `api` container's bind source for `/src` is this checkout (compared by real path), so a pull in another worktree never takes the stack over. Without Docker or the container it does nothing.
+- It prints that it is rebuilding, then runs the documented `up` through `op run` from the checkout's root: `up` rebuilds only the images whose inputs changed and reruns `cli`, which migrates. On vidar that asks 1Password once.
+- In an agent session (`CLAUDECODE=1` for Claude Code, `CODEX_THREAD_ID` for Codex, which injects it into its commands) it doesn't run `op`: it prints `follow-stack: the Development stack runs from this checkout; rebuild it with:` and the command, for the agent to relay.
+- A rebase, cherry-pick, revert or bisect in progress is skipped by `post-checkout`; `post-rewrite` fires at the end.
+- It never blocks git: it always exits 0, and when `up` fails it prints `follow-stack: rebuild failed; run it yourself:` and the command.
+- `HUSKY=0` skips it, like every husky hook. `.github/scripts/check-follow-stack.sh` tests it with stub `docker` and `op`, in CI's `shell` job.
 
 ## Health checks
 
@@ -95,4 +106,5 @@ The containerized Jobs host answers `/hangfire` with 401. The dashboard allows l
 | Port already in use on `up`                                         | A host-run process holds it. Stop it, or `stop` the container and keep the host-run one.                                                                                                                          |
 | Container names show as `<concealed by 1Password>-development-…-1`  | Under `op run`, compose's output masks every injected value, and `wattwise`, `api` and `jobs` are values of the database name and usernames. Cosmetic: `docker compose ps` without `op run` shows the real names. |
 | `/hangfire` answers 401                                             | By design in the container ([above](#the-hangfire-dashboard)).                                                                                                                                                    |
-| Compose still shows the old code after switching worktree           | Run `up` through `op run` in the worktree you want; it recreates the app containers.                                                                                                                              |
+| Compose still shows the old code after switching worktree           | Run `up` through `op run` in the checkout you want; it recreates the app containers. A pull or switch in the checkout the stack runs from does it itself ([Following git](#following-git)).                       |
+| A pull or switch printed `follow-stack: rebuild failed`             | Run the command it prints, which is the documented `up`; the usual cause is a dismissed 1Password prompt or a build error.                                                                                        |
