@@ -14,11 +14,15 @@ usage() {
   cat << 'EOF'
 Usage: ./setup [--headless] [--skip-secrets]
        ./setup --derive-url <APP> <url>
+       ./setup --check-bind <KEY> <address>
 
   --headless       Use the service-account token even when the 1Password desktop app is installed.
   --skip-secrets   Skip the token and deploy/.env steps (CI, or a machine without vault access).
   --derive-url     Print the published bind address and port derived from an app's url, or stop
                    with a message (what step 8 does for each app; check-setup.sh tests it).
+  --check-bind     Stop with a message unless the address is a loopback address (what step 8 does
+                   for the postgres, grafana, otlp, mailpit-smtp and mailpit bind addresses;
+                   check-setup.sh tests it). Prints nothing when it passes.
   -h, --help       Show this help.
 EOF
 }
@@ -58,11 +62,39 @@ derive_published() { # APP, url
   printf '%s_BIND_ADDRESS="%s"\n%s_PORT="%s"\n' "$app" "$host" "$app" "$port"
 }
 
+# Stops unless a bind address of the infrastructure services is a loopback address: 127.x.x.x
+# (octets 0 to 255, no leading zero) or ::1. These values come straight from the vault and nothing
+# else checks them, so a wrong one would publish PostgreSQL, Grafana or Mailpit on every interface.
+check_bind() { # KEY, address
+  local key="$1" address="$2" item octet
+  case "$key" in
+    POSTGRES_BIND_ADDRESS) item=postgres-admin ;;
+    GRAFANA_BIND_ADDRESS) item=grafana ;;
+    OTLP_BIND_ADDRESS) item=otlp ;;
+    MAILPIT_SMTP_BIND_ADDRESS) item=mailpit-smtp ;;
+    MAILPIT_BIND_ADDRESS) item=mailpit ;;
+    *) die "unknown key '$key': expected POSTGRES_BIND_ADDRESS, GRAFANA_BIND_ADDRESS, OTLP_BIND_ADDRESS, MAILPIT_SMTP_BIND_ADDRESS or MAILPIT_BIND_ADDRESS." ;;
+  esac
+  if [ "$address" = '::1' ]; then return 0; fi
+  if [[ "$address" =~ ^127\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
+    for octet in "${BASH_REMATCH[@]:1}"; do
+      [ "$octet" -le 255 ] || die "the $key value (the 1Password '$item' item's server) is not a loopback address: 127.x.x.x or ::1. Fix the item."
+    done
+    return 0
+  fi
+  die "the $key value (the 1Password '$item' item's server) is not a loopback address: 127.x.x.x or ::1. Fix the item."
+}
+
 force_headless=false
 skip_secrets=false
 if [ "${1:-}" = --derive-url ]; then
   [ "$#" -eq 3 ] || die "usage: ./setup --derive-url <APP> <url>"
   derive_published "$2" "$3"
+  exit 0
+fi
+if [ "${1:-}" = --check-bind ]; then
+  [ "$#" -eq 3 ] || die "usage: ./setup --check-bind <KEY> <address>"
+  check_bind "$2" "$3"
   exit 0
 fi
 for arg in "$@"; do
@@ -279,6 +311,14 @@ render_env() {
   if ! op inject -f -i "$root/deploy/development/compose.settings.tpl" -o "$secret_tmp" > /dev/null; then
     die "op inject failed: $hint"
   fi
+  # The other services' bind addresses must be loopback addresses.
+  local key value
+  for key in POSTGRES_BIND_ADDRESS GRAFANA_BIND_ADDRESS OTLP_BIND_ADDRESS MAILPIT_SMTP_BIND_ADDRESS MAILPIT_BIND_ADDRESS; do
+    value="$(grep -m1 "^${key}=" "$secret_tmp")" || die "op inject rendered no ${key}."
+    value="${value#*=}"
+    value="${value#\"}"
+    check_bind "$key" "${value%\"}"
+  done
   # The four apps' published bind address and port, derived from their rendered URLs. They are added
   # before the comparison, so an unchanged vault still reports "unchanged".
   local app line derived
