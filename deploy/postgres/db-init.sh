@@ -1,17 +1,17 @@
 #!/bin/sh
 # First start of a database: runs bootstrap.sql and sets every login role's password, once.
 #
-# Runs as the one-shot `db-init` service on the pinned postgres image, as `admin` (PGUSER). The
-# connection comes from PGHOST, PGPORT, PGUSER and PGDATABASE; every password is a Compose secret
-# file under /run/secrets, so none is in the container's configured environment and `docker
-# inspect` shows none (PGPASSWORD is exported only inside this process).
+# Run by `mise run db-init` (deploy/postgres/db-init-run.sh) inside the postgres container, as the
+# `postgres` OS user: `docker compose exec -T -u postgres postgres sh /db-init/db-init.sh`. It connects
+# as `admin` over the container's own socket (PGUSER and PGDATABASE default to POSTGRES_USER and
+# POSTGRES_DB). The passwords arrive on stdin only, one `<role> <password>` line per role, `admin`
+# first, so none is in an argument list, in the container's environment or in `docker inspect`.
 # Passwords are set with psql's \password, fed from stdin: libpq hashes (SCRAM-SHA-256) on the
 # client, so the server's DDL log sees only the verifier. Never `set -x`, never echo a password.
 # See deploy/docs/postgres.md.
 
 set -eu
 
-secrets=/run/secrets
 bootstrap=/db-init/bootstrap.sql
 
 log() {
@@ -23,29 +23,64 @@ fail() {
   exit 1
 }
 
-# $(cat ...) strips the trailing newline of the file.
-admin_password="$(cat "$secrets/postgres-admin-password")"
-[ -n "$admin_password" ] || fail 'the admin password is empty'
-PGPASSWORD="$admin_password"
+PGUSER="${PGUSER:-${POSTGRES_USER:-}}"
+PGDATABASE="${PGDATABASE:-${POSTGRES_DB:-}}"
+export PGUSER PGDATABASE
+
+# Read all of stdin before any psql runs: \password reads stdin too, and each psql gets its own pipe.
+pw_admin=''
+pw_cli=''
+pw_api=''
+pw_jobs=''
+pw_backup=''
+pw_reader=''
+has_reader=''
+while IFS=' ' read -r role password || [ -n "$role" ]; do
+  case "$role" in
+    admin) pw_admin="$password" ;;
+    cli) pw_cli="$password" ;;
+    api) pw_api="$password" ;;
+    jobs) pw_jobs="$password" ;;
+    backup) pw_backup="$password" ;;
+    reader)
+      pw_reader="$password"
+      has_reader=1
+      ;;
+    '') ;;
+    *) fail "unknown role $role on stdin" ;;
+  esac
+done
+unset password
+
+password_of() {
+  case "$1" in
+    cli) printf '%s' "$pw_cli" ;;
+    api) printf '%s' "$pw_api" ;;
+    jobs) printf '%s' "$pw_jobs" ;;
+    backup) printf '%s' "$pw_backup" ;;
+    reader) printf '%s' "$pw_reader" ;;
+  esac
+}
+
+[ -n "$pw_admin" ] || fail 'the admin password is missing or empty'
+PGPASSWORD="$pw_admin"
 export PGPASSWORD
-unset admin_password
+unset pw_admin
 
 # The roles to set up. cli, api, jobs and backup are required in every environment: a missing or
-# empty secret stops here (depending on the Compose version, an empty variable mounts no file or
-# an empty one; both stop a required role). Only `reader` is optional: outside Development it
-# gets no password, so a missing file skips it. An existing empty file is always a mistake.
+# empty password stops here. Only `reader` is optional: without a line for it the role gets no
+# password and is skipped. A reader line with an empty password is always a mistake.
 set_roles=''
 names=''
 for role in cli api jobs backup reader; do
-  file="$secrets/postgres-$role-password"
-  if [ ! -f "$file" ]; then
-    [ "$role" = reader ] || fail "the secret postgres-$role-password for role $role is missing or empty"
-    log "no secret for role $role, skipped"
-    continue
-  fi
-  if [ ! -s "$file" ]; then
-    [ "$role" = reader ] && fail "the secret postgres-$role-password for role $role is empty"
-    fail "the secret postgres-$role-password for role $role is missing or empty"
+  if [ "$role" = reader ]; then
+    if [ -z "$has_reader" ]; then
+      log "no password for role $role, skipped"
+      continue
+    fi
+    [ -n "$pw_reader" ] || fail "the password for role $role is empty"
+  else
+    [ -n "$(password_of "$role")" ] || fail "the password for role $role is missing or empty"
   fi
   set_roles="$set_roles $role"
   names="${names:+$names,}'$role'"
@@ -61,9 +96,9 @@ for role in $set_roles; do
   total=$((total + 1))
 done
 
-# Done check: with every role of the set holding a password, a later `up` has nothing to do. It
-# runs no bootstrap and no ALTER, so a second `up` changes no role and no password. A run that
-# stopped halfway leaves a role without one, so the next `up` does everything again.
+# Done check: with every role of the set holding a password, a later run has nothing to do. It
+# runs no bootstrap and no ALTER, so a second run changes no role and no password. A run that
+# stopped halfway leaves a role without one, so the next run does everything again.
 done_count="$(count_roles 'rolpassword IS NOT NULL')" || fail 'cannot read pg_authid'
 if [ "$done_count" = "$total" ]; then
   log 'already initialized, nothing to do'
@@ -76,8 +111,8 @@ psql -X -v ON_ERROR_STOP=1 -q -f "$bootstrap" >/dev/null
 for role in $set_roles; do
   log "setting the password of role $role"
   # printf is a builtin, so the value never appears in an argument list. \password reads
-  # /dev/tty when one exists, so a manual run must have no TTY: `docker compose run -T db-init`.
-  password="$(cat "$secrets/postgres-$role-password")"
+  # /dev/tty when one exists, so this must run without a TTY (`exec -T`).
+  password="$(password_of "$role")"
   printf '%s\n%s\n' "$password" "$password" | psql -X -v ON_ERROR_STOP=1 -q -c "\\password $role" >/dev/null ||
     fail "setting the password of role $role failed"
 done
