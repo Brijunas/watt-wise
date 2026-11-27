@@ -14,7 +14,7 @@ The debugger is Microsoft's `vsdbg`, which the C# extension drives over a pipe. 
 - **No `getvsdbg.sh` at build:** the script downloads whatever is current and takes an exact version only from a short retained list, so the build wouldn't be reproducible or checked.
 - **amd64 and arm64:** an empty `TARGETARCH` (the classic builder) is amd64; any other value fails the stage. The arm64 archive is untested: the development machine and CI are x64.
 - **Dev targets only:** `build` and `runtime` never hold it. The dev images are never published, because vsdbg's license allows it only with Visual Studio or VS Code: that limits `vsdbg` to those two, so the other editors use another debugger ([Other editors](#other-editors)).
-- The Cli image has none: nobody attaches to a one-shot.
+- The Cli has no image: it runs on the host, where an IDE attaches to it like to any host process.
 
 #### Bumping vsdbg
 

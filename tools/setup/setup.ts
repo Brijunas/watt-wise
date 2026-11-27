@@ -119,7 +119,7 @@ const main = async (): Promise<void> => {
   checkTestcontainers()
 
   note('done.')
-  note('next: the first start is `mise run up` (docs/setup.md).')
+  note('next: on a new database `mise run db-init`, then `mise run up` (docs/setup.md).')
 }
 
 try {

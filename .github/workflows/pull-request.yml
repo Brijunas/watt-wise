@@ -204,11 +204,6 @@ jobs:
             kind: dotnet
             healthcheck: 'true'
             debugger: 'true'
-          - image: Cli
-            dockerfile: backend/src/WattWise.Cli/Dockerfile
-            kind: dotnet
-            healthcheck: 'false'
-            debugger: 'false'
           - image: Frontend
             dockerfile: frontend/Dockerfile
             kind: web
@@ -352,8 +347,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Starts the Development compose file's db-init and cli under their own project, with
-      # throwaway passwords: roles, migrations, a second start, no leaked password, failure paths.
+      - uses: jdx/mise-action@924e7c586e33d7d4bae9c14e26c5d22e2beb6e78 # v5.3.0
+        with:
+          install_args: dotnet
+      # Runs db-init and the Cli's migrate on the host, then starts the Api, against the Development
+      # compose file under its own project, with throwaway passwords: roles, a second run, no leaked
+      # password, failure paths.
       - name: Check the first start of the Development stack
         run: bash .github/scripts/check-first-start.sh
 

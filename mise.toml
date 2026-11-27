@@ -23,9 +23,17 @@ run = "node tools/setup/setup.ts"
 # The 1Password token prompt reads the terminal.
 raw = true
 
+[tasks.db-init]
+description = "Once, on a new empty database: bootstrap it and set the login roles' passwords (needs op)"
+run = "op run --env-file deploy/development/compose.env -- sh deploy/postgres/db-init-run.sh"
+
 [tasks.up]
-description = "Build and start the Development stack and wait until it is healthy"
-run = "op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait"
+description = "Build and start the Development stack (postgres and lgtm, the Cli's migrate, then the rest) and wait until it is healthy"
+run = [
+  "op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait postgres lgtm",
+  "op run --env-file backend/src/WattWise.Cli/.env.development -- dotnet run --project backend/src/WattWise.Cli -- migrate",
+  "op run --env-file deploy/development/compose.env -- docker compose -f deploy/docker-compose.development.yml up -d --wait",
+]
 
 [tasks.watch]
 description = "Rebuild the apps' images when a project file or the lockfile changes (own terminal)"

@@ -1,18 +1,18 @@
 # Images
 
-The Docker images: the .NET hosts `WattWise.Api`, `WattWise.Jobs` and `WattWise.Cli`, and the two web apps `frontend` and `admin` ([below](#frontend-and-admin-images)). The decisions behind them are "Deployment" in [technical.md](../../docs/technical.md) and "Images" in [security.md](../../docs/security.md); the build commands are in [development.md](../../docs/development.md#images).
+The Docker images: the .NET hosts `WattWise.Api` and `WattWise.Jobs` (the Cli has no image, [below](#the-cli)), and the two web apps `frontend` and `admin` ([below](#frontend-and-admin-images)). The decisions behind them are "Deployment" in [technical.md](../../docs/technical.md) and "Images" in [security.md](../../docs/security.md); the build commands are in [development.md](../../docs/development.md#images).
 
 ## Layout
 
 Each host has one `Dockerfile` in its project folder (`backend/src/WattWise.<Host>/Dockerfile`). The build context is always the repo root, so the Dockerfile can reach `global.json` and `backend/Directory.*`.
 
-| Stage     | What it is                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vsdbg`   | Api and Jobs only: installs `gzip` (the SDK image has `tar` without it), downloads the pinned VS Code debugger for the build's architecture and checks its hash; only `dev` copies it in ([debugging.md](debugging.md#vsdbg)).                                                                                                                                                                                                                |
-| `restore` | The SDK image with the build settings files (`global.json`, the `.editorconfig` files, `Directory.Build.props`, `Directory.Packages.props`, `nuget.config`, `.globalconfig`) and only the `.csproj` files of the host's project closure, then `dotnet restore` into `/nuget`, with every project's `bin` and `obj` under `/artifacts` ([below](#build-output)). Cached until a `.csproj` or package version changes.                          |
-| `dev`     | `restore` plus an entry point: `dotnet watch --non-interactive … run` for the Api and Jobs (`DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true`; the Api also `OpenApiGenerateDocuments=false`), `dotnet run … --` for the Cli. The Api's and Jobs' also hold the VS Code debugger at `/vsdbg` ([debugging.md](debugging.md)). It copies no source: the Development stack bind-mounts the tree at `/src` ([development-stack.md](development-stack.md)). |
-| `build`   | `restore` plus `backend/src/`, then `dotnet publish -c Release --no-restore` into `/out` and `chmod -R a+rX,go-w /out`, so the `runtime` copy needs no `--chmod`. The Api passes `-p:OpenApiGenerateDocuments=false`: the OpenAPI document is generated and committed by `pnpm generate:api`, not in an image.                                                                                                                                |
-| `runtime` | The last stage, so a plain `docker build` gives it: the base runtime image, `/out` copied to `/app` owned by root and read-only (`--chown=root:root`, no `--chmod`: a symbolic one stripped the `x` bit of nested directories on CI's BuildKit; the build stage sets the modes), `USER $APP_UID`, and the entry point `dotnet WattWise.<Host>.dll`.                                                                                           |
+| Stage     | What it is                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vsdbg`   | Api and Jobs only: installs `gzip` (the SDK image has `tar` without it), downloads the pinned VS Code debugger for the build's architecture and checks its hash; only `dev` copies it in ([debugging.md](debugging.md#vsdbg)).                                                                                                                                                                                       |
+| `restore` | The SDK image with the build settings files (`global.json`, the `.editorconfig` files, `Directory.Build.props`, `Directory.Packages.props`, `nuget.config`, `.globalconfig`) and only the `.csproj` files of the host's project closure, then `dotnet restore` into `/nuget`, with every project's `bin` and `obj` under `/artifacts` ([below](#build-output)). Cached until a `.csproj` or package version changes. |
+| `dev`     | `restore` plus an entry point: `dotnet watch --non-interactive … run` for the Api and Jobs (`DOTNET_WATCH_RESTART_ON_RUDE_EDIT=true`; the Api also `OpenApiGenerateDocuments=false`), The Api's and Jobs' also hold the VS Code debugger at `/vsdbg` ([debugging.md](debugging.md)). It copies no source: the Development stack bind-mounts the tree at `/src` ([development-stack.md](development-stack.md)).       |
+| `build`   | `restore` plus `backend/src/`, then `dotnet publish -c Release --no-restore` into `/out` and `chmod -R a+rX,go-w /out`, so the `runtime` copy needs no `--chmod`. The Api passes `-p:OpenApiGenerateDocuments=false`: the OpenAPI document is generated and committed by `pnpm generate:api`, not in an image.                                                                                                       |
+| `runtime` | The last stage, so a plain `docker build` gives it: the base runtime image, `/out` copied to `/app` owned by root and read-only (`--chown=root:root`, no `--chmod`: a symbolic one stripped the `x` bit of nested directories on CI's BuildKit; the build stage sets the modes), `USER $APP_UID`, and the entry point `dotnet WattWise.<Host>.dll`.                                                                  |
 
 `dev` and `build` run as the SDK image's non-root `app` user (uid 1654, `$APP_UID`); `/src`, `/nuget` and `/out` belong to it and nothing is world-writable. The bind mount keeps this user: it can read the checkout and can't write it, so the `dev` target writes only to `/nuget` and `/artifacts` ([development-stack.md](development-stack.md#the-tree-and-what-the-containers-write)).
 
@@ -24,15 +24,13 @@ The `restore` stage sets `UseArtifactsOutput=true` and `ArtifactsPath=/artifacts
 
 All from `mcr.microsoft.com/dotnet`, with exact tags and no digest; `update-deps` refreshes them ([development.md](../../docs/development.md#updating-dependencies)).
 
-| Image     | Used by                   | Tag                      |
-| --------- | ------------------------- | ------------------------ |
-| `sdk`     | `restore` (all hosts)     | `11.0.100-azurelinux4.0` |
-| `aspnet`  | `runtime` of Api and Jobs | `11.0.0-azurelinux4.0`   |
-| `runtime` | `runtime` of the Cli      | `11.0.0-azurelinux4.0`   |
+| Image    | Used by                   | Tag                      |
+| -------- | ------------------------- | ------------------------ |
+| `sdk`    | `restore` (all hosts)     | `11.0.100-azurelinux4.0` |
+| `aspnet` | `runtime` of Api and Jobs | `11.0.0-azurelinux4.0`   |
 
-- The SDK tag equals the SDK in `global.json`; the other two are the runtime that SDK ships with.
+- The SDK tag equals the SDK in `global.json`; the `aspnet` tag is the runtime that SDK ships with.
 - `-azurelinux4.0` is Azure Linux 4.0. Microsoft builds and patches these images, they ship `curl` and ICU, they keep the `app` user at uid 1654 and glibc, and their exact tags are ones Renovate can track once it arrives ([technical.md](../../docs/technical.md), "Dependency updates"). There is no Debian variant of .NET 11, and Fedora's repos had only .NET 11 RC3 (November 2026).
-- The Cli needs only `Microsoft.NETCore.App` (its `WattWise.Cli.runtimeconfig.json` names no ASP.NET Core framework), so it uses the smaller `runtime` image.
 - The runtime images run as the base image's `app` user (`USER $APP_UID`, so `docker image inspect` shows `1654`) and hold no SDK. Api and Jobs use the base image's `curl` for the health check. `/app` belongs to root and is not writable by `app`, so a compromised process can't overwrite the DLLs it runs; the hosts write nothing there.
 
 ## The build context
@@ -45,21 +43,21 @@ The images hold no settings or secrets: every setting arrives as an environment 
 
 The Api and Jobs listen on the base image's `ASPNETCORE_HTTP_PORTS=8080`; a set `ASPNETCORE_URLS` overrides it. Both serve `/health` ([architecture.md](../../backend/docs/architecture.md#http-surface), [jobs.md](../../backend/docs/jobs.md)): 200 when healthy, 503 when the database check fails.
 
-Their `HEALTHCHECK` runs every 30 s (timeout 3 s, 3 retries); during the first 30 s it runs every 2 s, so a started container turns `healthy` quickly. It calls `curl -fsS --max-time 2 <url>/health`, where `<url>` is the first entry of `ASPNETCORE_URLS` with a wildcard host (`+`, `*`, `0.0.0.0`, `[::]`, with or without a port) replaced by `localhost` and a trailing slash dropped, or `http://localhost:<first HTTP port>` (8080 by default) when `ASPNETCORE_URLS` is empty. `-f` makes the 503 unhealthy. The first `ASPNETCORE_URLS` entry must be plain `http` with no leading space: an `https` first entry, or only `ASPNETCORE_HTTPS_PORTS`, is not supported by the check. The Cli has no health check.
+Their `HEALTHCHECK` runs every 30 s (timeout 3 s, 3 retries); during the first 30 s it runs every 2 s, so a started container turns `healthy` quickly. It calls `curl -fsS --max-time 2 <url>/health`, where `<url>` is the first entry of `ASPNETCORE_URLS` with a wildcard host (`+`, `*`, `0.0.0.0`, `[::]`, with or without a port) replaced by `localhost` and a trailing slash dropped, or `http://localhost:<first HTTP port>` (8080 by default) when `ASPNETCORE_URLS` is empty. `-f` makes the 503 unhealthy. The first `ASPNETCORE_URLS` entry must be plain `http` with no leading space: an `https` first entry, or only `ASPNETCORE_HTTPS_PORTS`, is not supported by the check.
 
 ## The Cli
 
-`docker run <image> migrate` runs `WattWise.Cli migrate`: the entry point is the Cli, so the arguments are its commands (`docker run <image> --help` lists them). The Cli's `dev` target runs `dotnet run`, so its arguments follow the same way. The Development stack's one-shot `cli` service runs the `runtime` target with an entry point that runs `migrate` and then `seed smoke-accounts`; the deployed stacks keep the image's entry point with `command: ['migrate']` ([development-stack.md](development-stack.md#first-start)).
+`WattWise.Cli` is a maintenance tool and has no image and no `Dockerfile`. In Development it runs on the host with `dotnet run` ([development.md](../../docs/development.md#migrations)); `mise run up` runs its `migrate` ([development-stack.md](development-stack.md#first-start)). In the deployed environments the deploy agent runs a signed self-contained `WattWise.Cli` binary from the deploy bundle (S5C, S5D).
 
 ## Running an image against Development
 
 The Development `.env.development` files hold `op://` references and loopback addresses (`ASPNETCORE_URLS`, the database host). `op run` resolves the references; each variable is passed into the container by name with `-e NAME`, and `--network host` makes the loopback addresses reach the host's PostgreSQL, Mailpit and Grafana:
 
 ```bash
-op run --env-file backend/src/WattWise.Cli/.env.development -- sh -c 'exec docker run --rm --network host $(sed -n "s/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/-e \1/p" backend/src/WattWise.Cli/.env.development) wattwise-cli migrate'
+op run --env-file backend/src/WattWise.Api/.env.development -- sh -c 'exec docker run -d --name wattwise-api-try --network host $(sed -n "s/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/-e \1/p" backend/src/WattWise.Api/.env.development) wattwise-api'
 ```
 
-The same works for `wattwise-api` and `wattwise-jobs` with their own file (add `-d --name <name>` to keep them running; `docker inspect -f '{{.State.Health.Status}}' <name>` shows the health). Stop the host-run Api or Jobs first: the ports are the same. The Development stack runs the `dev` targets through Compose ([development-stack.md](development-stack.md)), which is the usual way; this is for trying a runtime image.
+`docker inspect -f '{{.State.Health.Status}}' wattwise-api-try` shows the health. The same works for `wattwise-jobs` with its own file. Stop the host-run Api or Jobs first: the ports are the same. The Development stack runs the `dev` targets through Compose ([development-stack.md](development-stack.md)), which is the usual way; this is for trying a runtime image.
 
 ## Frontend and admin images
 

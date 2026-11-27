@@ -3,6 +3,7 @@
     "allow": [
       "Bash(gh pr merge:*)",
       "Bash(shellcheck:*)",
+      "Bash(docker compose -f * down:*)",
       "Bash(mise exec -- op read \"op://Watt Wise Development/smoke-accounts/*\")"
     ],
     "deny": [
